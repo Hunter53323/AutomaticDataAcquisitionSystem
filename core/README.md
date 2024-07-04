@@ -25,7 +25,7 @@ from .drivers.driver_base import DriverBase
 
 注意上述代码中 `.drivers.driver_base` 为**相对路径**，可以观看[相关视频](https://www.bilibili.com/video/BV1K24y1k7XA?vd_source=b2425bbb781dff215db471eb24eeaa00)了解相对路径和绝对路径的区别，以及模块管理中使用相对路径的好处
 
-由于本项目只需要一个 `CommunicationModule` 对象，且分别只需要一个 `TestDriver1` `TestDriver2` 对象，因此在 `communication/__init__.py` 以及 `communication/drivers/__init__.py` 中直接进行了对象的实例化以及驱动管理工作
+由于本项目只需要一个 `Communication` 对象，且分别只需要一个 `TestDriver1` `TestDriver2` 对象，因此在 `communication/__init__.py` 以及 `communication/drivers/__init__.py` 中直接进行了对象的实例化以及驱动管理工作
 
 ```python
 # communication/__init__.py
