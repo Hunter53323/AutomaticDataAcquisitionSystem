@@ -30,7 +30,7 @@ from .drivers.driver_base import DriverBase
 ```python
 # communication/__init__.py
 
-from .communication import communicator
+from .communication import communication
 from .drivers import driver1, driver2
 
 communicator = Communication()
@@ -39,7 +39,7 @@ communicator.register_device(driver2)
 ```
 
 ```python
-# `communication/drivers/__init__.py`
+# communication/drivers/__init__.py
 
 from .test_driver1 import TestDriver1
 from .test_driver2 import TestDriver2
