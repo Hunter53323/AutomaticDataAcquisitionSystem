@@ -1,9 +1,7 @@
-import json, eventlet
-from typing import Union
-from driver.Driver import DriverBase
+from .drivers.driver_base import DriverBase
 
 
-class CommunicationModule:
+class Communication:
     def __init__(self) -> None:
         self.drivers: list[DriverBase] = []
         self.__para_map: dict[str, DriverBase] = {}

@@ -1,7 +1,7 @@
 from pymodbus.client import ModbusSerialClient as ModbusClient
 from pymodbus.exceptions import ConnectionException
 import time
-from core.communication.drivers.ParametersConfig import DEVICES
+from .ParametersConfig import DEVICES
 
 
 class ReadWriteError(Exception):

@@ -1,10 +1,9 @@
 import time, itertools
-from typing import Union
-from driver.CommunicationModule import CommunicationModule
+from ..communication import Communication
 
 
-class AutoCollector:
-    def __init__(self, communication: CommunicationModule):
+class AutoCollection:
+    def __init__(self, communication: Communication):
         self.commuication = communication
         self.__para_pool: itertools.product
         self.__para_pool_vals: dict[str, list[any]] = {}
