@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Socket.IO Random Data</title>
+    <link rel="stylesheet" type="text/css" href="../static/styles.css" charset="utf-8">
+    <!-- <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}" charset="utf-8"> -->
+    <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+    <!-- <script src="{{ url_for('static', filename='script.js') }}"></script> -->
+    <script src="../static/script.js"></script>
+    <!-- <script src="../static/buttons.js"></script> -->
+    
+    
+</head>
+<body>
+  <h1 class="center-text">风机自动数采平台</h1>
+    <h2>被测设备数据:</h2>
+
+    <div class="horizontal_pairs_container">
+    <div class="horizontal_pair">
+        <span class="label">当前转速:&nbsp;</span>
+        <div id="currentrotationalspeed">0</div>
+        <span class="label">rpm</span>
+      </div>
+      
+      <div class="horizontal_pair">
+        <span class="label">给定转速:&nbsp;</span>
+        <div id="setrotationalspeed">0</div>
+        <span class="label">rpm</span>
+      </div>
+      
+      <div class="horizontal_pair">
+        <span class="label">目标转速:&nbsp;</span>
+        <div id="targetrotationalspeed">0</div>
+        <span class="label">rpm</span>
+      </div>
+      
+      <div class="horizontal_pair">
+        <span class="label">故障信息:&nbsp;</span>
+        <div id="faultinformation">良好</div>
+      </div>
+      
+      <div class="horizontal_pair">
+        <span class="label">直流母线电压:&nbsp;</span>
+        <div id="dcbusvoltage">0.00</div>
+        <span class="label">V</span>
+      </div>
+      <div class="horizontal_pair">
+        <span class="label">U相电流有效值:&nbsp;</span>
+        <div id="uphasecurrent">0</div>
+        <span class="label">A</span>
+      </div>
+      <div class="horizontal_pair">
+        <span class="label">计算功率:&nbsp;</span>
+        <div id="power">0</div>
+        <span class="label">W</span>
+      </div>
+      <div class="horizontal_pair">
+        <span class="label">定子电阻:&nbsp;</span>
+        <div id="dissipativeresistance">0</div>
+        <span class="label">Ω</span>
+      </div>
+      <div class="horizontal_pair">
+        <span class="label">D轴电感:&nbsp;</span>
+        <div id="daxieinductor">0</div>
+        <span class="label">H</span>
+      </div>
+      <div class="horizontal_pair">
+        <span class="label">Q轴电感:&nbsp;</span>
+        <div id="qaxieinductor">0</div>
+        <span class="label">H</span>
+      </div>
+      <div class="horizontal_pair">
+        <span class="label">反电动势常数:&nbsp;</span>
+        <div id="reverseemfconstant">0</div>
+        <span class="label">V</span>
+      </div>
+      <div class="horizontal_pair">
+        <span class="label">极对数:&nbsp;</span>
+        <div id="polaritylog">0</div>
+        <span class="label"></span>
+      </div>
+    </div>
+
+    <h2>测试设备数据:</h2>
+      <div class="horizontal_pairs_container">
+      <div class="horizontal_pair">
+        <span class="label">电机输入功率:&nbsp;</span>
+        <div id="motorinputpower">0</div>
+        <span class="label">W</span>
+      </div>
+      <div class="horizontal_pair">
+        <span class="label">转矩:&nbsp;</span>
+        <div id="torque">0</div>
+        <span class="label"></span>
+      </div>
+      <div class="horizontal_pair">
+        <span class="label">电机输出功率:&nbsp;</span>
+        <div id="motoroutputpower">0</div>
+        <span class="label">W</span>
+      </div>
+      <div class="horizontal_pair">
+        <span class="label">加载量:&nbsp;</span>
+        <div id="addload">0</div>
+        <span class="label"></span>
+      </div>
+    </div>
+
+      <h3>控制参数:</h3>
+      <div class="horizontal_pairs_container">
+      <div class="horizontal_pair">
+        <span class="label">速度环补偿系数:&nbsp;</span>
+        <div id="speedcompensationcoefficient">0</div>
+      </div>
+      <div class="horizontal_pair">
+        <span class="label">电流环带宽:&nbsp;</span>
+        <div id="currentbandwidth">0</div>
+      </div>
+      <div class="horizontal_pair">
+        <span class="label">观测器补偿系数:&nbsp;</span>
+        <div id="observercompensationcoefficient">0</div>
+      </div>
+      <div class="horizontal_pair">
+        <span class="label">负载量:&nbsp;</span>
+        <div id="load">0</div>
+      </div>
+      <div class="horizontal_pair">
+        <span class="label">转速:&nbsp;</span>
+        <div id="speed">0</div>
+        <span class="label">rpm</span>
+      </div>
+    </div>
+
+      <h3>设备状态:</h3>
+      <div id="status">未连接</div>
+      
+      <div>
+        <button onclick="click_connect_button()" id="connect_button">连接设备</button>
+        <button id="start_button" disabled>启动实时数采</button>
+        <button id="stop_button" disabled>停止实时数采</button>
+      </div>
+
+      <p><br></p>
+
+      <div class="container">
+        <h1>自动采集设置</h1>
+        <input type="file" id="csvFileInput" accept=".csv">
+        <button onclick="sendCSVToServer()">Upload</button>
+
+        <p>共有<span id="data-count">0</span>条数据需要采集，当前为第<span id="current-data-count">0</span>条。</p>
+        <div>
+          <button onclick="click_start_collect_button()" id="start_collect_button" disabled>开始</button>
+          <button onclick="click_pause_collect_button()" id="pause_collect_button" disabled>暂停</button>
+          <button onclick="click_stop_collect_button()" id="stop_collect_button" disabled>停止</button>
+          <button onclick="click_export_data_button()" id="export_data" disabled>数据导出</button>
+          <button onclick="click_clear_button()" id="clear" disabled>清空所有</button>
+        </div>
+      </div>
+      
+      
+</body>
+</html>

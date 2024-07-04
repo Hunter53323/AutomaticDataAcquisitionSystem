@@ -1,0 +1,40 @@
+body {
+    font-family: Arial, sans-serif;
+}
+
+.horizontal_pairs_container {
+    display: flex;
+    justify-content: space-between; /* 添加间距 */
+}
+.horizontal_pair {
+    display: flex;
+    flex-direction: column; /* 内部元素纵向排列 */
+    align-items: center; /* 垂直居中对齐 */
+    margin-right: 20px; /* 设置子元素之间的间距 */
+}
+.label {
+    margin-right: 10px; /* 调整标签和数值之间的间距 */
+}
+
+.container {
+    border: 2px solid black; /* 边框样式 */
+    padding: 20px; /* 内边距 */
+    width: 80%; /* 宽度，根据需要调整 */
+    margin: 0 auto; /* 水平居中 */
+    background-color: #f9f9f9; /* 背景色 */
+  }
+
+.center-text {
+    text-align: center;
+}
+
+button {
+    margin: 5px;
+    padding: 10px 20px;
+    font-size: 16px;
+}
+
+#status {
+    font-size: 18px;
+    margin-top: 20px;
+}
