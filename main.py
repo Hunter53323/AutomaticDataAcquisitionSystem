@@ -2,7 +2,7 @@ from flask import Flask, render_template, url_for, request, jsonify
 from flask_socketio import SocketIO
 import random
 import threading
-from ControlDriver import Driver
+from core.communication.drivers.ControlDriver import Driver
 import time
 
 app = Flask(__name__)
