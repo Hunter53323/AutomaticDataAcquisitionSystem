@@ -1,9 +1,9 @@
 <script setup>
 import StatisticBox from '../components/StatisticBox.vue'
 import ViewTitle from '../components/ViewTitle.vue'
-import { reactive } from 'vue'
+import { ref } from 'vue'
 
-let content = ref([])
+const content = ref([])
 
 fetch('http://127.0.0.1:5000/data_test', {
   method: 'GET',
