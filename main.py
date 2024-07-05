@@ -1,17 +1,21 @@
 from flask import Flask, render_template, url_for, request, jsonify
 from flask_socketio import SocketIO
+from flask_cors import CORS
+from core.communication import communicator
 import random
 import threading
-from core.communication.drivers.ControlDriver import Driver
 import time
 
 app = Flask(__name__)
+CORS(app, supports_credentials=True)
 socketio = SocketIO(app)
+
+communicator.connect()
+communicator.start_read_all()
 
 thread = None
 thread_running = threading.Event()
 
-client = Driver([("电机驱动", "COM10")])
 
 
 @app.route("/")
@@ -75,46 +79,21 @@ def collect_data():
         return jsonify({"status": "error"}), 400
 
 
+@app.route("/data_test", methods=["GET"])
+def get_data():
+    return jsonify(communicator.read()), 200
+
+
+
 def get_data():
     """
     从数据采集模块获取数据，
     """
     while thread_running.is_set():
-        socketio.sleep(0.05)  # 50毫秒
-        status, speed = client.read_from_parameter("电机驱动", "实际转速")
-        if status == False:
-            speed = "error"
-        # status, faultinformation = client.read_from_parameter("电机驱动", "故障信息")
-        # if status == False:
-        #     faultinformation = "error"
-        # 这一块可能需要考虑多线程
-        speed = [random.random()]
-        faultinformation = [random.randint(0, 1)]
+        socketio.sleep(0.05)  # 50ms
         socketio.emit(
             "data_from_device",
-            {
-                "currentrotationalspeed": speed[0],
-                "faultinformation": faultinformation[0],
-                "setrotationalspeed": random.randint(0, 100),
-                "targetrotationalspeed": random.randint(0, 100),
-                "dcbusvoltage": random.randint(0, 100),
-                "uphasecurrent": random.randint(0, 100),
-                "power": random.randint(0, 100),
-                "dissipativeresistance": random.randint(0, 100),
-                "daxieinductor": random.randint(0, 100),
-                "qaxieinductor": random.randint(0, 100),
-                "reverseemfconstant": random.randint(0, 100),
-                "polaritylog": random.randint(0, 100),
-                "motorinputpower": random.randint(0, 100),
-                "torque": random.randint(0, 100),
-                "motoroutputpower": random.randint(0, 100),
-                "addload": random.randint(0, 100),
-                "speedcompensationcoefficient": random.randint(0, 100),
-                "currentbandwidth": random.randint(0, 100),
-                "observercompensationcoefficient": random.randint(0, 100),
-                "load": random.randint(0, 100),
-                "speed": random.randint(0, 100),
-            },
+            communicator.read()
         )
 
 
@@ -133,25 +112,23 @@ def stop_data():
 
 @socketio.on("connect_device")
 def connect_device():
-    client.connect_all_device()
-    socketio.emit("connection", {"status": client.connect_all_device()})
+    communicator.connect()
+    socketio.emit("connection", {"status": communicator.connect()})
     # thread = threading.Thread(target=random_data, args=(client,))
     # thread.start()
 
 
 @socketio.on("disconnect_device")
 def disconnect_device():
-    client.close()
+    communicator.disconnect()
     socketio.emit("connection", {"status": False})
 
 
-def random_data(client: Driver):
+def random_data():
     i = 0
     while i < 1000:
         i += 1
         socketio.sleep(0.01)
-        client.write_from_parameter("电机驱动", "实际转速", random.randint(0, 100))
-        client.write_from_parameter("电机驱动", "故障信息", random.randint(0, 2))
 
 
 if __name__ == "__main__":
