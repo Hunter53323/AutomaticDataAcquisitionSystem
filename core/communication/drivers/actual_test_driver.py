@@ -2,13 +2,12 @@ from .driver_base import DriverBase
 from pymodbus.client import ModbusTcpClient
 import struct
 
-client = ModbusTcpClient("127.0.0.1", 503)
 
-
-class TestDriver(DriverBase):
+class TestDevice(DriverBase):
 
     def __init__(self, device_name: str, data_list: list[str], para_list: list[str]):
         super().__init__(device_name, data_list, para_list)
+        self.client = ModbusTcpClient("127.0.0.1", 503)
 
     def write(self, para_dict: dict[str, any]) -> bool:
         """
@@ -21,23 +20,23 @@ class TestDriver(DriverBase):
         if command == "start_device":
             address = 0
             value = 1
-            result = client.write_register(address, value, unit=1)
+            result = self.client.write_register(address, value, unit=1)
         elif command == "stop_device":
             address = 0
             value = 0
-            result = client.write_register(address, value, unit=1)
+            result = self.client.write_register(address, value, unit=1)
         elif command == "P_mode":
             address = 1
             value = 1
-            result = client.write_register(address, value, unit=1)
+            result = self.client.write_register(address, value, unit=1)
         elif command == "N_mode":
             address = 1
             value = 2
-            result = client.write_register(address, value, unit=1)
+            result = self.client.write_register(address, value, unit=1)
         elif command == "N1_mode":
             address = 1
             value = 4
-            result = client.write_register(address, value, unit=1)
+            result = self.client.write_register(address, value, unit=1)
         elif command == "write":
             address = 2
             data_value = float(para_dict["loading"])
@@ -48,7 +47,7 @@ class TestDriver(DriverBase):
             registers = struct.unpack(">HH", packed_value)
             # 将两个整数写入到两个连续的寄存器中
             value = list(registers)
-            result = client.write_registers(address, value, unit=1)
+            result = self.client.write_registers(address, value, unit=1)
         else:
             return False
 
@@ -58,18 +57,18 @@ class TestDriver(DriverBase):
             return True
 
     def connect(self) -> bool:
-        self.conn_state = client.connect()
+        self.conn_state = self.client.connect()
         return self.conn_state
 
     def disconnect(self) -> bool:
-        client.close()
+        self.client.close()
         self.conn_state = False
 
     def read_all(self) -> bool:
         address = 1
         count = 12
 
-        result = client.read_holding_registers(address, count, unit=1)
+        result = self.client.read_holding_registers(address, count, unit=1)
         if not result.isError():
             registers = result.registers
             packed_values = [registers[i : i + 2] for i in range(0, len(registers), 2)]
@@ -81,24 +80,24 @@ class TestDriver(DriverBase):
 
 
 if __name__ == "__main__":
-    testdriver = TestDriver(
+    testdevice = TestDevice(
         device_name="test_device",
         data_list=["input_power", "torque", "output_power"],
         para_list=["command", "loading"],
     )
-    testdriver.connect()
-    testdriver.read_all()
-    print("Test read:", testdriver.curr_data)
+    testdevice.connect()
+    testdevice.read_all()
+    print("Test read:", testdevice.curr_data)
     parameters = {"command": "start_device"}
-    print("Test start:", testdriver.write(parameters))
+    print("Test start:", testdevice.write(parameters))
     parameters = {"command": "stop_device"}
-    print("Test stop:", testdriver.write(parameters))
+    print("Test stop:", testdevice.write(parameters))
     parameters = {"command": "P_mode"}
-    print("Test P:", testdriver.write(parameters))
+    print("Test P:", testdevice.write(parameters))
     parameters = {"command": "N_mode"}
-    print("Test N:", testdriver.write(parameters))
+    print("Test N:", testdevice.write(parameters))
     parameters = {"command": "N1_mode"}
-    print("Test N1:", testdriver.write(parameters))
+    print("Test N1:", testdevice.write(parameters))
     parameters = {"command": "write", "loading": 200}
-    print("Test write:", testdriver.write(parameters))
-    testdriver.disconnect()
+    print("Test write:", testdevice.write(parameters))
+    testdevice.disconnect()
