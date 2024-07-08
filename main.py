@@ -17,7 +17,6 @@ thread = None
 thread_running = threading.Event()
 
 
-
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -65,7 +64,12 @@ def collect_data():
     elif signal == "search":
         # 查询当前数据采集的状态，返回当前正在采集第几条数据
         current_data = 1
-        return jsonify({"status": "search", "current_data": current_data, "complete": False}), 200
+        return (
+            jsonify(
+                {"status": "search", "current_data": current_data, "complete": False}
+            ),
+            200,
+        )
     elif signal == "pause":
         # 暂停数采
         return jsonify({"status": "pause"}), 200
@@ -79,10 +83,24 @@ def collect_data():
         return jsonify({"status": "error"}), 400
 
 
-@app.route("/data_test", methods=["GET"])
+@app.route("/data", methods=["GET"])
 def get_data():
     return jsonify(communicator.read()), 200
 
+
+@app.route("/para", methods=["GET"])
+def get_para():
+    return jsonify(communicator.get_curr_para()), 200
+
+
+@app.route("/para", methods=["POST"])
+def set_para():
+    para_to_set_dict = request.form.get("paraToSet")
+    try:
+        communicator.write()
+        return jsonify({"result": "success"}), 200
+    except Exception():
+        return jsonify({"result": "fault", "msg":"Fault Message"}), 400
 
 
 def get_data():
@@ -91,10 +109,7 @@ def get_data():
     """
     while thread_running.is_set():
         socketio.sleep(0.05)  # 50ms
-        socketio.emit(
-            "data_from_device",
-            communicator.read()
-        )
+        socketio.emit("data_from_device", communicator.read())
 
 
 @socketio.on("start_data")

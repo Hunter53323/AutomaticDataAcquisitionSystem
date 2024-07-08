@@ -20,7 +20,7 @@ class TestDriver1(DriverBase):
         self.curr_data["data1"] = 1
         self.curr_data["data2"] = 2
         self.curr_data["moredata1"] = 123.123
-        self.curr_data["moredata2"] = 123123123
+        self.curr_data["今天是星期天"] = 123123123
         self.curr_data["moredata3"] = 1978
         self.curr_data["moredata4"] = 0002310.3123
         self.curr_data["moredata5"] = 14551

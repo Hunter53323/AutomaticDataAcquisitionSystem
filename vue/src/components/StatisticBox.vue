@@ -1,15 +1,18 @@
 <script lang="ts" setup>
 import { ref, reactive, computed } from 'vue'
 
-const props = defineProps(['contentObj'])
+const props = defineProps(['contentObj', 'title'])
 const contentLength = computed(() => Object.keys(props.contentObj).length)
 </script>
 
 <template>
   <div class="statisticBox">
-    <el-row v-for="row in Math.ceil(contentLength / 4)">
-      <el-col v-for="(value, key, index) in props.contentObj" :span="6">
-        <el-statistic v-if="index < row * 4 && index >= row * 4 - 4" :title="key" :value="value" group-separator=" "
+    <div class="statisticTitle">
+      {{ props.title }}
+    </div>
+    <el-row v-for="row in Math.ceil(contentLength / 6)">
+      <el-col v-for="(value, key, index) in props.contentObj" :span="4">
+        <el-statistic v-if="index < row * 6 && index >= row * 6 - 6" :title="key" :value="value" group-separator=" "
           :precision="2" />
       </el-col>
     </el-row>
@@ -23,10 +26,16 @@ const contentLength = computed(() => Object.keys(props.contentObj).length)
 }
 
 .el-row {
-  margin: 20px 50px 20px 50px;
+  margin: 20px 20px 20px 20px;
 }
 
 .el-statistic {
   --el-statistic-title-font-size: --el-font-size-small;
+}
+
+.statisticTitle {
+  text-align: left;
+  font-size: 20px;
+  margin: 0 0 0 20px;
 }
 </style>
