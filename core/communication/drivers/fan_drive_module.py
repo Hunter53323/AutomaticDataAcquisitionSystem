@@ -122,11 +122,11 @@ class FanDriver(DriverBase):
         data1 = self.device_address
         data2 = "01"
         data3 = "03"
-        if para_dict["command"] == "start":
+        if para_dict["fan_command"] == "start":
             data4 = "01"
-        elif para_dict["command"] == "stop":
+        elif para_dict["fan_command"] == "stop":
             data4 = "02"
-        elif para_dict["command"] == "clear_breakdown":
+        elif para_dict["fan_command"] == "clear_breakdown":
             data4 = "04"
         else:
             data4 = "00"

@@ -11,10 +11,10 @@ class TestDevice(DriverBase):
 
     def write(self, para_dict: dict[str, any]) -> bool:
         """
-        para_dict示例{"command":"start_device", "loading":float}
+        para_dict示例{"test_device_command":"start_device", "loading":float}
         command:"start_device","stop_device","P_mode","N_mode","N1_mode","write"
         """
-        command = para_dict["command"]
+        command = para_dict["test_device_command"]
         if not self.conn_state:
             return False
         if command == "start_device":
