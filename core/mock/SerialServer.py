@@ -1,53 +1,82 @@
 import serial
 import time
 import struct
+from fan import Fan
+
+state = False
 
 
-def handle_command(data: bytes):
+def handle_command(data: bytes, fan: Fan):
     # 根据命令字符串进行处理
     byte0 = b"\x5A"
     byte1 = b"\xFF"
-    if data[2].to_bytes() == b"\x01":
-        # 控制命令
-        byte2 = b"\x01"
-        byte3 = b"\x01"
-        data_checksum = calculate_checksum(data[0:13])
-        if data_checksum == data[13].to_bytes():
-            byte4 = b"\x01"
+    try:
+        if data[2].to_bytes() == b"\x01":
+            # 控制命令回复
+            byte2 = b"\x01"
+            byte3 = b"\x01"
+            data_checksum = calculate_checksum(data[0:13])
+            if data_checksum == data[13].to_bytes():
+                # 执行电机控制
+                speed = int.from_bytes(data[5:7])
+                control = data[4]
+                if control == 1:
+                    state = True
+                elif control == 2:
+                    state = False
+                elif control == 4:
+                    state = fan.state
+                elif control == 0:
+                    state = fan.state
+                else:
+                    raise Exception("control error")
+                fan.control(state, speed)
+
+                byte4 = b"\x01"
+            else:
+                byte4 = b"\x02"
+            byte5 = calculate_checksum(byte0, byte1, byte2, byte3, byte4)
+            if byte5 != b"\x5C" and byte5 != b"\x5D":
+                raise Exception("checksum error")
+            byte6 = b"\xA5"
+            response = byte0 + byte1 + byte2 + byte3 + byte4 + byte5 + byte6
+        elif data[2].to_bytes() == b"\x02":
+            # 查询命令
+            byte2 = b"\x02"
+            byte3 = b"\x0C"
+            # 自定义的设置查询数据
+            target_speed, actual_speed, dc_bus_voltage, U_phase_current, power, breakdown = fan.read()
+            # target_speed = 200
+            # actual_speed = 300
+            # dc_bus_voltage = 50
+            # U_phase_current = 100
+            # power = 30
+            byte4and5 = struct.pack(">H", target_speed)
+            byte6and7 = struct.pack(">H", actual_speed)
+            byte8and9 = struct.pack(">H", dc_bus_voltage)
+            byte10and11 = struct.pack(">H", U_phase_current)
+            byte12and13 = struct.pack(">H", power)
+            byte14 = b"\x00"
+            byte15 = b"\x00"
+            byte16 = calculate_checksum(byte0, byte1, byte2, byte3, byte4and5 + byte6and7 + byte8and9 + byte10and11 + byte12and13 + byte14 + byte15)
+            byte17 = b"\xA5"
+            response = (
+                byte0 + byte1 + byte2 + byte3 + byte4and5 + byte6and7 + byte8and9 + byte10and11 + byte12and13 + byte14 + byte15 + byte16 + byte17
+            )
         else:
-            byte4 = b"\x02"
-        byte5 = calculate_checksum(byte0, byte1, byte2, byte3, byte4)
-        if byte5 != b"\x5C" and byte5 != b"\x5D":
-            raise Exception("checksum error")
-        byte6 = b"\xA5"
-        response = byte0 + byte1 + byte2 + byte3 + byte4 + byte5 + byte6
-    elif data[2].to_bytes() == b"\x02":
-        # 查询命令
-        byte2 = b"\x02"
-        byte3 = b"\x0C"
-        # 自定义的设置查询数据
-        target_speed = 200
-        actual_speed = 300
-        dc_bus_voltage = 50
-        U_phase_current = 100
-        power = 30
-        byte4and5 = struct.pack(">H", target_speed)
-        byte6and7 = struct.pack(">H", actual_speed)
-        byte8and9 = struct.pack(">H", dc_bus_voltage)
-        byte10and11 = struct.pack(">H", U_phase_current)
-        byte12and13 = struct.pack(">H", power)
-        byte14 = b"\x00"
-        byte15 = b"\x00"
-        byte16 = calculate_checksum(byte0, byte1, byte2, byte3, byte4and5 + byte6and7 + byte8and9 + byte10and11 + byte12and13 + byte14 + byte15)
-        byte17 = b"\xA5"
-        response = byte0 + byte1 + byte2 + byte3 + byte4and5 + byte6and7 + byte8and9 + byte10and11 + byte12and13 + byte14 + byte15 + byte16 + byte17
-    else:
+            byte2 = b"\x00"
+            byte3 = b"\x00"
+            byte5 = b"\x00"
+            byte6 = b"\xA5"
+            response = byte0 + byte1 + byte2 + byte3 + byte5 + byte6
+        return response
+    except:
         byte2 = b"\x00"
         byte3 = b"\x00"
         byte5 = b"\x00"
         byte6 = b"\xA5"
         response = byte0 + byte1 + byte2 + byte3 + byte5 + byte6
-    return response
+        return response
 
 
 def calculate_checksum(*args: bytes) -> bytes:
@@ -67,7 +96,9 @@ def calculate_checksum(*args: bytes) -> bytes:
 
 if __name__ == "__main__":
     # 配置串行端口
+    fan = Fan()
     ser = serial.Serial("COM10", 9600, timeout=10)  # 请替换为您的串行端口和波特率
+    fan.thread_start()
     print("服务器启动")
 
     try:
@@ -78,12 +109,13 @@ if __name__ == "__main__":
                 print(f"收到命令: {data.hex()}")
 
                 # 处理命令
-                response = handle_command(data)
+                response = handle_command(data, fan)
                 ser.write(response)
 
             # 添加一些延迟，避免过快的轮询
             time.sleep(0.1)
     except KeyboardInterrupt:
+        fan.stop()
         print("退出程序")
     finally:
         ser.close()  # 关闭串行端口
