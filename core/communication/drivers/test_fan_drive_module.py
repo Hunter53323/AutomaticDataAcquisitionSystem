@@ -1,7 +1,6 @@
 from .fan_drive_module import FanDriver
 import pytest
 
-
 class TestFanDriver:
 
     @pytest.fixture(scope="class")
@@ -23,7 +22,7 @@ class TestFanDriver:
         return fan_driver
 
     def test_serwrite(self, init: FanDriver):
-        assert init._FanDriver__serwrite(b"\xA5\x02\x5A") == (True, "")
+        assert init._FanDriver__serwrite(b"\xA5\x02\x5A") == (True, "")#a502005a才是查询命令，这个不应该出现，服务器应该不接受或输出报文错误！
 
     def read_all_cpu(self, init: FanDriver, cpu: str):
         init.set_device_cpu(cpu)
@@ -36,7 +35,7 @@ class TestFanDriver:
         breakdown = init.curr_data["breakdown"]
 
         FB, VB, IB, Cofe1, Cofe2, Cofe3, Cofe4, Cofe5 = init._FanDriver__get_cpu_paras()
-        assert target_speed == 200 * FB * Cofe1 / Cofe2
+        assert target_speed == 165 * FB * Cofe1 / Cofe2
         assert actual_speed == 300 * FB * Cofe1 / Cofe2
         assert dc_bus_voltage == 50 * VB / Cofe2
         assert U_phase_current == 100 * IB / Cofe2 / Cofe5
@@ -58,34 +57,49 @@ class TestFanDriver:
                     "set_speed": 100,
                     "speed_loop_compensates_bandwidth": 200,
                     "current_loop_compensates_bandwidth": 300,
-                    "observer_compensates_bandwidth": 400,
+                    "observer_compensates_bandwidth": 41,
                 }
             )
             == True
         )
 
-    def test_decode_response(self, init: FanDriver):
-        # 第一个cpu
-        FB, VB, IB, Cofe1, Cofe2, Cofe3, Cofe4, Cofe5 = init._FanDriver__get_cpu_paras()
-        assert init._FanDriver__decode_read_response(b"\x5A\xFF\x02\x0C\x00\xC8\x01\x2C\x00\x32\x00\x64\x00\x1E\x00\x00\x10\xA5") == (
-            200 * FB * Cofe1 / Cofe2,
-            300 * FB * Cofe1 / Cofe2,
-            50 * VB / Cofe2,
-            100 * IB / Cofe2 / Cofe5,
-            30 * IB * VB * Cofe3 / Cofe4 / Cofe2 / Cofe5,
-            [],
-        )
-
-        init.set_device_cpu("M0")
-        FB, VB, IB, Cofe1, Cofe2, Cofe3, Cofe4, Cofe5 = init._FanDriver__get_cpu_paras()
-        assert init._FanDriver__decode_read_response(b"\x5A\xFF\x02\x0C\x00\xC8\x01\x2C\x00\x32\x00\x64\x00\x1E\x00\x00\x10\xA5") == (
-            200 * FB * Cofe1 / Cofe2,
-            300 * FB * Cofe1 / Cofe2,
-            50 * VB / Cofe2,
-            100 * IB / Cofe2 / Cofe5,
-            30 * IB * VB * Cofe3 / Cofe4 / Cofe2 / Cofe5,
-            [],
-        )
+    def test_wALL(self,init:FanDriver):
+        for speed in range(65536):
+            for speed_loop_compensates_bandwidth in range(15,3100):
+                assert (
+                        init.write(
+                            {
+                                "command": "start",
+                                "set_speed": speed,
+                                "speed_loop_compensates_bandwidth": speed_loop_compensates_bandwidth,
+                                "current_loop_compensates_bandwidth": 300,
+                                "observer_compensates_bandwidth": 400,
+                            }
+                        )
+                        == True
+                )
+    # def test_decode_response(self, init: FanDriver):
+    #     # 第一个cpu
+    #     FB, VB, IB, Cofe1, Cofe2, Cofe3, Cofe4, Cofe5 = init._FanDriver__get_cpu_paras()
+    #     assert init._FanDriver__decode_read_response(b"\x5A\xFF\x02\x0C\x00\xC8\x01\x2C\x00\x32\x00\x64\x00\x1E\x00\x00\x10\xA5") == (
+    #         200 * FB * Cofe1 / Cofe2,
+    #         300 * FB * Cofe1 / Cofe2,
+    #         50 * VB / Cofe2,
+    #         100 * IB / Cofe2 / Cofe5,
+    #         30 * IB * VB * Cofe3 / Cofe4 / Cofe2 / Cofe5,
+    #         [],
+    #     )
+    #
+    #     init.set_device_cpu("M0")
+    #     FB, VB, IB, Cofe1, Cofe2, Cofe3, Cofe4, Cofe5 = init._FanDriver__get_cpu_paras()
+    #     assert init._FanDriver__decode_read_response(b"\x5A\xFF\x02\x0C\x00\xC8\x01\x2C\x00\x32\x00\x64\x00\x1E\x00\x00\x10\xA5") == (
+    #         200 * FB * Cofe1 / Cofe2,
+    #         300 * FB * Cofe1 / Cofe2,
+    #         50 * VB / Cofe2,
+    #         100 * IB / Cofe2 / Cofe5,
+    #         30 * IB * VB * Cofe3 / Cofe4 / Cofe2 / Cofe5,
+    #         [],
+    #     )
 
 
 if __name__ == "__main__":

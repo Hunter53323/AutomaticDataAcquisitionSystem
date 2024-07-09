@@ -45,19 +45,21 @@ def handle_command(data: bytes, fan: Fan):
             byte2 = b"\x02"
             byte3 = b"\x0C"
             # 自定义的设置查询数据
-            target_speed, actual_speed, dc_bus_voltage, U_phase_current, power, breakdown = fan.read()
-            # target_speed = 200
-            # actual_speed = 300
-            # dc_bus_voltage = 50
-            # U_phase_current = 100
-            # power = 30
+            # target_speed, actual_speed, dc_bus_voltage, U_phase_current, power, breakdown = fan.read()
+            target_speed = 165
+            actual_speed = 300
+            dc_bus_voltage = 50
+            U_phase_current = 100
+            power = 30
             byte4and5 = struct.pack(">H", target_speed)
             byte6and7 = struct.pack(">H", actual_speed)
             byte8and9 = struct.pack(">H", dc_bus_voltage)
             byte10and11 = struct.pack(">H", U_phase_current)
             byte12and13 = struct.pack(">H", power)
-            byte14 = b"\x00"
+
+            byte14 = b"\x00"#故障未写
             byte15 = b"\x00"
+
             byte16 = calculate_checksum(byte0, byte1, byte2, byte3, byte4and5 + byte6and7 + byte8and9 + byte10and11 + byte12and13 + byte14 + byte15)
             byte17 = b"\xA5"
             response = (
@@ -109,11 +111,13 @@ if __name__ == "__main__":
                 print(f"收到命令: {data.hex()}")
 
                 # 处理命令
+                #在处理之前应该检查报文是否为有效报文！
                 response = handle_command(data, fan)
+                print(response.hex())
                 ser.write(response)
 
             # 添加一些延迟，避免过快的轮询
-            time.sleep(0.1)
+            # time.sleep(0.1)
     except KeyboardInterrupt:
         fan.stop()
         print("退出程序")

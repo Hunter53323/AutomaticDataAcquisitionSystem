@@ -90,12 +90,15 @@ class FanDriver(DriverBase):
         if not write_status:
             return False
 
-        response = self.ser.read_until(b"\xA5")
+        response =self.read_msg()
+        # response = self.ser.read_until(b"\xA5")
         # 检测收到的数据是否是预期的数据，否则报错
-        if len(response) != 18:
+        if len(response) != 18 or response[17].to_bytes()!=b"\xA5":
+            print("count",read_count)
             if read_count == 3:
                 return False
             return self.read_all(read_count=read_count + 1)
+
         # 检查校验和是否相符
         response_checksum = self.__calculate_checksum(response[0:16])
         if response[16].to_bytes() != response_checksum:
@@ -114,6 +117,15 @@ class FanDriver(DriverBase):
         }
         return True
 
+    def read_msg(self):
+        while self.ser.in_waiting<4:
+            time.sleep(0.1)
+        recv=self.ser.read(4)
+        while self.ser.in_waiting<recv[3]+2:
+            time.sleep(0.1)
+        recv=recv+self.ser.read(recv[3]+2)
+        return recv
+
     def write(self, para_dict: dict[str, any], write_count: int = 1) -> bool:
         """
         控制指令
@@ -131,7 +143,7 @@ class FanDriver(DriverBase):
         else:
             data4 = "00"
         byte0to4 = bytes.fromhex(data0 + data1 + data2 + data3 + data4)
-        # 第五和第六个字节是转速
+        # 第五和第六个字节是转速，卡范围
         speed: int = para_dict["set_speed"]
         byte5and6 = speed.to_bytes(2, byteorder="big", signed=False)
         # 第七个和第八个字节是速度环补偿带宽
@@ -225,3 +237,4 @@ class FanDriver(DriverBase):
 
 if __name__ == "__main__":
     fan_driver = FanDriver("Fan", ["speed", "temperature"], ["speed", "temperature"], device_address="01", cpu="M0")
+    # fan_driver.read_all()
