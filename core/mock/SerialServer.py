@@ -12,6 +12,7 @@ def handle_command(data: bytes, fan: Fan):
     byte1 = b"\xFF"
     try:
         if data[2].to_bytes() == b"\x01":
+            print("control")
             # 控制命令回复
             byte2 = b"\x01"
             byte3 = b"\x01"
@@ -95,6 +96,14 @@ def calculate_checksum(*args: bytes) -> bytes:
 
     return bytes([checksum_low8])
 
+def read_msg(ser:serial.Serial):
+    while ser.in_waiting<4:
+        time.sleep(0.1)
+    recv=ser.read(4)
+    while ser.in_waiting<recv[3]+2:
+        time.sleep(0.1)
+    recv=recv+ser.read(recv[3]+2)
+    return recv
 
 if __name__ == "__main__":
     # 配置串行端口
@@ -106,8 +115,9 @@ if __name__ == "__main__":
     try:
         while True:
             # 检查是否有数据
+            # print(ser.in_waiting)
             if ser.in_waiting:
-                data = ser.read_until(b"\x5A")
+                data = read_msg(ser)
                 print(f"收到命令: {data.hex()}")
 
                 # 处理命令
