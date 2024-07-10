@@ -101,9 +101,9 @@ class TestDevice(DriverBase):
             packed_values = [registers[i : i + 2] for i in range(0, len(registers), 2)]
             float_values = [struct.unpack(">f", struct.pack(">HH", *pack))[0] for pack in packed_values]
 
-            self.curr_data["input_power"] = float_values[0]
+            self.curr_data["motor_input_power"] = float_values[0]
             self.curr_data["torque"] = float_values[1]
-            self.curr_data["output_power"] = float_values[2]
+            self.curr_data["motor_output_power"] = float_values[2]
 
     def update_hardware_parameter(self, para_dict: dict[str, any]) -> bool:
         selfip = self.ip
