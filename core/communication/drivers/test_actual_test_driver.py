@@ -30,7 +30,7 @@ class TestActualTestDriver:
         print("Test N:", testdevice.write(parameters))
         parameters = {"test_device_command": "N1_mode"}
         print("Test N1:", testdevice.write(parameters))
-        parameters = {"test_device_command": "write", "loading": 200}
+        parameters = {"test_device_command": "write", "load": 200}
         print("Test write:", testdevice.write(parameters))
 
     def test_disconnect(self):

@@ -2,6 +2,7 @@ import serial
 from serial.serialutil import SerialTimeoutException
 from .driver_base import DriverBase
 import time
+import copy
 
 serial_port = "COM9"  # 请替换为您的串行端口
 serial_baudrate = 9600  # 根据实际情况设置波特率
@@ -13,6 +14,9 @@ serial_bytesize = 8  # 数据位
 class FanDriver(DriverBase):
     def __init__(self, device_name: str, data_list: list[str], para_list: list[str], **kwargs):
         super().__init__(device_name, data_list, para_list)
+        # 协议要求，未赋值的参数为0
+        for key in self.curr_para:
+            self.curr_para[key] = 0
         self.device_address = None
         self.cpu = None
         for key, value in kwargs.items():
@@ -147,6 +151,9 @@ class FanDriver(DriverBase):
         """
         控制指令
         """
+        # 参数不全的情况下，需要将以往的参数补充上
+        if write_count == 1:
+            para_dict.update({key: self.curr_para[key] for key in self.curr_para if key not in para_dict})
         data0 = "A5"
         data1 = self.device_address
         data2 = "01"
@@ -201,6 +208,9 @@ class FanDriver(DriverBase):
         # 取出的单个字节是int类型，response_checksum是bytes类型，需要转换
         if response[5].to_bytes() == response_checksum:
             if response[4].to_bytes() == b"\x01":
+                # 修改参数表
+                for key in self.curr_para:
+                    self.curr_para[key] = para_dict[key]
                 return True
             else:
                 self.logger.error(

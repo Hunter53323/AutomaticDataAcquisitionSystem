@@ -27,7 +27,7 @@ class TestDevice(DriverBase):
 
     def write(self, para_dict: dict[str, any]) -> bool:
         """
-        para_dict示例{"test_device_command":"start_device", "loading":float}
+        para_dict示例{"test_device_command":"start_device", "load":float}
         command:"start_device","stop_device","P_mode","N_mode","N1_mode","write"
         """
         command = para_dict["test_device_command"]
@@ -55,7 +55,7 @@ class TestDevice(DriverBase):
             result = self.client.write_register(address, value, unit=1)
         elif command == "write":
             address = 2
-            data_value = float(para_dict["loading"])
+            data_value = float(para_dict["load"])
 
             # 将浮点数打包为四个字节
             packed_value = struct.pack(">f", data_value)
@@ -70,6 +70,9 @@ class TestDevice(DriverBase):
         if result.isError():
             return False
         else:
+            for key in self.curr_para:
+                if key in para_dict:
+                    self.curr_para[key] = para_dict[key]
             return True
 
     def connect(self) -> bool:
@@ -123,7 +126,7 @@ if __name__ == "__main__":
     testdevice = TestDevice(
         device_name="test_device",
         data_list=["input_power", "torque", "output_power"],
-        para_list=["command", "loading"],
+        para_list=["command", "load"],
     )
 
     testdevice.update_hardware_parameter(para_dict={"ip": "127.0.0.1", "port": 504})
