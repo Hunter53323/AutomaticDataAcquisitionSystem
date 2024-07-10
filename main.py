@@ -2,9 +2,8 @@ from flask import Flask, render_template, url_for, request, jsonify
 from flask_socketio import SocketIO
 from flask_cors import CORS
 from core.communication import communicator
-import random
+from core.auto_collection import auto_collector
 import threading
-import time
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
@@ -65,9 +64,7 @@ def collect_data():
         # 查询当前数据采集的状态，返回当前正在采集第几条数据
         current_data = 1
         return (
-            jsonify(
-                {"status": "search", "current_data": current_data, "complete": False}
-            ),
+            jsonify({"status": "search", "current_data": current_data, "complete": False}),
             200,
         )
     elif signal == "pause":
@@ -85,7 +82,51 @@ def collect_data():
 
 @app.route("/data", methods=["GET"])
 def get_data():
+    # 不止要读取数据，还要读取控制参数
     return jsonify(communicator.read()), 200
+
+
+# def get_data():
+#     """
+#     从数据采集模块获取数据，
+#     """
+#     while thread_running.is_set():
+#         socketio.sleep(0.05)  # 50毫秒
+#         status, speed = client.read_from_parameter("电机驱动", "实际转速")
+#         if status == False:
+#             speed = "error"
+#         # status, faultinformation = client.read_from_parameter("电机驱动", "故障信息")
+#         # if status == False:
+#         #     faultinformation = "error"
+#         # 这一块可能需要考虑多线程
+#         speed = [random.random()]
+#         faultinformation = [random.randint(0, 1)]
+#         socketio.emit(
+#             "data_from_device",
+#             {
+#                 "currentrotationalspeed": speed[0],
+#                 "faultinformation": faultinformation[0],
+#                 "setrotationalspeed": random.randint(0, 100),
+#                 "targetrotationalspeed": random.randint(0, 100),
+#                 "dcbusvoltage": random.randint(0, 100),
+#                 "uphasecurrent": random.randint(0, 100),
+#                 "power": random.randint(0, 100),
+#                 "dissipativeresistance": random.randint(0, 100),
+#                 "daxieinductor": random.randint(0, 100),
+#                 "qaxieinductor": random.randint(0, 100),
+#                 "reverseemfconstant": random.randint(0, 100),
+#                 "polaritylog": random.randint(0, 100),
+#                 "motorinputpower": random.randint(0, 100),
+#                 "torque": random.randint(0, 100),
+#                 "motoroutputpower": random.randint(0, 100),
+#                 "addload": random.randint(0, 100),
+#                 "speedcompensationcoefficient": random.randint(0, 100),
+#                 "currentbandwidth": random.randint(0, 100),
+#                 "observercompensationcoefficient": random.randint(0, 100),
+#                 "load": random.randint(0, 100),
+#                 "speed": random.randint(0, 100),
+#             },
+#         )
 
 
 @app.route("/para", methods=["GET"])
@@ -100,7 +141,7 @@ def set_para():
         communicator.write()
         return jsonify({"result": "success"}), 200
     except Exception():
-        return jsonify({"result": "fault", "msg":"Fault Message"}), 400
+        return jsonify({"result": "fault", "msg": "Fault Message"}), 400
 
 
 def get_data():
@@ -137,13 +178,6 @@ def connect_device():
 def disconnect_device():
     communicator.disconnect()
     socketio.emit("connection", {"status": False})
-
-
-def random_data():
-    i = 0
-    while i < 1000:
-        i += 1
-        socketio.sleep(0.01)
 
 
 if __name__ == "__main__":
