@@ -48,4 +48,4 @@ def test_auto_collector():
 
 if __name__ == "__main__":
     test_communicator()
-    test_auto_collector()
+    # test_auto_collector()

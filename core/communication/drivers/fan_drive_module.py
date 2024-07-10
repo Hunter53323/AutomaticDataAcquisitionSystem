@@ -2,6 +2,7 @@ import serial
 from serial.serialutil import SerialTimeoutException
 from .driver_base import DriverBase
 import time
+from typing import Union
 
 serial_port = "COM9"  # 请替换为您的串行端口
 serial_baudrate = 9600  # 根据实际情况设置波特率
@@ -17,7 +18,7 @@ class FanDriver(DriverBase):
         self.cpu = None
         for key, value in kwargs.items():
             if key == "device_address":
-                self.device_address = value
+                self.set_device_address(value)
             if key == "cpu":
                 if value != "M0" and value != "M4":
                     raise ValueError("Invalid cpu value")
@@ -27,8 +28,8 @@ class FanDriver(DriverBase):
             port=serial_port, baudrate=serial_baudrate, parity=serial_parity, stopbits=serial_stopbits, bytesize=serial_bytesize, timeout=10
         )
 
-    def set_device_address(self, device_address: str) -> bool:
-        self.device_address = device_address
+    def set_device_address(self, device_address: bytes) -> bool:
+        self.device_address = f"{device_address[0]:02x}"
         return True
 
     def set_device_cpu(self, cpu: str) -> bool:
@@ -134,11 +135,11 @@ class FanDriver(DriverBase):
         data1 = self.device_address
         data2 = "01"
         data3 = "03"
-        if para_dict["command"] == "start":
+        if para_dict["fan_command"] == "start":
             data4 = "01"
-        elif para_dict["command"] == "stop":
+        elif para_dict["fan_command"] == "stop":
             data4 = "02"
-        elif para_dict["command"] == "clear_breakdown":
+        elif para_dict["fan_command"] == "clear_breakdown":
             data4 = "04"
         else:
             data4 = "00"
@@ -233,6 +234,35 @@ class FanDriver(DriverBase):
         checksum_low8 = checksum & 0xFF
 
         return bytes([checksum_low8])
+
+    def update_hardware_parameter(self, para_dict: dict[str, any]) -> bool:
+        for key in para_dict.keys():
+            if key not in ["device_address", "cpu"]:
+                # raise ValueError("Unknown parameter")
+                return False
+        for key, value in para_dict.items():
+            if key == "device_address":
+                if type(value) != bytes:
+                    # raise ValueError("device_address must be bytes")
+                    return False
+                if len(value) != 1:
+                    # raise ValueError("device_address must be 1 byte")
+                    return False
+            elif key == "cpu":
+                if value not in ["M0", "M4"]:
+                    # raise ValueError("cpu must be M0 or M4")
+                    return False
+            else:
+                # raise ValueError("Unknown parameter")
+                return False
+        for key, value in para_dict.items():
+            if key == "device_address":
+                self.set_device_address(value)
+            elif key == "cpu":
+                self.set_device_cpu(value)
+            else:
+                return False
+        return True
 
 
 if __name__ == "__main__":
