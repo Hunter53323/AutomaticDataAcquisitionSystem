@@ -23,6 +23,7 @@ class FanDriver(DriverBase):
                 if value != "M0" and value != "M4":
                     raise ValueError("Invalid cpu value")
                 self.cpu = value
+        self.hardware_para = ["device_address", "cpu"]
 
         self.ser: serial.Serial = serial.Serial(
             port=serial_port, baudrate=serial_baudrate, parity=serial_parity, stopbits=serial_stopbits, bytesize=serial_bytesize, timeout=10

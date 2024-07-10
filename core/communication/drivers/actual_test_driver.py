@@ -11,9 +11,9 @@ class TestDevice(DriverBase):
         self.ip = "127.0.0.1"
         self.port = 503
         self.client = ModbusTcpClient(self.ip, self.port)
+        self.hardware_para = ["ip", "port"]
 
     def __set_client(self, ip: str, port: int):
-        # 正则表达式检查IP是否符合要求
         try:
             ipaddress.ip_address(ip)
             self.ip = ip
