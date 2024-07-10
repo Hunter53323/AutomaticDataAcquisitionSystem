@@ -23,7 +23,6 @@ class Communication:
                 tmp_dict[self.__para_map[key]] = {}
             tmp_dict[self.__para_map[key]].update({key: val})
         if error_key_list:
-            self.__para_pool_vals.clear()
             print("非法参数", *error_key_list)
             return False
         flag = True
@@ -82,7 +81,7 @@ class Communication:
         for driver in self.drivers:
             flag = flag & driver.connect()
         return flag
-    
+
     def disconnect(self) -> bool:
         flag = True
         for driver in self.drivers:
@@ -94,15 +93,25 @@ class Communication:
         for driver in self.drivers:
             flag = flag & driver.start_read_all()
         return flag
-    
+
     def get_para_map(self) -> dict[str, DriverBase]:
         return self.__para_map
 
     def get_data_map(self) -> dict[str, DriverBase]:
         return self.__data_map
-    
+
     def stop_read_all(self) -> bool:
         flag = True
         for driver in self.drivers:
             flag = flag & driver.stop_read_all()
         return flag
+
+    def update_device_parameter(self, device_name: str, para_dict: dict[str, any]) -> bool:
+        for driver in self.drivers:
+            if driver.device_name == device_name:
+                for key in para_dict.keys():
+                    if key not in driver.hardware_para:
+                        para_dict.pop(key)
+                        print("非法参数", key)
+                return driver.update_hardware_parameter(para_dict)
+        return False
