@@ -2,7 +2,6 @@ import serial
 from serial.serialutil import SerialTimeoutException
 from .driver_base import DriverBase
 import time
-from typing import Union
 
 serial_port = "COM9"  # 请替换为您的串行端口
 serial_baudrate = 9600  # 根据实际情况设置波特率
@@ -21,6 +20,7 @@ class FanDriver(DriverBase):
                 self.set_device_address(value)
             if key == "cpu":
                 if value != "M0" and value != "M4":
+                    self.logger.error("Invalid cpu value")
                     raise ValueError("Invalid cpu value")
                 self.cpu = value
         self.hardware_para = ["device_address", "cpu"]
@@ -38,23 +38,30 @@ class FanDriver(DriverBase):
         return True
 
     def connect(self) -> bool:
-        if (self.device_address is None) or (self.cpu is None):
+        if (self.device_address is None):
+            self.logger.error("device_address is None")
             return False
-        if self.ser.is_open:
-            return True
-        self.ser.open()
+        if self.cpu is None:
+            self.logger.error("self.cpu is None")
+            return False
+        if self.ser.is_open==False:
+            self.ser.open()
         if self.ser.is_open:
             self.conn_state = True
+            self.logger.info("self.ser open true")
             return True
         else:
+            self.logger.error("self.ser open false")
             return False
 
     def disconnect(self) -> bool:
         self.ser.close()
         if self.ser.is_open:
+            self.logger.error("self.ser close false")
             return False
         else:
             self.conn_state = False
+            self.logger.info("self.ser close true")
             return True
 
     def __serwrite(self, byte_data: bytes, count: int = 0) -> tuple[bool, str]:
@@ -63,13 +70,16 @@ class FanDriver(DriverBase):
         """
         try:
             self.ser.write(byte_data)
+            self.logger.info(f"ser write context:{byte_data.hex()}")
             return True, ""
         except SerialTimeoutException as e:
-            print(e)
+            # print(e)
+            self.logger.error(f"ser write error:{e},count:{count}")
             return False, "Timeout"
         except Exception as e:
+            self.logger.error(f"ser write error:{e},count:{count}")
             if count == 3:
-                print(e)
+                # print(e)
                 return False, "Unknown error"
             return self.__serwrite(byte_data, count=count + 1)
 
@@ -86,21 +96,29 @@ class FanDriver(DriverBase):
         byte5 = b"\x5A"
 
         byte_data = byte0to3 + byte4 + byte5
+        self.logger.info(f"查询指令:{byte_data.hex()}")
         # self.ser.write(byte_data)
         # 写以及写出错的处理
         write_status, err = self.__serwrite(byte_data)
         if not write_status:
+            self.logger.error(f"查询指令写入串口报错! reason:{err},查询指令:{byte_data.hex()}")
             return False
 
-        response = self.ser.read_until(b"\xA5")
+        response =self.read_msg()
+        self.logger.info(f"查询回复:{response.hex()}")
+        # response = self.ser.read_until(b"\xA5")
         # 检测收到的数据是否是预期的数据，否则报错
-        if len(response) != 18:
+        if len(response) != 18 or response[17].to_bytes()!=b"\xA5":
+            # print("count",read_count)
+            self.logger.error(f"查询回复报错! len(response) != 18?:{len(response) != 18},response[17].to_bytes()!=\xA5?:{response[17].to_bytes()!=b"\xA5"},查询回复:{response.hex()},count:{read_count}")
             if read_count == 3:
                 return False
             return self.read_all(read_count=read_count + 1)
+
         # 检查校验和是否相符
         response_checksum = self.__calculate_checksum(response[0:16])
         if response[16].to_bytes() != response_checksum:
+            self.logger.error(f"查询校验和报错! recv:{response[16].to_bytes()},cal:{response_checksum},count:{read_count}")
             if read_count == 3:
                 return False
             return self.read_all(read_count=read_count + 1)
@@ -116,6 +134,15 @@ class FanDriver(DriverBase):
         }
         return True
 
+    def read_msg(self):
+        while self.ser.in_waiting<4:
+            time.sleep(0.1)
+        recv=self.ser.read(4)
+        while self.ser.in_waiting<recv[3]+2:
+            time.sleep(0.1)
+        recv=recv+self.ser.read(recv[3]+2)
+        return recv
+
     def write(self, para_dict: dict[str, any], write_count: int = 1) -> bool:
         """
         控制指令
@@ -123,7 +150,7 @@ class FanDriver(DriverBase):
         data0 = "A5"
         data1 = self.device_address
         data2 = "01"
-        data3 = "03"
+        data3 = "09"#手册是03，但是实际传了9个字节
         if para_dict["fan_command"] == "start":
             data4 = "01"
         elif para_dict["fan_command"] == "stop":
@@ -133,7 +160,7 @@ class FanDriver(DriverBase):
         else:
             data4 = "00"
         byte0to4 = bytes.fromhex(data0 + data1 + data2 + data3 + data4)
-        # 第五和第六个字节是转速
+        # 第五和第六个字节是转速，卡范围
         speed: int = para_dict["set_speed"]
         byte5and6 = speed.to_bytes(2, byteorder="big", signed=False)
         # 第七个和第八个字节是速度环补偿带宽
@@ -151,16 +178,20 @@ class FanDriver(DriverBase):
         frame_end = b"\x5A"
 
         write_bytes = byte0to4 + bytes_data + checksum + frame_end
-
+        self.logger.info(f"控制指令:{write_bytes.hex()}")
         # self.ser.write(write_bytes)
         # 写以及写出错的处理
         write_status, err = self.__serwrite(write_bytes)
         if not write_status:
+            self.logger.error(f"控制指令写入串口报错！ 控制指令:{write_bytes.hex()},count:{write_count}")
             return False
 
         response = self.ser.read_until(b"\xA5")
+        self.logger.info(f"控制指令回复:{response.hex()}")
         # 检测收到的数据是否是预期的数据，否则报错
         if len(response) != 7:
+            self.logger.error(
+                f"控制回复报错! len(response) != 7?:{len(response) != 7},控制回复:{response.hex()},count:{write_count}")
             if write_count == 3:
                 return False
             return self.write(para_dict, write_count=write_count + 1)
@@ -172,10 +203,14 @@ class FanDriver(DriverBase):
             if response[4].to_bytes() == b"\x01":
                 return True
             else:
+                self.logger.error(
+                    f"控制回复校验结果报错! recv:{response[4].to_bytes()},shoulder:\x01,count:{write_count}")
                 if write_count == 3:
                     return False
                 return self.write(para_dict, write_count=write_count + 1)
         else:
+            self.logger.error(
+                f"控制回复校验和报错! recv:{response[5].to_bytes()},cal:{response_checksum},count:{write_count}")
             return False
 
     def __decode_read_response(self, response: bytes) -> tuple[int, int, int, int, int, list, bool]:
@@ -256,3 +291,5 @@ class FanDriver(DriverBase):
 
 if __name__ == "__main__":
     fan_driver = FanDriver("Fan", ["speed", "temperature"], ["speed", "temperature"], device_address="01", cpu="M0")
+    # fan_driver.read_all()
+    # fan_driver.connect()

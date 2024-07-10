@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 from threading import Thread, Event
+import logging
+from logging.handlers import RotatingFileHandler
 import time
 
 
@@ -11,6 +13,7 @@ class DriverBase(ABC):
         self.curr_data = {key: None for key in data_list}
         self.curr_para = {key: None for key in para_list}
         self.hardware_para = []
+        self.logger = self.set_logger()
         pass
 
     @abstractmethod
@@ -41,7 +44,8 @@ class DriverBase(ABC):
 
     def read(self, data_name_list: list[str] = None) -> dict[str, any]:
         if not self.__read_all_running:
-            print(f"{self.device_name}read_all线程尚未启动")
+            # print(f"{self.device_name}read_all线程尚未启动")
+            self.logger.debug(f"{self.device_name}read_all线程尚未启动")
             return {}
         if not data_name_list:
             return self.curr_data
@@ -85,3 +89,21 @@ class DriverBase(ABC):
         for key in para_name_list:
             result = {**result, key: self.curr_para[key]}
         return result
+
+    def set_logger(self):
+        # 创建一个日志记录器
+        logger = logging.getLogger("my_log")
+        logger.setLevel(logging.DEBUG)  # 设置日志级别
+        formatter = logging.Formatter("%(asctime)s-%(module)s-%(funcName)s-%(lineno)d-%(name)s-%(message)s")  # 其中name为getlogger指定的名字
+
+        rHandler = RotatingFileHandler(self.device_name + ".txt", maxBytes=1024 * 1024, backupCount=1)
+        rHandler.setLevel(logging.DEBUG)
+        rHandler.setFormatter(formatter)
+
+        console = logging.StreamHandler()
+        console.setLevel(logging.DEBUG)
+        console.setFormatter(formatter)
+
+        logger.addHandler(rHandler)
+        logger.addHandler(console)
+        return logger
