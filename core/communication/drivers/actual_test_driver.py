@@ -1,13 +1,29 @@
 from .driver_base import DriverBase
 from pymodbus.client import ModbusTcpClient
 import struct
+import ipaddress
 
 
 class TestDevice(DriverBase):
 
     def __init__(self, device_name: str, data_list: list[str], para_list: list[str]):
         super().__init__(device_name, data_list, para_list)
-        self.client = ModbusTcpClient("127.0.0.1", 503)
+        self.ip = "127.0.0.1"
+        self.port = 503
+        self.client = ModbusTcpClient(self.ip, self.port)
+
+    def __set_client(self, ip: str, port: int):
+        # 正则表达式检查IP是否符合要求
+        try:
+            ipaddress.ip_address(ip)
+            self.ip = ip
+            self.port = port
+            self.client = ModbusTcpClient(ip, port)
+            return True
+        except ValueError:
+            return False
+        except Exception as e:
+            return False
 
     def write(self, para_dict: dict[str, any]) -> bool:
         """
@@ -57,12 +73,20 @@ class TestDevice(DriverBase):
             return True
 
     def connect(self) -> bool:
-        self.conn_state = self.client.connect()
-        return self.conn_state
+        try:
+            self.conn_state = self.client.connect()
+            return self.conn_state
+        except:
+            print("连接失败")
+            return False
 
     def disconnect(self) -> bool:
-        self.client.close()
-        self.conn_state = False
+        try:
+            self.client.close()
+            self.conn_state = False
+            return True
+        except:
+            return False
 
     def read_all(self) -> bool:
         address = 1
@@ -78,6 +102,22 @@ class TestDevice(DriverBase):
             self.curr_data["torque"] = float_values[1]
             self.curr_data["output_power"] = float_values[2]
 
+    def update_hardware_parameter(self, para_dict: dict[str, any]) -> bool:
+        selfip = self.ip
+        selfport = self.port
+        for key, value in para_dict.items():
+            if key == "ip":
+                selfip = value
+            elif key == "port":
+                if type(value) == int:
+                    selfport = value
+                else:
+                    # raise TypeError("port must be an integer.")
+                    return False
+            else:
+                raise KeyError(f"{key} is not a valid parameter.")
+        return self.__set_client(selfip, selfport)
+
 
 if __name__ == "__main__":
     testdevice = TestDevice(
@@ -85,19 +125,24 @@ if __name__ == "__main__":
         data_list=["input_power", "torque", "output_power"],
         para_list=["command", "loading"],
     )
-    testdevice.connect()
-    testdevice.read_all()
-    print("Test read:", testdevice.curr_data)
-    parameters = {"command": "start_device"}
-    print("Test start:", testdevice.write(parameters))
-    parameters = {"command": "stop_device"}
-    print("Test stop:", testdevice.write(parameters))
-    parameters = {"command": "P_mode"}
-    print("Test P:", testdevice.write(parameters))
-    parameters = {"command": "N_mode"}
-    print("Test N:", testdevice.write(parameters))
-    parameters = {"command": "N1_mode"}
-    print("Test N1:", testdevice.write(parameters))
-    parameters = {"command": "write", "loading": 200}
-    print("Test write:", testdevice.write(parameters))
-    testdevice.disconnect()
+
+    testdevice.update_hardware_parameter(para_dict={"ip": "127.0.0.1", "port": 504})
+    print(testdevice.connect())
+    testdevice.update_hardware_parameter(para_dict={"ip": "127.0.0.1", "port": 503})
+    print(testdevice.connect())
+
+    # testdevice.read_all()
+    # print("Test read:", testdevice.curr_data)
+    # parameters = {"command": "start_device"}
+    # print("Test start:", testdevice.write(parameters))
+    # parameters = {"command": "stop_device"}
+    # print("Test stop:", testdevice.write(parameters))
+    # parameters = {"command": "P_mode"}
+    # print("Test P:", testdevice.write(parameters))
+    # parameters = {"command": "N_mode"}
+    # print("Test N:", testdevice.write(parameters))
+    # parameters = {"command": "N1_mode"}
+    # print("Test N1:", testdevice.write(parameters))
+    # parameters = {"command": "write", "loading": 200}
+    # print("Test write:", testdevice.write(parameters))
+    # testdevice.disconnect()

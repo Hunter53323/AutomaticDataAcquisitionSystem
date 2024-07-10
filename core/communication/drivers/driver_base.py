@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from threading import Thread, Event
+import time
 
 
 class DriverBase(ABC):
@@ -25,6 +26,10 @@ class DriverBase(ABC):
 
     @abstractmethod
     def read_all(self) -> bool:
+        pass
+
+    @abstractmethod
+    def update_hardware_parameter(self, para_dict: dict[str, any]) -> bool:
         pass
 
     def is_connected(self) -> bool:
@@ -70,6 +75,7 @@ class DriverBase(ABC):
                 print(f"{self.device_name}read_all线程正在退出")
                 break
             self.read_all()
+            time.sleep(0.05)
 
     def get_curr_para(self, para_name_list: list[str] = None) -> dict[str, any]:
         if not para_name_list:
