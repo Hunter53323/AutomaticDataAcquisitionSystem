@@ -12,7 +12,7 @@ def handle_command(data: bytes, fan: Fan):
     byte1 = b"\xFF"
     try:
         if data[2].to_bytes() == b"\x01":
-            print("control")
+            print("收到控制命令")
             # 控制命令回复
             byte2 = b"\x01"
             byte3 = b"\x01"
@@ -43,12 +43,14 @@ def handle_command(data: bytes, fan: Fan):
             response = byte0 + byte1 + byte2 + byte3 + byte4 + byte5 + byte6
         elif data[2].to_bytes() == b"\x02":
             # 查询命令
+            print("收到查询命令")
             byte2 = b"\x02"
             byte3 = b"\x0C"
             # 自定义的设置查询数据
             # target_speed, actual_speed, dc_bus_voltage, U_phase_current, power, breakdown = fan.read()
-            target_speed = 165
-            actual_speed = 300
+            target_speed, actual_speed, _, _, _, _ = fan.read()
+            # target_speed = 165
+            # actual_speed = 300
             dc_bus_voltage = 50
             U_phase_current = 100
             power = 30
@@ -58,7 +60,7 @@ def handle_command(data: bytes, fan: Fan):
             byte10and11 = struct.pack(">H", U_phase_current)
             byte12and13 = struct.pack(">H", power)
 
-            byte14 = b"\x00"#故障未写
+            byte14 = b"\x00"  # 故障未写
             byte15 = b"\x00"
 
             byte16 = calculate_checksum(byte0, byte1, byte2, byte3, byte4and5 + byte6and7 + byte8and9 + byte10and11 + byte12and13 + byte14 + byte15)
@@ -96,14 +98,16 @@ def calculate_checksum(*args: bytes) -> bytes:
 
     return bytes([checksum_low8])
 
-def read_msg(ser:serial.Serial):
-    while ser.in_waiting<4:
+
+def read_msg(ser: serial.Serial):
+    while ser.in_waiting < 4:
         time.sleep(0.1)
-    recv=ser.read(4)
-    while ser.in_waiting<recv[3]+2:
+    recv = ser.read(4)
+    while ser.in_waiting < recv[3] + 2:
         time.sleep(0.1)
-    recv=recv+ser.read(recv[3]+2)
+    recv = recv + ser.read(recv[3] + 2)
     return recv
+
 
 if __name__ == "__main__":
     # 配置串行端口
@@ -121,9 +125,9 @@ if __name__ == "__main__":
                 print(f"收到命令: {data.hex()}")
 
                 # 处理命令
-                #在处理之前应该检查报文是否为有效报文！
+                # 在处理之前应该检查报文是否为有效报文！
                 response = handle_command(data, fan)
-                print(response.hex())
+                print("发送回复:", response.hex())
                 ser.write(response)
 
             # 添加一些延迟，避免过快的轮询
