@@ -1,4 +1,4 @@
-from driver_base import DriverBase
+from .driver_base import DriverBase
 from pymodbus.client import ModbusTcpClient
 import struct
 import ipaddress

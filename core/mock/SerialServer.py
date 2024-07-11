@@ -5,8 +5,10 @@ from fan import Fan
 
 state = False
 
+breakdowncnt = 1
 
-def handle_command(data: bytes, fan: Fan,testbreakdown:bool=False):
+
+def handle_command(data: bytes, fan: Fan, testbreakdown: bool = False):
     # 根据命令字符串进行处理
     byte0 = b"\x5A"
     byte1 = b"\xFF"
@@ -60,17 +62,21 @@ def handle_command(data: bytes, fan: Fan,testbreakdown:bool=False):
             byte10and11 = struct.pack(">H", U_phase_current)
             byte12and13 = struct.pack(">H", power)
 
-            if testbreakdown:#模拟故障
-                byte14=
-                byte15=
+            if testbreakdown:  # 模拟故障
+                global breakdowncnt
+                byte14and15 = breakdowncnt.to_bytes(2, byteorder="big", signed=False)
+                byte14 = byte14and15[1].to_bytes()
+                byte15 = byte14and15[0].to_bytes()
+                breakdowncnt += 1
             else:
                 byte14 = b"\x00"  # 不模拟故障
                 byte15 = b"\x00"
 
-            byte16 = calculate_checksum(byte0, byte1, byte2, byte3, byte4and5 + byte6and7 + byte8and9 + byte10and11 + byte12and13 + byte14 + byte15)
+            byte16 = calculate_checksum(byte0, byte1, byte2, byte3,
+                                        byte4and5 + byte6and7 + byte8and9 + byte10and11 + byte12and13 + byte14 + byte15)
             byte17 = b"\xA5"
             response = (
-                byte0 + byte1 + byte2 + byte3 + byte4and5 + byte6and7 + byte8and9 + byte10and11 + byte12and13 + byte14 + byte15 + byte16 + byte17
+                    byte0 + byte1 + byte2 + byte3 + byte4and5 + byte6and7 + byte8and9 + byte10and11 + byte12and13 + byte14 + byte15 + byte16 + byte17
             )
         else:
             byte2 = b"\x00"
@@ -105,10 +111,10 @@ def calculate_checksum(*args: bytes) -> bytes:
 
 def read_msg(ser: serial.Serial):
     while ser.in_waiting < 4:
-        time.sleep(0.1)
+        time.sleep(0.005)
     recv = ser.read(4)
     while ser.in_waiting < recv[3] + 2:
-        time.sleep(0.1)
+        time.sleep(0.005)
     recv = recv + ser.read(recv[3] + 2)
     return recv
 
@@ -130,7 +136,8 @@ if __name__ == "__main__":
 
                 # 处理命令
                 # 在处理之前应该检查报文是否为有效报文！
-                response = handle_command(data, fan)
+                response = handle_command(data, fan,False)
+                print(time.time())
                 print("发送回复:", response.hex())
                 ser.write(response)
 
@@ -141,7 +148,6 @@ if __name__ == "__main__":
         print("退出程序")
     finally:
         ser.close()  # 关闭串行端口
-
 
 # 校验和：帧头、命令码、总包数、当前包数、数据长度、数据
 # 字节序列想要完整打印就data.hex()，取出来的单个字节想完整打印就是data[0].to_bytes()，for循环中可以直接打印
