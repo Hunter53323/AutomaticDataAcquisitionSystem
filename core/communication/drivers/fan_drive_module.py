@@ -10,6 +10,10 @@ serial_parity = "N"  # None表示无校验
 serial_stopbits = 1  # 停止位
 serial_bytesize = 8  # 数据位
 
+breakdownmap = {1: "采样偏置故障", 2: "缺相故障", 3: "硬件过流故障", 4: "电机堵转故障", 5: "电机失步故障",
+                6: "软件 RMS 过流故障", 7: "软件峰值过流故障", 8: "直流母线欠压故障", 9: "IPM 过温故障",
+                10: "启动失败故障", 11: "直流母线过压故障", 12: "网压瞬时掉电故障"}
+
 
 class FanDriver(DriverBase):
     def __init__(self, device_name: str, data_list: list[str], para_list: list[str], **kwargs):
@@ -30,7 +34,8 @@ class FanDriver(DriverBase):
         self.hardware_para = ["device_address", "cpu"]
 
         self.ser: serial.Serial = serial.Serial(
-            port=serial_port, baudrate=serial_baudrate, parity=serial_parity, stopbits=serial_stopbits, bytesize=serial_bytesize, timeout=10
+            port=serial_port, baudrate=serial_baudrate, parity=serial_parity, stopbits=serial_stopbits,
+            bytesize=serial_bytesize, timeout=10
         )
 
     def set_device_address(self, device_address: bytes) -> bool:
@@ -48,7 +53,7 @@ class FanDriver(DriverBase):
         if self.cpu is None:
             self.logger.error("self.cpu is None")
             return False
-        if self.ser.is_open==False:
+        if self.ser.is_open == False:
             self.ser.open()
         if self.ser.is_open:
             self.conn_state = True
@@ -108,13 +113,14 @@ class FanDriver(DriverBase):
             self.logger.error(f"查询指令写入串口报错! reason:{err},查询指令:{byte_data.hex()}")
             return False
 
-        response =self.read_msg()
+        response = self.read_msg()
         self.logger.info(f"查询回复:{response.hex()}")
         # response = self.ser.read_until(b"\xA5")
         # 检测收到的数据是否是预期的数据，否则报错
-        if len(response) != 18 or response[17].to_bytes()!=b"\xA5":
+        if len(response) != 18 or response[17].to_bytes() != b"\xA5":
             # print("count",read_count)
-            self.logger.error(f"查询回复报错! len(response) != 18?:{len(response) != 18},response[17].to_bytes()!=\xA5?:{response[17].to_bytes()!=b"\xA5"},查询回复:{response.hex()},count:{read_count}")
+            self.logger.error(
+                f"查询回复报错! len(response) != 18?:{len(response) != 18},response[17].to_bytes()!=\xA5?:{response[17].to_bytes() != b"\xA5"},查询回复:{response.hex()},count:{read_count}")
             if read_count == 3:
                 return False
             return self.read_all(read_count=read_count + 1)
@@ -122,33 +128,62 @@ class FanDriver(DriverBase):
         # 检查校验和是否相符
         response_checksum = self.__calculate_checksum(response[0:16])
         if response[16].to_bytes() != response_checksum:
-            self.logger.error(f"查询校验和报错! recv:{response[16].to_bytes()},cal:{response_checksum},count:{read_count}")
+            self.logger.error(
+                f"查询校验和报错! recv:{response[16].to_bytes()},cal:{response_checksum},count:{read_count}")
             if read_count == 3:
                 return False
             return self.read_all(read_count=read_count + 1)
         # 数据检查完毕后开始读取数据
-        target_speed, actual_speed, dc_bus_voltage, U_phase_current, power, breakdown = self.__decode_read_response(response)
+        target_speed, actual_speed, dc_bus_voltage, U_phase_current, power, breakdowns = self.__decode_read_response(
+            response)
         self.curr_data = {
             "target_speed": target_speed,
             "actual_speed": actual_speed,
             "dc_bus_voltage": dc_bus_voltage,
             "U_phase_current": U_phase_current,
             "power": power,
-            "breakdown": breakdown,
+            "breakdown": breakdowns,
         }
-        if breakdown != []:
+        if len(breakdowns):
+            self.logger.info(f"查询到故障! 故障码:{', '.join(str(breakdown) for breakdown in breakdowns)}")
             self.run_state = False
             self.breakdown = True
+            self.breakdown(breakdowns)  # 进入故障处理子函数
+            
         return True
 
     def read_msg(self):
-        while self.ser.in_waiting<4:
+        while self.ser.in_waiting < 4:
             time.sleep(0.1)
-        recv=self.ser.read(4)
-        while self.ser.in_waiting<recv[3]+2:
+        recv = self.ser.read(4)
+        while self.ser.in_waiting < recv[3] + 2:
             time.sleep(0.1)
-        recv=recv+self.ser.read(recv[3]+2)
+        recv = recv + self.ser.read(recv[3] + 2)
         return recv
+
+    def breakdown(self, breakdowns: list[int]) -> bool:
+        for i in range(len(breakdowns)):
+            if breakdowns[i] == 3 or 6 or 7:
+                self.logger.info(f"故障为过流故障! 故障类型:{breakdownmap[breakdowns[i]]}")
+                # 过流处理逻辑
+                pass
+
+                del breakdowns[i]
+                self.logger.info(f"过流故障清除成功!")
+                return True
+        for i in range(len(breakdowns)):
+            if 0 < breakdowns[i] <= 12:
+                self.logger.info(f"故障为一般故障! 故障类型:{breakdownmap[breakdowns[i]]}")
+                # 一般故障处理逻辑
+                pass
+
+                del breakdowns[i]
+                self.logger.info(f"一般故障清除成功!")
+                return True
+        if len(breakdowns)!=0:
+            self.logger.error(f"故障码错误! 收到的故障码:{breakdowns}")
+            #其他处理逻辑
+            return False
 
     def write(self, para_dict: dict[str, any], write_count: int = 1) -> bool:
         """
@@ -160,7 +195,7 @@ class FanDriver(DriverBase):
         data0 = "A5"
         data1 = self.device_address
         data2 = "01"
-        data3 = "09"#手册是03，但是实际传了9个字节
+        data3 = "09"  # 手册是03，但是实际传了9个字节
         if para_dict["fan_command"] == "start":
             data4 = "01"
         elif para_dict["fan_command"] == "stop":
@@ -233,7 +268,7 @@ class FanDriver(DriverBase):
                 f"控制回复校验和报错! recv:{response[5].to_bytes()},cal:{response_checksum},count:{write_count}")
             return False
 
-    def __decode_read_response(self, response: bytes) -> tuple[int, int, int, int, int, list, bool]:
+    def __decode_read_response(self, response: bytes) -> tuple[int, int, int, int, int, list[int]]:
         FB, VB, IB, Cofe1, Cofe2, Cofe3, Cofe4, Cofe5 = self.__get_cpu_paras()
         # 第四个和第五个字节是目标转速的高8位和低8位,两种方案都可以
         # target_speed = (response[4] << 8) | response[5]

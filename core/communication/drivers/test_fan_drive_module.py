@@ -50,14 +50,9 @@ class TestFanDriver:
             == True
         )
         assert fandriver.run_state == True
-        assert (
-            fandriver.write(
-                {
-                    "set_speed": 200,
-                }
-            )
-            == True
-        )
+
+    def test_breakdown(self):
+
         assert fandriver.run_state == True
         assert (
             fandriver.write(
@@ -69,34 +64,34 @@ class TestFanDriver:
         )
         assert fandriver.run_state == False
 
-    # def test_wALL(self):
+    # def test_wALL(self):#测试完成没有问题，时间约3h过长后面不再测试了
     #     for speed in range(65536):
     #         print(speed)
     #         assert (
-    #             fandriver.write(
-    #                 {
-    #                     "fan_command": "start",
-    #                     "set_speed": speed,
-    #                     "speed_loop_compensates_bandwidth": 10,
-    #                     "current_loop_compensates_bandwidth": 300,
-    #                     "observer_compensates_bandwidth": 400,
-    #                 }
-    #             )
-    #             == True
+    #                 fandriver.write(
+    #                     {
+    #                         "fan_command": "start",
+    #                         "set_speed": speed,
+    #                         "speed_loop_compensates_bandwidth": 10,
+    #                         "current_loop_compensates_bandwidth": 300,
+    #                         "observer_compensates_bandwidth": 400,
+    #                     }
+    #                 )
+    #                 == True
     #         )
     #     for speed_loop_compensates_bandwidth in range(15, 3100):
     #         print(speed_loop_compensates_bandwidth)
     #         assert (
-    #             fandriver.write(
-    #                 {
-    #                     "fan_command": "start",
-    #                     "set_speed": 10,
-    #                     "speed_loop_compensates_bandwidth": speed_loop_compensates_bandwidth,
-    #                     "current_loop_compensates_bandwidth": 300,
-    #                     "observer_compensates_bandwidth": 400,
-    #                 }
-    #             )
-    #             == True
+    #                 fandriver.write(
+    #                     {
+    #                         "fan_command": "start",
+    #                         "set_speed": 10,
+    #                         "speed_loop_compensates_bandwidth": speed_loop_compensates_bandwidth,
+    #                         "current_loop_compensates_bandwidth": 300,
+    #                         "observer_compensates_bandwidth": 400,
+    #                     }
+    #                 )
+    #                 == True
     #         )
 
     def test_decode_response(self):

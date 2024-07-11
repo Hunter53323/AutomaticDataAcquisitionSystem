@@ -18,6 +18,24 @@ class DriverBase(ABC):
         self.logger = self.set_logger()
         pass
 
+    def set_logger(self):
+        # 创建一个日志记录器
+        logger = logging.getLogger(self.device_name)
+        logger.setLevel(logging.DEBUG)  # 设置日志级别
+        formatter = logging.Formatter('%(asctime)s-%(module)s-%(funcName)s-%(lineno)d-%(name)s-%(message)s')# 其中name为getlogger指定的名字
+
+        rHandler = RotatingFileHandler(filename="../../../log/"+self.device_name+".log", maxBytes=1024 * 1024, backupCount=1)
+        rHandler.setLevel(logging.DEBUG)
+        rHandler.setFormatter(formatter)
+
+        console = logging.StreamHandler()
+        console.setLevel(logging.DEBUG)
+        console.setFormatter(formatter)
+
+        logger.addHandler(rHandler)
+        logger.addHandler(console)
+        return logger
+
     @abstractmethod
     def write(self, para_dict: dict[str, any]) -> bool:
         pass
@@ -25,13 +43,16 @@ class DriverBase(ABC):
     @abstractmethod
     def connect(self) -> bool:
         return True
-
+    
     @abstractmethod
     def disconnect(self) -> bool:
         return True
-
+    
     @abstractmethod
     def read_all(self) -> bool:
+        pass
+    @abstractmethod
+    def breakdown(self,breakdowns: list[int]) -> bool:
         pass
 
     @abstractmethod
@@ -40,10 +61,10 @@ class DriverBase(ABC):
 
     def is_connected(self) -> bool:
         return self.conn_state
-
+    
     def is_read_all_running(self) -> bool:
         return self.__read_all_running
-
+    
     def read(self, data_name_list: list[str] = None) -> dict[str, any]:
         if not self.__read_all_running:
             # print(f"{self.device_name}read_all线程尚未启动")
@@ -55,7 +76,7 @@ class DriverBase(ABC):
         for key in data_name_list:
             result = {**result, key: self.curr_data[key]}
         return result
-
+    
     def start_read_all(self) -> bool:
         if self.__read_all_running:
             print(f"{self.device_name}read_all线程已启动")
@@ -65,7 +86,7 @@ class DriverBase(ABC):
         self.__read_Thread.start()
         self.__read_all_running = True
         return True
-
+    
     def stop_read_all(self) -> bool:
         if not self.__read_all_running:
             print(f"{self.device_name}read_all线程未启动")
@@ -91,21 +112,3 @@ class DriverBase(ABC):
         for key in para_name_list:
             result = {**result, key: self.curr_para[key]}
         return result
-
-    def set_logger(self):
-        # 创建一个日志记录器
-        logger = logging.getLogger("my_log")
-        logger.setLevel(logging.DEBUG)  # 设置日志级别
-        formatter = logging.Formatter("%(asctime)s-%(module)s-%(funcName)s-%(lineno)d-%(name)s-%(message)s")  # 其中name为getlogger指定的名字
-
-        rHandler = RotatingFileHandler(self.device_name + ".txt", maxBytes=1024 * 1024, backupCount=1)
-        rHandler.setLevel(logging.DEBUG)
-        rHandler.setFormatter(formatter)
-
-        console = logging.StreamHandler()
-        console.setLevel(logging.DEBUG)
-        console.setFormatter(formatter)
-
-        logger.addHandler(rHandler)
-        logger.addHandler(console)
-        return logger
