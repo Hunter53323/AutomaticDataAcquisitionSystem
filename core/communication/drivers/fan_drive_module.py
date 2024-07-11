@@ -10,9 +10,9 @@ serial_parity = "N"  # None表示无校验
 serial_stopbits = 1  # 停止位
 serial_bytesize = 8  # 数据位
 
-breakdownmap = {1: "采样偏置故障", 2: "缺相故障", 3: "硬件过流故障", 4: "电机堵转故障", 5: "电机失步故障",
-                6: "软件 RMS 过流故障", 7: "软件峰值过流故障", 8: "直流母线欠压故障", 9: "IPM 过温故障",
-                10: "启动失败故障", 11: "直流母线过压故障", 12: "网压瞬时掉电故障"}
+breakdownmap = {0: "采样偏置故障", 1: "缺相故障", 2: "硬件过流故障", 3: "电机堵转故障", 4: "电机失步故障",
+                5: "软件 RMS 过流故障", 6: "软件峰值过流故障", 7: "直流母线欠压故障", 8: "IPM 过温故障",
+                9: "启动失败故障", 10: "直流母线过压故障", 11: "网压瞬时掉电故障"}
 
 
 class FanDriver(DriverBase):
@@ -144,11 +144,16 @@ class FanDriver(DriverBase):
             "power": power,
             "breakdown": breakdowns,
         }
-        if len(breakdowns):
+        if len(breakdowns) > 0:
             self.logger.info(f"查询到故障! 故障码:{', '.join(str(breakdown) for breakdown in breakdowns)}")
             self.run_state = False
             self.breakdown = True
-            self.breakdown(breakdowns)  # 进入故障处理子函数
+            # 进入故障处理子函数
+            if self.handle_breakdown(breakdowns):
+                self.logger.info(f"故障处理成功！")
+            else:
+                self.logger.error(f"故障处理失败！")
+                return False
             
         return True
 
@@ -161,9 +166,9 @@ class FanDriver(DriverBase):
         recv = recv + self.ser.read(recv[3] + 2)
         return recv
 
-    def breakdown(self, breakdowns: list[int]) -> bool:
+    def handle_breakdown(self, breakdowns: list[int]) -> bool:
         for i in range(len(breakdowns)):
-            if breakdowns[i] == 3 or 6 or 7:
+            if breakdowns[i] == 2 or breakdowns[i] == 5 or breakdowns[i] == 6:
                 self.logger.info(f"故障为过流故障! 故障类型:{breakdownmap[breakdowns[i]]}")
                 # 过流处理逻辑
                 pass
@@ -172,7 +177,7 @@ class FanDriver(DriverBase):
                 self.logger.info(f"过流故障清除成功!")
                 return True
         for i in range(len(breakdowns)):
-            if 0 < breakdowns[i] <= 12:
+            if 0 <= breakdowns[i] < 12:
                 self.logger.info(f"故障为一般故障! 故障类型:{breakdownmap[breakdowns[i]]}")
                 # 一般故障处理逻辑
                 pass
@@ -180,9 +185,9 @@ class FanDriver(DriverBase):
                 del breakdowns[i]
                 self.logger.info(f"一般故障清除成功!")
                 return True
-        if len(breakdowns)!=0:
+        if len(breakdowns) != 0:
             self.logger.error(f"故障码错误! 收到的故障码:{breakdowns}")
-            #其他处理逻辑
+            # 其他处理逻辑
             return False
 
     def write(self, para_dict: dict[str, any], write_count: int = 1) -> bool:
@@ -288,8 +293,9 @@ class FanDriver(DriverBase):
         for i in range(8):
             if (response[14] & (1 << i)) != 0:
                 breakdown.append(i)
+        for i in range(4):
             if (response[15] & (1 << i)) != 0:
-                breakdown.append(i + 8)
+                breakdown.append(i+8)
         # 第16个字节是校验和低8位，检查校验和,前面已经检查过了，因此此处不用再次检查
         # if self.__calculate_checksum(response[0:16]) == response[16].to_bytes():
         return target_speed, actual_speed, dc_bus_voltage, U_phase_current, power, breakdown
@@ -345,6 +351,6 @@ class FanDriver(DriverBase):
 
 
 if __name__ == "__main__":
-    fan_driver = FanDriver("Fan", ["speed", "temperature"], ["speed", "temperature"], device_address="01", cpu="M0")
-    # fan_driver.read_all()
+    fan_driver = FanDriver("Fan", ["speed", "temperature"], ["speed", "temperature"], device_address=b"\x01", cpu="M0")
+    fan_driver.read_all()
     # fan_driver.connect()

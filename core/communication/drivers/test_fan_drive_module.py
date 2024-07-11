@@ -51,7 +51,11 @@ class TestFanDriver:
         )
         assert fandriver.run_state == True
 
-    def test_breakdown(self):
+    # def test_breakdown(self):#测试成功，再次测试需要将SerialServer的response = handle_command(data, fan,True)
+    #     fandriver.set_device_cpu("M0")
+    #     for i in range(65536):
+    #         assert fandriver.read_all() == True
+    #         breakdown = fandriver.curr_data["breakdown"]
 
         assert fandriver.run_state == True
         assert (

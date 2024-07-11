@@ -113,7 +113,7 @@ class TestDevice(DriverBase):
             self.curr_data["torque"] = float_values[1]
             self.curr_data["motor_output_power"] = float_values[2]
 
-    def breakdown(self, breakdowns: list[int]) -> bool:
+    def handle_breakdown(self, breakdowns: list[int]) -> bool:
         pass
 
     def update_hardware_parameter(self, para_dict: dict[str, any]) -> bool:
