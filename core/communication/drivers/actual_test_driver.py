@@ -1,4 +1,4 @@
-from .driver_base import DriverBase
+from driver_base import DriverBase
 from pymodbus.client import ModbusTcpClient
 import struct
 import ipaddress
@@ -104,6 +104,9 @@ class TestDevice(DriverBase):
             self.curr_data["motor_input_power"] = float_values[0]
             self.curr_data["torque"] = float_values[1]
             self.curr_data["motor_output_power"] = float_values[2]
+
+    def breakdown(self,breakdowns: list[int]) -> bool:
+        pass
 
     def update_hardware_parameter(self, para_dict: dict[str, any]) -> bool:
         selfip = self.ip

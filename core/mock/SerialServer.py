@@ -6,7 +6,7 @@ from fan import Fan
 state = False
 
 
-def handle_command(data: bytes, fan: Fan):
+def handle_command(data: bytes, fan: Fan,testbreakdown:bool=False):
     # 根据命令字符串进行处理
     byte0 = b"\x5A"
     byte1 = b"\xFF"
@@ -60,8 +60,12 @@ def handle_command(data: bytes, fan: Fan):
             byte10and11 = struct.pack(">H", U_phase_current)
             byte12and13 = struct.pack(">H", power)
 
-            byte14 = b"\x00"  # 故障未写
-            byte15 = b"\x00"
+            if testbreakdown:#模拟故障
+                byte14=
+                byte15=
+            else:
+                byte14 = b"\x00"  # 不模拟故障
+                byte15 = b"\x00"
 
             byte16 = calculate_checksum(byte0, byte1, byte2, byte3, byte4and5 + byte6and7 + byte8and9 + byte10and11 + byte12and13 + byte14 + byte15)
             byte17 = b"\xA5"
