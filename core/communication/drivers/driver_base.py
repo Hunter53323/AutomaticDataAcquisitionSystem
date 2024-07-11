@@ -22,9 +22,9 @@ class DriverBase(ABC):
         # 创建一个日志记录器
         logger = logging.getLogger(self.device_name)
         logger.setLevel(logging.DEBUG)  # 设置日志级别
-        formatter = logging.Formatter('%(asctime)s-%(module)s-%(funcName)s-%(lineno)d-%(name)s-%(message)s')# 其中name为getlogger指定的名字
+        formatter = logging.Formatter("%(asctime)s-%(module)s-%(funcName)s-%(lineno)d-%(name)s-%(message)s")  # 其中name为getlogger指定的名字
 
-        rHandler = RotatingFileHandler(filename="../../../log/"+self.device_name+".log", maxBytes=1024 * 1024, backupCount=1)
+        rHandler = RotatingFileHandler(filename="./log/" + self.device_name + ".log", maxBytes=1024 * 1024, backupCount=1)
         rHandler.setLevel(logging.DEBUG)
         rHandler.setFormatter(formatter)
 
