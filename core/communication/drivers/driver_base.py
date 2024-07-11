@@ -9,6 +9,8 @@ class DriverBase(ABC):
     def __init__(self, device_name: str, data_list: list[str], para_list: list[str]):
         self.device_name = device_name
         self.conn_state = False
+        self.run_state = False
+        self.breakdown = False
         self.__read_all_running: bool = False
         self.curr_data = {key: None for key in data_list}
         self.curr_para = {key: None for key in para_list}

@@ -30,9 +30,12 @@ class TestDevice(DriverBase):
         para_dict示例{"test_device_command":"start_device", "load":float}
         command:"start_device","stop_device","P_mode","N_mode","N1_mode","write"
         """
-        command = para_dict["test_device_command"]
         if not self.conn_state:
             return False
+        if "test_device_command" not in para_dict:
+            command = "write"
+        else:
+            command = para_dict["test_device_command"]
         if command == "start_device":
             address = 0
             value = 1
@@ -70,6 +73,11 @@ class TestDevice(DriverBase):
         if result.isError():
             return False
         else:
+            # 确认写正确后，更改状态值
+            if command == "start_device":
+                self.run_state = True
+            elif command == "stop_device":
+                self.run_state = False
             for key in self.curr_para:
                 if key in para_dict:
                     self.curr_para[key] = para_dict[key]

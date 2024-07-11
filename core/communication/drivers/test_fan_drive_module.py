@@ -49,6 +49,7 @@ class TestFanDriver:
             )
             == True
         )
+        assert fandriver.run_state == True
         assert (
             fandriver.write(
                 {
@@ -57,6 +58,16 @@ class TestFanDriver:
             )
             == True
         )
+        assert fandriver.run_state == True
+        assert (
+            fandriver.write(
+                {
+                    "fan_command": "stop",
+                }
+            )
+            == True
+        )
+        assert fandriver.run_state == False
 
     # def test_wALL(self):
     #     for speed in range(65536):

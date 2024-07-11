@@ -136,6 +136,9 @@ class FanDriver(DriverBase):
             "power": power,
             "breakdown": breakdown,
         }
+        if breakdown != []:
+            self.run_state = False
+            self.breakdown = True
         return True
 
     def read_msg(self):
@@ -208,7 +211,14 @@ class FanDriver(DriverBase):
         # 取出的单个字节是int类型，response_checksum是bytes类型，需要转换
         if response[5].to_bytes() == response_checksum:
             if response[4].to_bytes() == b"\x01":
-                # 修改参数表
+                # 确认读写操作正确后，修改参数表
+                if para_dict["fan_command"] == "start":
+                    self.run_state = True
+                elif para_dict["fan_command"] == "stop":
+                    self.run_state = False
+                elif para_dict["fan_command"] == "clear_breakdown":
+                    self.breakdown = False
+                para_dict["fan_command"] = ""
                 for key in self.curr_para:
                     self.curr_para[key] = para_dict[key]
                 return True

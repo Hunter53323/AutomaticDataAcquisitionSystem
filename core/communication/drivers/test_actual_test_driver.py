@@ -20,17 +20,25 @@ class TestActualTestDriver:
     def test_read(self):
         testdevice.read_all()
         print("Test read:", testdevice.curr_data)
+
         parameters = {"test_device_command": "start_device"}
         print("Test start:", testdevice.write(parameters))
+        assert testdevice.run_state == True
+
         parameters = {"test_device_command": "stop_device"}
         print("Test stop:", testdevice.write(parameters))
+        assert testdevice.run_state == False
+
         parameters = {"test_device_command": "P_mode"}
         print("Test P:", testdevice.write(parameters))
+
         parameters = {"test_device_command": "N_mode"}
         print("Test N:", testdevice.write(parameters))
+
         parameters = {"test_device_command": "N1_mode"}
         print("Test N1:", testdevice.write(parameters))
-        parameters = {"test_device_command": "write", "load": 200}
+
+        parameters = {"load": 200}
         print("Test write:", testdevice.write(parameters))
 
     def test_disconnect(self):
