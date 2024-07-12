@@ -13,6 +13,7 @@ class TestFanDriver:
 
     def read_all_cpu(self, cpu: str):
         fandriver.set_device_cpu(cpu)
+        fandriver.connect()
         assert fandriver.read_all() == True
         target_speed = fandriver.curr_data["target_speed"]
         actual_speed = fandriver.curr_data["actual_speed"]
@@ -51,11 +52,11 @@ class TestFanDriver:
         )
         assert fandriver.run_state == True
 
-    # def test_breakdown(self):#测试成功，再次测试需要将SerialServer的response = handle_command(data, fan,True)
-    #     fandriver.set_device_cpu("M0")
-    #     for i in range(65536):
-    #         assert fandriver.read_all() == True
-    #         breakdown = fandriver.curr_data["breakdown"]
+        # def test_breakdown(self):#测试成功，再次测试需要将SerialServer的response = handle_command(data, fan,True)
+        #     fandriver.set_device_cpu("M0")
+        #     for i in range(65536):
+        #         assert fandriver.read_all() == True
+        #         breakdown = fandriver.curr_data["breakdown"]
 
         assert fandriver.run_state == True
         assert (

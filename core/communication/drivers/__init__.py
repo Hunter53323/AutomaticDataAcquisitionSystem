@@ -24,6 +24,7 @@ fandriver = FanDriver(
     ],
     device_address=b"\x01",
     cpu="M0",
+    port="COM9",
 )
 
 # from .test_driver1 import TestDriver1

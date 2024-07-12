@@ -23,6 +23,7 @@ class FanDriver(DriverBase):
             self.curr_para[key] = 0
         self.device_address = None
         self.cpu = None
+        self.port = None
         for key, value in kwargs.items():
             if key == "device_address":
                 self.set_device_address(value)
@@ -31,10 +32,15 @@ class FanDriver(DriverBase):
                     self.logger.error("Invalid cpu value")
                     raise ValueError("Invalid cpu value")
                 self.cpu = value
+            if key == "port":
+                if not isinstance(value, str):
+                    self.logger.error("Invalid port value")
+                    raise ValueError("Invalid port value")
+                self.port = value
         self.hardware_para = ["device_address", "cpu"]
 
         self.ser: serial.Serial = serial.Serial(
-            port=serial_port, baudrate=serial_baudrate, parity=serial_parity, stopbits=serial_stopbits,
+            baudrate=serial_baudrate, parity=serial_parity, stopbits=serial_stopbits,
             bytesize=serial_bytesize, timeout=10
         )
 
@@ -47,12 +53,16 @@ class FanDriver(DriverBase):
         return True
 
     def connect(self) -> bool:
-        if (self.device_address is None):
+        if self.device_address is None:
             self.logger.error("device_address is None")
             return False
         if self.cpu is None:
             self.logger.error("self.cpu is None")
             return False
+        if self.port is None:
+            self.logger.error("self.port is None")
+            return False
+        self.ser.port = self.port
         if self.ser.is_open == False:
             self.ser.open()
         if self.ser.is_open:
