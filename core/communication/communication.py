@@ -1,4 +1,5 @@
 from .drivers.driver_base import DriverBase
+from .exception_handling import BreakdownHanding
 
 
 class Communication:
@@ -6,6 +7,7 @@ class Communication:
         self.drivers: list[DriverBase] = []
         self.__para_map: dict[str, DriverBase] = {}
         self.__data_map: dict[str, DriverBase] = {}
+        self.breakdown_handler = BreakdownHanding()
         pass
 
     def __update_map(self, driver: DriverBase):
@@ -13,6 +15,10 @@ class Communication:
         self.__data_map.update({key: driver for key in driver.curr_data.keys()})
 
     def write(self, para_dict: dict[str, any]) -> bool:
+        for driver in self.drivers:
+            if driver.breakdown == True:
+                print(driver.device_name, "发生故障，请先处理故障")
+                return False
         tmp_dict: dict[DriverBase, dict[str, any]] = {}
         error_key_list: list[str] = []
         for key, val in para_dict.items():
@@ -75,6 +81,7 @@ class Communication:
     def register_device(self, driver: DriverBase) -> bool:
         self.drivers.append(driver)
         self.__update_map(driver)
+        self.breakdown_handler.add_driver(driver)
 
     def connect(self) -> bool:
         flag = True

@@ -148,13 +148,6 @@ class FanDriver(DriverBase):
             self.logger.info(f"查询到故障! 故障码:{', '.join(str(breakdown) for breakdown in breakdowns)}")
             self.run_state = False
             self.breakdown = True
-            # 进入故障处理子函数
-            if self.handle_breakdown(breakdowns):
-                self.logger.info(f"故障处理成功！")
-            else:
-                self.logger.error(f"故障处理失败！")
-                return False
-            
         return True
 
     def read_msg(self):
