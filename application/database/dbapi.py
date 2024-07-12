@@ -1,4 +1,4 @@
-from database import db
+from . import db
 
 
 @db.route("/show", methods=["GET", "POST", "PUT", "DELETE"])
