@@ -5,7 +5,17 @@ from core.communication import communicator
 from core.auto_collection import auto_collector
 import threading
 
+from application.auto_collection import autocollect
+from application.database import db
+from application.device_control import control
+
 app = Flask(__name__)
+
+app.register_blueprint(autocollect, url_prefix="/collect")
+app.register_blueprint(db, url_prefix="/db")
+app.register_blueprint(control, url_prefix="/control")
+
+
 CORS(app, supports_credentials=True)
 socketio = SocketIO(app)
 
@@ -117,5 +127,9 @@ def sqldb():
 
 @app.route("/dbapi/export", methods=["POST"])
 # 数据导出接口，根据发送的测试人员等信息导出数据，返回csv文件，由客户指定导出目录进行保存
-def sqldb():
+def export():
     pass
+
+
+if __name__ == "__main__":
+    socketio.run(app, debug=True, host="127.0.0.1", port=5000)
