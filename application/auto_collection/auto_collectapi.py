@@ -1,4 +1,4 @@
-from auto_collection import autocollect
+from . import autocollect
 
 
 @autocollect.route("/csvupload", methods=["POST"])
