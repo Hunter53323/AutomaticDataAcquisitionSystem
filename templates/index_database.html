@@ -69,8 +69,8 @@
         <!-- 数据增加表单 -->
         <h2>增加数据</h2>
         <form id="add-data-form">
-            <input type="text" id="fan-name" placeholder="风机名称" required>
-            <input type="text" id="fan-model" placeholder="风机型号" required>
+            <input type="text" id="fan-name" placeholder="风机名称" >
+            <input type="text" id="fan-model" placeholder="风机型号" >
             <input type="text" id="rotation-speed" placeholder="转速">
             <input type="text" id="speed-compensation" placeholder="速度环补偿系数">
             <input type="text" id="current-bandwidth" placeholder="电流环带宽">
@@ -117,6 +117,8 @@
     <h1>风机数据控制面板</h1>
     <div id="data-display">
         <button id="refresh-button" onclick="fetchData()">刷新数据</button>
+        <!-- 数据清除按钮 -->
+        <button id="clear-data-button">清除数据</button>
         <table id="fans-data">
             <thead>
                 <tr>
@@ -358,14 +360,14 @@
         $('#add-data-form').submit(function(event) {
             event.preventDefault();
             var data = {
-                '风机名称': $('#fan-name').val(),
-                '风机型号': $('#fan-model').val(),
-                '转速': $('#rotation-speed').val(),
-                '速度环补偿系数': $('#speed-compensation').val(),
-                '电流环带宽': $('#current-bandwidth').val(),
-                '观测器补偿系数': $('#observer-compensation').val(),
-                '负载量': $('#load').val(),
-                '功率': $('#power').val()
+                '风机名称': $('#fan-name').val() || -1,
+                '风机型号': $('#fan-model').val() || -1,
+                '转速': $('#rotation-speed').val() || null,
+                '速度环补偿系数': $('#speed-compensation').val() || null,
+                '电流环带宽': $('#current-bandwidth').val() || null,
+                '观测器补偿系数': $('#observer-compensation').val() || null,
+                '负载量': $('#load').val() || null,
+                '功率': $('#power').val() || null
             };
             $.ajax({
                 url: '/api/data',
@@ -526,6 +528,33 @@
                 }
             });
         });
+
+        // 绑定清除数据按钮的点击事件
+        $('#clear-data-button').click(function() {
+            // 显示确认删除的对话框
+            var confirmDelete = confirm("再次确认是否删除整个数据库！");
+            if (confirmDelete) {
+                // 如果用户点击“是”，则发送请求删除所有数据
+                $.ajax({
+                    url: '/api/clear_data', // 确保这个URL匹配后端定义的路由
+                    type: 'DELETE',
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            alert('数据库已清空！');
+                            // 刷新页面或执行其他操作，例如重新加载数据
+                            fetchData(); // 假设这是刷新表格数据的函数
+                        } else {
+                            alert('删除失败，请稍后重试。');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error deleting data: ' + error);
+                        alert('数据删除失败，请稍后重试。');
+                    }
+                });
+            }
+            // 如果用户点击“否”，则不进行任何操作
+        });        
 
  
 

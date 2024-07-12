@@ -1,3 +1,4 @@
 from .output_database import OutputDatabase
 
-outputdb = OutputDatabase("localhost", "root", "123456", "test")
+outputdb = OutputDatabase("localhost", "liuqi", "liuqi9713", "world")
+
