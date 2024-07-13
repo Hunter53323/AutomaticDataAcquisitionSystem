@@ -36,6 +36,21 @@ def test_communicator_write_and_read():
     assert communicator.write({"fan_command": "stop", "test_device_command": "stop_device"}) == True
 
 
+def test_check_thread_alive():
+    assert communicator.check_thread_alive() == True
+
+
+def test_get_hardware_parameter():
+    dict1 = {"ip": "127.0.0.1", "port": 503}
+    dict2 = {"cpu": "M0", "device_address": "01", "port": "COM9"}
+    dict3 = {"cpu": "M4", "device_address": "01", "port": "COM9"}
+    assert communicator.get_hardware_parameter(device_name="TestDevice") == dict1
+    assert communicator.get_hardware_parameter(device_name="FanDriver") == dict2
+    assert communicator.update_hardware_parameter(device_name="FanDriver", para_dict={"cpu": "M4"}) == True
+    assert communicator.update_hardware_parameter(device_name="FanDriver", para_dict={"po": "M0"}) == True
+    assert communicator.get_hardware_parameter(device_name="FanDriver") == dict3
+
+
 def test_stop():
     assert communicator.stop_read_all() == True
     assert communicator.disconnect() == True

@@ -127,10 +127,17 @@ class FanDriver(DriverBase):
         self.logger.info(f"查询回复:{response.hex()}")
         # response = self.ser.read_until(b"\xA5")
         # 检测收到的数据是否是预期的数据，否则报错
-        if len(response) != 18 or response[17].to_bytes() != b"\xA5":
+        if len(response) != 18:
             # print("count",read_count)
             self.logger.error(
-                f"查询回复报错! len(response) != 18?:{len(response) != 18},response[17].to_bytes()!=\xA5?:{response[17].to_bytes() != b"\xA5"},查询回复:{response.hex()},count:{read_count}")
+                f"查询回复报错! len(response) != 18?:{len(response) != 18},查询回复:{response.hex()},count:{read_count}")
+            if read_count == 3:
+                return False
+            return self.read_all(read_count=read_count + 1)
+        
+        if response[17].to_bytes() != b"\xA5":
+            self.logger.error(
+                f"查询回复报错! response[17].to_bytes()!=\xA5?:{response[17].to_bytes() != b"\xA5"},查询回复:{response.hex()},count:{read_count}")
             if read_count == 3:
                 return False
             return self.read_all(read_count=read_count + 1)
@@ -327,7 +334,7 @@ class FanDriver(DriverBase):
 
     def update_hardware_parameter(self, para_dict: dict[str, any]) -> bool:
         for key in para_dict.keys():
-            if key not in ["device_address", "cpu"]:
+            if key not in ["device_address", "cpu", "port"]:
                 # raise ValueError("Unknown parameter")
                 return False
         for key, value in para_dict.items():
@@ -342,6 +349,10 @@ class FanDriver(DriverBase):
                 if value not in ["M0", "M4"]:
                     # raise ValueError("cpu must be M0 or M4")
                     return False
+            elif key == "port":
+                if not isinstance(value, str):
+                    # raise ValueError("port must be str")
+                    return False
             else:
                 # raise ValueError("Unknown parameter")
                 return False
@@ -350,9 +361,14 @@ class FanDriver(DriverBase):
                 self.set_device_address(value)
             elif key == "cpu":
                 self.set_device_cpu(value)
+            elif key == "port":
+                self.port = value
             else:
                 return False
         return True
+    
+    def get_hardware_parameter(self) -> dict[str, any]:
+        return {"device_address": self.device_address, "cpu": self.cpu, "port": self.port}
 
 
 if __name__ == "__main__":
