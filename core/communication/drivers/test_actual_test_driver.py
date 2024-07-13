@@ -40,6 +40,8 @@ class TestActualTestDriver:
         assert testdevice.write(parameters) == True
         parameters = {"test_device_command": "asdafasg"}#ÂÒÂëÖ¸Áî
         assert testdevice.write(parameters) == False
+        parameters = {"test_device_command": ["start_device","N_mode"]}
+        assert testdevice.write(parameters) == False
         for load in range(20000):
             parameters = {"test_device_command": "write", "load": float(load)/10}
             assert testdevice.write(parameters) == True

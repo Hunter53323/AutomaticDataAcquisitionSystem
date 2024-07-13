@@ -20,12 +20,10 @@ class TestDevice(DriverBase):
             ipaddress.ip_address(ip)
             self.ip = ip
             self.port = port
-            self.client = ModbusTcpClient(host=ip,port=port)
+            self.client = ModbusTcpClient(host=ip, port=port)
             self.connect()
             self.logger.info(f"client连接到服务器{self.client}")
             return True
-        except ValueError:
-            return False
         except Exception as e:
             self.logger.error(f"client连接error！ error:{e}")
             return False
@@ -41,7 +39,6 @@ class TestDevice(DriverBase):
         # slave = 1  # 设置从机地址
         # result = self.client.read_holding_registers(address=address, count=count * coding, slave=slave,
         #                                             timeout=5)  # 请求应该为00 01 00 00 00 06 01 03 00 01 00 0C
-        command = para_dict["test_device_command"]
         if not self.conn_state:
             self.logger.error(f"服务器未连接! 非法写！")
             return False
@@ -134,9 +131,9 @@ class TestDevice(DriverBase):
             self.logger.error(f"接收错误! error:{e}")
             return
         finally:
-            pass#收尾
+            pass  # 收尾
 
-    def read_all(self, num=3, read_count=3,encoding=4) -> bool:
+    def read_all(self, num=3, read_count=3, encoding=4) -> bool:
         for count in range(read_count):
             try:
                 result = self.recv()
@@ -144,8 +141,9 @@ class TestDevice(DriverBase):
                     raise Exception(f"接收失败! result：{result.hex()}")
                 else:
                     tid, pid, length, uid, fc, data_size = struct.unpack(">HHHBBB", result[:9])
-                    if data_size == num*encoding:
-                        float_values = [struct.unpack(">f", result[i:i+4])[0] for i in range(9, 9 + num * encoding, encoding)]
+                    if data_size == num * encoding:
+                        float_values = [struct.unpack(">f", result[i:i + 4])[0] for i in
+                                        range(9, 9 + num * encoding, encoding)]
                         self.logger.info(
                             f"tid, pid, length, uid：{tid, pid, length, uid},Function Code:{fc},data_size:{data_size},数据：{float_values}")
                         self.curr_data["motor_input_power"] = float_values[0]
@@ -153,13 +151,34 @@ class TestDevice(DriverBase):
                         self.curr_data["motor_output_power"] = float_values[2]
                         return True
                     else:
-                        raise Exception(f"数据接收数量错误！ 目标接收num*encoding：{num*encoding},实际收到：{data_size}")
+                        raise Exception(f"数据接收数量错误！ 目标接收num*encoding：{num * encoding},实际收到：{data_size}")
             except Exception as e:
                 self.logger.error(f"error:{e},count：{count}")
         return False
 
     def handle_breakdown(self, breakdowns: list[int]) -> bool:
-        pass
+        try:
+            if len(breakdowns) != 0:
+                parameters = {"test_device_command": "P_mode"}
+                testdevice.write(parameters)
+                parameters = {"test_device_command": "write", "load": float(0) / 10}  # 假设空载为0
+                testdevice.write(parameters)
+                parameters = {"test_device_command": "start_device"}
+                testdevice.write(parameters)
+            else:
+                self.logger.error(f"未收到故障码！")
+            return True
+        except Exception as e:
+            self.logger.error(f"故障处理模块报错！ error:{e}")
+            self.logger.error(f"再次尝试空载！")
+            parameters = {"test_device_command": "P_mode"}
+            testdevice.write(parameters)
+            parameters = {"test_device_command": "write", "load": float(0) / 10}  # 假设空载为0
+            testdevice.write(parameters)
+            parameters = {"test_device_command": "start_device"}
+            testdevice.write(parameters)
+        finally:
+            return False
 
     def update_hardware_parameter(self, para_dict: dict[str, any]) -> bool:
         selfip = self.ip
