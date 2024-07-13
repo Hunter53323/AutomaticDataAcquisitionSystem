@@ -83,6 +83,12 @@ class Communication:
         self.__update_map(driver)
         self.breakdown_handler.add_driver(driver)
 
+    def find_driver(self, device_name: str) -> DriverBase:
+        for driver in self.drivers:
+            if driver.device_name == device_name:
+                return driver
+        return None
+
     def connect(self) -> bool:
         flag = True
         for driver in self.drivers:

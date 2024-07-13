@@ -1,9 +1,30 @@
 from flask_socketio import SocketIO
 from flask import Flask
 import random
+from core.communication import communicator
 
 
 def handle_socketio_events(socketio: SocketIO):
+
+    @socketio.on("connect")
+    # 连接对应设备，并开始获取数据
+    def connect():
+        """
+        返回的数据格式为{"status": True or False}
+        """
+        communicator.connect()
+        communicator.start_read_all()
+        print("Client connected")
+
+    @socketio.on("disconnect")
+    # 和对应的设备断连
+    def disconnect():
+        """
+        返回的数据格式为{"status": True or False}
+        """
+        communicator.stop_read_all()
+        communicator.disconnect()
+        pass
 
     @socketio.on("current_data")
     def get_data():

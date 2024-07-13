@@ -1,48 +1,115 @@
 import time, itertools
-from ..communication import Communication
-from ..database.mysql_base import MySQLBase
+from core.communication import Communication
+from core.database.mysql_base import MySQLBase
 from collections import deque
+import threading
 
 
 class AutoCollection:
     def __init__(self, communication: Communication, database: MySQLBase):
         self.communication = communication
-        self.__para_pool: itertools.product
-        self.__para_pool_vals: dict[str, list[any]] = {}
+        self.__para_vals: dict[str, list[any]] = {}
+        self.__para_queue: deque[dict[str, any]] = deque()
         self.__stable_state: bool = False
-        self.__para_pool_inited: bool = False
+        self.__para_queue_inited: bool = False
         self.__auto_running: bool = False
-        self.__para_queue: deque[dict[str, any]]
+        self.__pause_flag: bool = False
+        self.__stop_flag: bool = False
+
+        self.__collect_count: list[int] = [0, 0]  # 第一位是成功数量，第二位是失败数量
+
         self.db = database
         pass
 
     def is_stable(self) -> bool:
         return self.__stable_state
 
+    def start_auto_collect(self) -> bool:
+        """
+        在一个新的线程中启动auto_collect
+        """
+        if self.__auto_running:
+            print("正在自动采集...")
+            return False
+        thread = threading.Thread(target=self.auto_collect)
+        thread.start()
+        return True
+
+    def pause_auto_collect(self) -> bool:
+        if not self.__auto_running:
+            return False
+        self.__pause_flag = True
+        return True
+
+    def continue_auto_collect(self) -> bool:
+        if not self.__auto_running:
+            return False
+        self.__pause_flag = False
+        return True
+
+    def stop_auto_collect(self) -> bool:
+        if not self.__auto_running:
+            return False
+        self.__stop_flag = True
+        return True
+
+    def get_current_progress(self) -> tuple[int, int, int, bool]:
+        """
+        :return int 成功采集数量
+        :return int 失败采集数量
+        :return int 剩余采集数量
+        :return bool 是否正在自动采集
+        """
+        return self.__collect_count[0], self.__collect_count[1], len(self.__para_queue), self.__auto_running
+
+    def get_current_para(self) -> dict[str, any]:
+        return self.communication.get_curr_para()
+
     def auto_collect(self) -> bool:
-        if not self.__para_pool_inited:
-            print("参数池未初始化")
+        if not self.__para_queue_inited:
+            print("参数队列未初始化")
             return False
         print("自动采集启动")
         self.__auto_running = True
+        self.__collect_count = [0, 0]
         # for item_para in self.__para_pool:
         while self.__para_queue:
+            if self.__stop_flag:
+                break
+            self.judge_pause_status()
             item_para = self.__para_queue.popleft()
             self.__stable_state = False
-            tmp_para_dict = dict(zip(self.__para_pool_vals.keys(), item_para))
+            tmp_para_dict = dict(zip(self.__para_vals.keys(), item_para))
             collect_data, err_handle_status, code, err = self.signal_progress(tmp_para_dict)
             self.save_data(data_dict=collect_data, para_dict=tmp_para_dict, err=err)
+            self.__collect_count[0 if collect_data else 1] += 1
             if not err_handle_status:
                 # 清障失败，需要人工干预
                 # 故障预警
                 self.communication.breakdown_handler.breakdown_warning(code)
                 self.wait_until_no_breakdown()
             # 顺利采集完成一条数据
+        self.clear_para()
         print("自动采集结束")
-        self.__auto_running = False
         return True
 
-    def wait_until_no_breakdown(self) -> bool:
+    def clear_para(self):
+        # 清理参数，结束一次采集循环
+        self.__para_vals: dict[str, list[any]] = {}
+        self.__para_queue: deque[dict[str, any]] = deque()
+        self.__stable_state: bool = False
+        self.__para_queue_inited: bool = False
+        self.__auto_running: bool = False
+        self.__pause_flag: bool = False
+        self.__stop_flag: bool = False
+
+        self.__collect_count: list[int] = [0, 0]  # 第一位是成功数量，第二位是失败数量
+
+    def judge_pause_status(self):
+        while self.__pause_flag:
+            time.sleep(0.2)
+
+    def wait_until_no_breakdown(self):
         # 等待函数，直到读取到的数据中没有故障了才会继续向下运行
         while True:
             curr_data: dict[str, any] = self.communication.read()
@@ -51,7 +118,6 @@ class AutoCollection:
                 continue
             else:
                 print("故障已清除，继续自动采集")
-                return True
 
     def signal_progress(self, para_dict: dict[str, any], count: int = 0) -> tuple[dict, bool, int, str]:
         """
@@ -98,28 +164,35 @@ class AutoCollection:
 
     def init_para_pool(self, para_pool_dict: dict[str, list[any]]) -> bool:
         if self.__auto_running:
-            print("正在自动采集，请结束或暂停后初始化参数池")
+            print("正在自动采集，请结束或暂停后初始化参数队列")
             return False
-        print("初始化参数池")
-        self.__para_pool_vals.clear()
+        print("初始化参数队列")
+        self.__para_vals.clear()
         error_key_list: list[str] = []
-        self.__para_pool_vals = {key: None for key in self.communication.get_para_map().keys()}
+        self.__para_vals = {key: None for key in self.communication.get_para_map().keys()}
         for key, val in para_pool_dict.items():
-            if key not in self.__para_pool_vals.keys():
+            if key not in self.__para_vals.keys():
                 error_key_list.append(key)
                 continue
-            self.__para_pool_vals[key] = val
+            self.__para_vals[key] = val
         if error_key_list:
-            self.__para_pool_vals.clear()
+            self.__para_vals.clear()
             print("非法参数", *error_key_list)
             return False
-        if None in self.__para_pool_vals.values():
+        if None in self.__para_vals.values():
             print("存在未指派的参数!")
             return False
-        self.__para_pool = itertools.product(*self.__para_pool_vals.values())
-        self.__para_queue = deque(self.__para_pool)
-        self.__para_pool_inited = True
+        para_pool = itertools.product(*self.__para_vals.values())
+        self.__para_queue = deque(para_pool)
+        self.__para_queue_inited = True
         return True
+
+    def init_para_pool_from_csv(self, para_dict) -> bool:
+        if self.__auto_running:
+            print("正在自动采集，请结束或暂停后初始化参数队列")
+            return False
+        pass
+        self.__para_queue_inited = True
 
     def is_auto_running(self):
         return self.__auto_running
