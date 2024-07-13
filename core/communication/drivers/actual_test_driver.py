@@ -156,15 +156,18 @@ class TestDevice(DriverBase):
                 self.logger.error(f"error:{e},count：{count}")
         return False
 
-    def handle_breakdown(self, breakdowns: list[int]) -> bool:
+    def handle_breakdown(self, breakdown: int) -> bool:
         try:
-            if len(breakdowns) != 0:
+            if breakdown != 0:
                 parameters = {"test_device_command": "P_mode"}
-                testdevice.write(parameters)
+                if not testdevice.write(parameters):
+                    raise Exception(f"{parameters}")
                 parameters = {"test_device_command": "write", "load": float(0) / 10}  # 假设空载为0
-                testdevice.write(parameters)
+                if not testdevice.write(parameters):
+                    raise Exception(f"{parameters}")
                 parameters = {"test_device_command": "start_device"}
-                testdevice.write(parameters)
+                if not testdevice.write(parameters):
+                    raise Exception(f"{parameters}")
             else:
                 self.logger.error(f"未收到故障码！")
             return True
