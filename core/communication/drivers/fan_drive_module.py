@@ -199,6 +199,8 @@ class FanDriver(DriverBase):
             self.logger.error(f"故障码错误! 收到的故障码:{breakdowns}")
             # 其他处理逻辑
             return False
+        self.logger.info(f"故障清除!")
+        return True
 
     def write(self, para_dict: dict[str, any], write_count: int = 1) -> bool:
         """
