@@ -1,3 +1,5 @@
+from typing import Tuple, List
+
 import serial
 from serial.serialutil import SerialTimeoutException
 from .driver_base import DriverBase
@@ -169,38 +171,35 @@ class FanDriver(DriverBase):
 
     def read_msg(self):
         while self.ser.in_waiting < 4:
-            time.sleep(0.1)
+            time.sleep(0.01)
         recv = self.ser.read(4)
         while self.ser.in_waiting < recv[3] + 2:
-            time.sleep(0.1)
+            time.sleep(0.01)
         recv = recv + self.ser.read(recv[3] + 2)
         return recv
 
-    def handle_breakdown(self, breakdowns: list[int]) -> bool:
-        for i in range(len(breakdowns)):
-            if breakdowns[i] == 2 or breakdowns[i] == 5 or breakdowns[i] == 6:
-                self.logger.info(f"故障为过流故障! 故障类型:{breakdownmap[breakdowns[i]]}")
+    def handle_breakdown(self, breakdown: int) -> bool:
+        try:
+            if breakdown == 1:
+                self.logger.info(f"故障为过流故障! ")
+            elif breakdown == 2:
+                self.logger.info(f"故障为普通故障! ")
                 # 过流处理逻辑
-                pass
-
-                del breakdowns[i]
-                self.logger.info(f"过流故障清除成功!")
-                return True
-        for i in range(len(breakdowns)):
-            if 0 <= breakdowns[i] < 12:
-                self.logger.info(f"故障为一般故障! 故障类型:{breakdownmap[breakdowns[i]]}")
-                # 一般故障处理逻辑
-                pass
-
-                del breakdowns[i]
-                self.logger.info(f"一般故障清除成功!")
-                return True
-        if len(breakdowns) != 0:
-            self.logger.error(f"故障码错误! 收到的故障码:{breakdowns}")
-            # 其他处理逻辑
+            para_dict = {
+                "fan_command": "clear_breakdown",
+                "set_speed": 0,
+                "speed_loop_compensates_bandwidth": 0,
+                "current_loop_compensates_bandwidth": 0,
+                "observer_compensates_bandwidth": 0,
+            }
+            if self.write(para_dict):
+                self.logger.info(f"故障清除成功!")
+            else:
+                raise Exception(f"故障清除失败！")
+            return True
+        except Exception as e:
+            self.logger.error(f"error:{e}")
             return False
-        self.logger.info(f"故障清除!")
-        return True
 
     def write(self, para_dict: dict[str, any], write_count: int = 1) -> bool:
         """
@@ -285,7 +284,7 @@ class FanDriver(DriverBase):
                 f"控制回复校验和报错! recv:{response[5].to_bytes()},cal:{response_checksum},count:{write_count}")
             return False
 
-    def __decode_read_response(self, response: bytes) -> tuple[int, int, int, int, int, list[int]]:
+    def __decode_read_response(self, response: bytes) -> tuple[float, float, float, float, float, list[int]]:
         FB, VB, IB, Cofe1, Cofe2, Cofe3, Cofe4, Cofe5 = self.__get_cpu_paras()
         # 第四个和第五个字节是目标转速的高8位和低8位,两种方案都可以
         # target_speed = (response[4] << 8) | response[5]
