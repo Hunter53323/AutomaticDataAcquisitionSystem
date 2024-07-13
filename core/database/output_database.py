@@ -1,20 +1,20 @@
 import mysql.connector
 from mysql.connector import Error
-from .mysql_base import MySQLDatabase
+from .mysql_base import MySQLBase
 import csv
 import re
 
 
-class OutputDatabase(MySQLDatabase):
+class OutputDatabase(MySQLBase):
     def __init__(self, host_name, user_name, user_password, db_name, table_name, table_columns):
-      # 确保传递所有需要的参数给 MySQLDatabase 的构造函数
+        # 确保传递所有需要的参数给 MySQLDatabase 的构造函数
         super().__init__(host_name, user_name, user_password, db_name, table_name, table_columns)
         self.table_name = table_name
         self.table_columns = table_columns
 
     def create_table(self):
         # 调用父类的 create_table 方法
-        super().create_table()   
+        super().create_table()
 
     # def create_table(self):
     #     if self.connection and self.connection.is_connected():
@@ -55,6 +55,6 @@ class OutputDatabase(MySQLDatabase):
     #         )
     #         """
     #         cursor.execute(create_table_sql)
-    #         self.connection.commit()         
+    #         self.connection.commit()
 
     #     return super().create_table()
