@@ -60,6 +60,10 @@ class DriverBase(ABC):
     def update_hardware_parameter(self, para_dict: dict[str, any]) -> bool:
         pass
 
+    @abstractmethod
+    def get_hardware_parameter(self) -> dict[str, any]:
+        pass
+
     def is_connected(self) -> bool:
         return self.conn_state
 
@@ -80,17 +84,18 @@ class DriverBase(ABC):
 
     def start_read_all(self) -> bool:
         if self.__read_all_running:
-            print(f"{self.device_name}read_all线程已启动")
+            print(f"{self.device_name}:read_all线程无需重复启动")
             return False
         self.__stop_event = Event()
         self.__read_Thread = Thread(target=self.__read_all_loop, args=(self.__stop_event,))
         self.__read_Thread.start()
         self.__read_all_running = True
+        print(f"{self.device_name}:read_all线程已启动")
         return True
 
     def stop_read_all(self) -> bool:
         if not self.__read_all_running:
-            print(f"{self.device_name}read_all线程未启动")
+            print(f"{self.device_name}:read_all线程未启动")
             return True
         self.__stop_event.set()
         self.__read_Thread.join()
@@ -101,10 +106,17 @@ class DriverBase(ABC):
     def __read_all_loop(self, stop_event: Event):
         while True:
             if stop_event.is_set():
-                print(f"{self.device_name}read_all线程正在退出")
+                print(f"{self.device_name}:read_all线程正在退出")
                 break
             self.read_all()
             time.sleep(0.05)
+
+    def check_thread_alive(self) -> bool:
+        if not self.__read_Thread.is_alive():
+            self.start_read_all()
+            if not self.__read_Thread.is_alive():
+                return False
+        return True
 
     def get_curr_para(self, para_name_list: list[str] = None) -> dict[str, any]:
         if not para_name_list:

@@ -132,6 +132,9 @@ class TestDevice(DriverBase):
                 raise KeyError(f"{key} is not a valid parameter.")
         return self.__set_client(selfip, selfport)
 
+    def get_hardware_parameter(self) -> dict[str, any]:
+        return {"ip": self.ip, "port": self.port}
+
 
 if __name__ == "__main__":
     testdevice = TestDevice(
