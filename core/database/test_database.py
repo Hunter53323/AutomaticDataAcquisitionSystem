@@ -86,8 +86,6 @@ def test_insert_data_with_missing_values(db):
 
 
 # 测试查询功能，查询所有列且不带条件的情况
-from datetime import datetime
-
 def test_select_data_all_columns(db):
     db.clear_and_reset_ids()
     test_data = [
@@ -120,8 +118,6 @@ def test_select_data_all_columns(db):
 
 
 # 测试查询功能，通过指定ID查询        
-from datetime import datetime
-
 def test_select_data_by_specific_ids(db):
     db.clear_and_reset_ids()
     # 插入多条测试数据
