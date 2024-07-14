@@ -41,7 +41,7 @@ def test_check_thread_alive():
 
 
 def test_get_hardware_parameter():
-    dict1 = {"ip": "127.0.0.1", "port": 503}
+    dict1 = {"ip": "127.0.0.1", "port": 5020}
     dict2 = {"cpu": "M0", "device_address": "01", "port": "COM9"}
     dict3 = {"cpu": "M4", "device_address": "01", "port": "COM9"}
     assert communicator.get_hardware_parameter(device_name="TestDevice") == dict1

@@ -67,6 +67,16 @@ class TestFanDriver:
             )
             == True
         )
+
+        assert (
+            fandriver.write(
+                {
+                    "current_loop_compensates_bandwidth": 300,
+                    "observer_compensates_bandwidth": 400,
+                }
+            )
+            == True
+        )
         assert fandriver.run_state == False
 
     # def test_wALL(self):#测试完成没有问题，时间约3h过长后面不再测试了

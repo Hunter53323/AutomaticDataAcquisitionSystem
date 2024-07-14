@@ -14,6 +14,7 @@ class TestDevice(DriverBase):
         super().__init__(device_name, data_list, para_list)
         self.__set_client(ip="127.0.0.1", port=5020)
         self.hardware_para = ["ip", "port"]
+        self.command = "test_device_command"
 
     def __set_client(self, ip: str, port: int):
         try:
@@ -42,7 +43,7 @@ class TestDevice(DriverBase):
         if not self.conn_state:
             self.logger.error(f"服务器未连接! 非法写！")
             return False
-        if "test_device_command" not in para_dict:
+        if self.command not in para_dict:
             command = "write"
         else:
             command = para_dict["test_device_command"]
@@ -142,9 +143,9 @@ class TestDevice(DriverBase):
             if msg_cache and count < 20:
                 msg = msg_cache
             else:
-                if count==20:
+                if count == 20:
                     self.logger.warn(f"警告更新报文时间设置过长！ 报文更新周期小于{timeout}s")
-                elif count==0:
+                elif count == 0:
                     self.logger.warn(f"警告更新报文时间设置过短！请增大！ 报文更新周期大于{timeout*10}s")
                 break
         return msg
@@ -158,10 +159,10 @@ class TestDevice(DriverBase):
                 else:
                     tid, pid, length, uid, fc, data_size = struct.unpack(">HHHBBB", result[:9])
                     if data_size == num * encoding:
-                        float_values = [struct.unpack(">f", result[i:i + 4])[0] for i in
-                                        range(9, 9 + num * encoding, encoding)]
+                        float_values = [struct.unpack(">f", result[i : i + 4])[0] for i in range(9, 9 + num * encoding, encoding)]
                         self.logger.info(
-                            f"tid, pid, length, uid：{tid, pid, length, uid},Function Code:{fc},data_size:{data_size},数据：{float_values}")
+                            f"tid, pid, length, uid：{tid, pid, length, uid},Function Code:{fc},data_size:{data_size},数据：{float_values}"
+                        )
                         self.curr_data["motor_input_power"] = float_values[0]
                         self.curr_data["torque"] = float_values[1]
                         self.curr_data["motor_output_power"] = float_values[2]
@@ -221,8 +222,7 @@ class TestDevice(DriverBase):
 
 if __name__ == "__main__":
     testdevice = TestDevice(
-        device_name="TestDevice", data_list=["motor_input_power", "torque", "motor_output_power"],
-        para_list=["test_device_command", "load"]
+        device_name="TestDevice", data_list=["motor_input_power", "torque", "motor_output_power"], para_list=["test_device_command", "load"]
     )
     # testdevice.update_hardware_parameter(para_dict={"ip": "127.0.0.1", "port": 504})
     # print(testdevice.connect())

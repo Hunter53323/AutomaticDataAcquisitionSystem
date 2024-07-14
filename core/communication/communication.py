@@ -7,14 +7,17 @@ class Communication:
         self.drivers: list[DriverBase] = []
         self.__para_map: dict[str, DriverBase] = {}
         self.__data_map: dict[str, DriverBase] = {}
+        self.__command_map: dict[str, DriverBase] = {}
         self.breakdown_handler = BreakdownHanding()
         pass
 
     def __update_map(self, driver: DriverBase):
         self.__para_map.update({key: driver for key in driver.curr_para.keys()})
         self.__data_map.update({key: driver for key in driver.curr_data.keys()})
+        self.__command_map.update({driver.command: driver})
 
     def write(self, para_dict: dict[str, any]) -> bool:
+        para_command_map = {**self.__para_map, **self.__command_map}
         for driver in self.drivers:
             if driver.breakdown == True:
                 print(driver.device_name, "发生故障，请先处理故障")
@@ -22,12 +25,12 @@ class Communication:
         tmp_dict: dict[DriverBase, dict[str, any]] = {}
         error_key_list: list[str] = []
         for key, val in para_dict.items():
-            if key not in self.__para_map.keys():
+            if key not in para_command_map.keys():
                 error_key_list.append(key)
                 continue
-            if self.__para_map[key] not in tmp_dict.keys():
-                tmp_dict[self.__para_map[key]] = {}
-            tmp_dict[self.__para_map[key]].update({key: val})
+            if para_command_map[key] not in tmp_dict.keys():
+                tmp_dict[para_command_map[key]] = {}
+            tmp_dict[para_command_map[key]].update({key: val})
         if error_key_list:
             print("非法参数", *error_key_list)
             return False

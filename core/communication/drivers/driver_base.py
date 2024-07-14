@@ -14,6 +14,7 @@ class DriverBase(ABC):
         self.__read_all_running: bool = False
         self.curr_data = {key: None for key in data_list}
         self.curr_para = {key: None for key in para_list}
+        self.command = None
         self.hardware_para = []
         self.logger = self.set_logger()
         pass

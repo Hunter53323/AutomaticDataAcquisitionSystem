@@ -40,6 +40,7 @@ class FanDriver(DriverBase):
                     raise ValueError("Invalid port value")
                 self.port = value
         self.hardware_para = ["device_address", "cpu"]
+        self.command = "fan_command"
 
         self.ser: serial.Serial = serial.Serial(
             baudrate=serial_baudrate, parity=serial_parity, stopbits=serial_stopbits,
@@ -205,6 +206,11 @@ class FanDriver(DriverBase):
         """
         控制指令
         """
+        # 有无控制命令
+        if self.command in para_dict:
+            command = para_dict[self.command]
+        else:
+            command = "write"
         # 参数不全的情况下，需要将以往的参数补充上
         if write_count == 1:
             para_dict.update({key: self.curr_para[key] for key in self.curr_para if key not in para_dict})
@@ -212,11 +218,11 @@ class FanDriver(DriverBase):
         data1 = self.device_address
         data2 = "01"
         data3 = "09"  # 手册是03，但是实际传了9个字节
-        if para_dict["fan_command"] == "start":
+        if command == "start":
             data4 = "01"
-        elif para_dict["fan_command"] == "stop":
+        elif command == "stop":
             data4 = "02"
-        elif para_dict["fan_command"] == "clear_breakdown":
+        elif command == "clear_breakdown":
             data4 = "04"
         else:
             data4 = "00"
@@ -263,13 +269,12 @@ class FanDriver(DriverBase):
         if response[5].to_bytes() == response_checksum:
             if response[4].to_bytes() == b"\x01":
                 # 确认读写操作正确后，修改参数表
-                if para_dict["fan_command"] == "start":
+                if command == "start":
                     self.run_state = True
-                elif para_dict["fan_command"] == "stop":
+                elif command == "stop":
                     self.run_state = False
-                elif para_dict["fan_command"] == "clear_breakdown":
+                elif command == "clear_breakdown":
                     self.breakdown = False
-                para_dict["fan_command"] = ""
                 for key in self.curr_para:
                     self.curr_para[key] = para_dict[key]
                 return True
