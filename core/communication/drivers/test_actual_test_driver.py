@@ -1,3 +1,4 @@
+import random
 import socket
 import struct
 import time
@@ -10,9 +11,13 @@ class TestActualTestDriver:
 
     def test_read_all(self):
         testdevice.update_hardware_parameter(para_dict={"ip": "127.0.0.1", "port": 5021})
-        for _ in range(120000):
+        for _ in range(100):
             assert testdevice.read_all() == True
 
+    def test_read_newest(self):
+        testdevice.update_hardware_parameter(para_dict={"ip": "127.0.0.1", "port": 5021})
+        time.sleep(10)
+        assert testdevice.read_all() == True
 
     def test_connect(self):
         testdevice.update_hardware_parameter(para_dict={"ip": "127.0.0.1", "port": 5020})
@@ -42,8 +47,9 @@ class TestActualTestDriver:
         assert testdevice.write(parameters) == False
         parameters = {"test_device_command": ["start_device","N_mode"]}
         assert testdevice.write(parameters) == False
-        for load in range(20000):
-            parameters = {"test_device_command": "write", "load": float(load)/10}
+        for _ in range(20000):
+            load=random.uniform(0,10000)
+            parameters = {"test_device_command": "write", "load": load}
             assert testdevice.write(parameters) == True
     def test_disconnect(self):
         assert testdevice.disconnect() == True

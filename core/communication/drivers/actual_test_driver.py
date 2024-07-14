@@ -113,7 +113,7 @@ class TestDevice(DriverBase):
             self.logger.error(f"连接关闭错误！error:{e}")
             return False
 
-    def recv(self, timeout=1):
+    def recv_one(self, timeout: float = 1):
         self.client.comm_params.timeout_connect = timeout  # 设置接收超时时间，如果超时即使接收的字节数少于目标值也返回
         try:
             msg = self.client.recv(6)
@@ -132,6 +132,22 @@ class TestDevice(DriverBase):
             return
         finally:
             pass  # 收尾
+
+    def recv(self, timeout=0.05):
+        msg = self.recv_one(timeout * 10)  # 放大区间使得可以收到报文
+        count = 0
+        while msg:  # 如果报文不为空，则可能后面有新报文
+            count += 1
+            msg_cache = self.recv_one(timeout)  # 更新新报文
+            if msg_cache and count < 20:
+                msg = msg_cache
+            else:
+                if count==20:
+                    self.logger.warn(f"警告更新报文时间设置过长！ 报文更新周期小于{timeout}s")
+                elif count==0:
+                    self.logger.warn(f"警告更新报文时间设置过短！请增大！ 报文更新周期大于{timeout*10}s")
+                break
+        return msg
 
     def read_all(self, num=3, read_count=3, encoding=4) -> bool:
         for count in range(read_count):

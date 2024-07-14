@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import logging
+import random
 import socket
 import struct
+import threading
 import time
 
 from pymodbus.server import StartTcpServer
@@ -64,30 +66,31 @@ class Tcpserver():
         self.s.bind(('127.0.0.1', 5021))
         self.s.listen(1)
         self.conn, self.addr = self.s.accept()
+        print('Connected by', self.addr)
+        self.run_server()
 
     def run_server(self):
-        print('Connected by', self.addr)
-        for torque in range(0, 40000):
-            MESSAGE = build_modbus_tcp_message(torque=float(torque) / 100)
+        count=0
+        while True:
+            count+=1
+            torque=random.uniform(0, 40000)
+            speed=random.uniform(0, 10000)
+            voltage=random.uniform(0, 380)
+            MESSAGE = build_modbus_tcp_message(torque=torque,speed=speed,voltage=voltage)
+            print(f"发送的报文为：{MESSAGE.hex()},count:{count}")
             self.conn.sendall(MESSAGE)
-            # time.sleep(0.02)
-        for speed in range(0, 40000):
-            MESSAGE = build_modbus_tcp_message(speed=float(speed) / 2)
-            print(MESSAGE.hex())
-            self.conn.sendall(MESSAGE)
-            # time.sleep(0.05)
-        for voltage in range(0, 40000):
-            MESSAGE = build_modbus_tcp_message(voltage=float(voltage) / 2)
-            print(MESSAGE.hex())
-            self.conn.sendall(MESSAGE)
-            # time.sleep(0.05)
+            time.sleep(0.05)
 
 
 if __name__ == "__main__":
     try:
-        server = Tcpserver()
-        server.run_server()#模拟一直发
-        run_server()#模拟收
+        thread1 = threading.Thread(target=Tcpserver)
+        thread2 = threading.Thread(target=run_server)
+        # 启动线程
+        thread1.start()
+        thread2.start()
+        # 等待线程完成
+        thread1.join()
+        thread2.join()
     except Exception as e:
         print(e)
-        run_server()
