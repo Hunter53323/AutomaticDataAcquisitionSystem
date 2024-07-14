@@ -10,7 +10,7 @@ function sendCSVToServer() {
     const formData = new FormData();
     formData.append('file', file);
   
-    fetch('/upload', {
+    fetch('/collect/csvupload', {
       method: 'POST',
       body: formData,
     })

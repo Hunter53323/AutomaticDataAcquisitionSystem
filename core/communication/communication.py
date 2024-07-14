@@ -83,6 +83,12 @@ class Communication:
         self.__update_map(driver)
         self.breakdown_handler.add_driver(driver)
 
+    def find_driver(self, device_name: str) -> DriverBase:
+        for driver in self.drivers:
+            if driver.device_name == device_name:
+                return driver
+        return None
+
     def connect(self) -> bool:
         flag = True
         for driver in self.drivers:
@@ -113,12 +119,27 @@ class Communication:
             flag = flag & driver.stop_read_all()
         return flag
 
-    def update_device_parameter(self, device_name: str, para_dict: dict[str, any]) -> bool:
+    def check_thread_alive(self) -> bool:
+        flag = True
+        for driver in self.drivers:
+            flag = flag & driver.check_thread_alive()
+        return flag
+
+    def update_hardware_parameter(self, device_name: str, para_dict: dict[str, any]) -> bool:
+        err_key = []
         for driver in self.drivers:
             if driver.device_name == device_name:
                 for key in para_dict.keys():
                     if key not in driver.hardware_para:
-                        para_dict.pop(key)
+                        err_key.append(key)
                         print("非法参数", key)
+                for key in err_key:
+                    para_dict.pop(key)
                 return driver.update_hardware_parameter(para_dict)
         return False
+
+    def get_hardware_parameter(self, device_name: str) -> dict[str, any]:
+        for driver in self.drivers:
+            if driver.device_name == device_name:
+                return driver.get_hardware_parameter()
+        return {}

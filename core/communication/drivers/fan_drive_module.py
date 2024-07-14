@@ -1,3 +1,5 @@
+from typing import Tuple, List
+
 import serial
 from serial.serialutil import SerialTimeoutException
 from .driver_base import DriverBase
@@ -23,6 +25,7 @@ class FanDriver(DriverBase):
             self.curr_para[key] = 0
         self.device_address = None
         self.cpu = None
+        self.port = None
         for key, value in kwargs.items():
             if key == "device_address":
                 self.set_device_address(value)
@@ -31,10 +34,15 @@ class FanDriver(DriverBase):
                     self.logger.error("Invalid cpu value")
                     raise ValueError("Invalid cpu value")
                 self.cpu = value
+            if key == "port":
+                if not isinstance(value, str):
+                    self.logger.error("Invalid port value")
+                    raise ValueError("Invalid port value")
+                self.port = value
         self.hardware_para = ["device_address", "cpu"]
 
         self.ser: serial.Serial = serial.Serial(
-            port=serial_port, baudrate=serial_baudrate, parity=serial_parity, stopbits=serial_stopbits,
+            baudrate=serial_baudrate, parity=serial_parity, stopbits=serial_stopbits,
             bytesize=serial_bytesize, timeout=10
         )
 
@@ -47,12 +55,16 @@ class FanDriver(DriverBase):
         return True
 
     def connect(self) -> bool:
-        if (self.device_address is None):
+        if self.device_address is None:
             self.logger.error("device_address is None")
             return False
         if self.cpu is None:
             self.logger.error("self.cpu is None")
             return False
+        if self.port is None:
+            self.logger.error("self.port is None")
+            return False
+        self.ser.port = self.port
         if self.ser.is_open == False:
             self.ser.open()
         if self.ser.is_open:
@@ -117,10 +129,17 @@ class FanDriver(DriverBase):
         self.logger.info(f"查询回复:{response.hex()}")
         # response = self.ser.read_until(b"\xA5")
         # 检测收到的数据是否是预期的数据，否则报错
-        if len(response) != 18 or response[17].to_bytes() != b"\xA5":
+        if len(response) != 18:
             # print("count",read_count)
             self.logger.error(
-                f"查询回复报错! len(response) != 18?:{len(response) != 18},response[17].to_bytes()!=\xA5?:{response[17].to_bytes() != b"\xA5"},查询回复:{response.hex()},count:{read_count}")
+                f"查询回复报错! len(response) != 18?:{len(response) != 18},查询回复:{response.hex()},count:{read_count}")
+            if read_count == 3:
+                return False
+            return self.read_all(read_count=read_count + 1)
+        
+        if response[17].to_bytes() != b"\xA5":
+            self.logger.error(
+                f"查询回复报错! response[17].to_bytes()!=\xA5?:{response[17].to_bytes() != b"\xA5"},查询回复:{response.hex()},count:{read_count}")
             if read_count == 3:
                 return False
             return self.read_all(read_count=read_count + 1)
@@ -152,35 +171,34 @@ class FanDriver(DriverBase):
 
     def read_msg(self):
         while self.ser.in_waiting < 4:
-            time.sleep(0.1)
+            time.sleep(0.01)
         recv = self.ser.read(4)
         while self.ser.in_waiting < recv[3] + 2:
-            time.sleep(0.1)
+            time.sleep(0.01)
         recv = recv + self.ser.read(recv[3] + 2)
         return recv
 
-    def handle_breakdown(self, breakdowns: list[int]) -> bool:
-        for i in range(len(breakdowns)):
-            if breakdowns[i] == 2 or breakdowns[i] == 5 or breakdowns[i] == 6:
-                self.logger.info(f"故障为过流故障! 故障类型:{breakdownmap[breakdowns[i]]}")
+    def handle_breakdown(self, breakdown: int) -> bool:
+        try:
+            if breakdown == 1:
+                self.logger.info(f"故障为过流故障! ")
+            elif breakdown == 2:
+                self.logger.info(f"故障为普通故障! ")
                 # 过流处理逻辑
-                pass
-
-                del breakdowns[i]
-                self.logger.info(f"过流故障清除成功!")
-                return True
-        for i in range(len(breakdowns)):
-            if 0 <= breakdowns[i] < 12:
-                self.logger.info(f"故障为一般故障! 故障类型:{breakdownmap[breakdowns[i]]}")
-                # 一般故障处理逻辑
-                pass
-
-                del breakdowns[i]
-                self.logger.info(f"一般故障清除成功!")
-                return True
-        if len(breakdowns) != 0:
-            self.logger.error(f"故障码错误! 收到的故障码:{breakdowns}")
-            # 其他处理逻辑
+            para_dict = {
+                "fan_command": "clear_breakdown",
+                "set_speed": 0,
+                "speed_loop_compensates_bandwidth": 0,
+                "current_loop_compensates_bandwidth": 0,
+                "observer_compensates_bandwidth": 0,
+            }
+            if self.write(para_dict):
+                self.logger.info(f"故障清除成功!")
+            else:
+                raise Exception(f"故障清除失败！")
+            return True
+        except Exception as e:
+            self.logger.error(f"error:{e}")
             return False
 
     def write(self, para_dict: dict[str, any], write_count: int = 1) -> bool:
@@ -266,7 +284,7 @@ class FanDriver(DriverBase):
                 f"控制回复校验和报错! recv:{response[5].to_bytes()},cal:{response_checksum},count:{write_count}")
             return False
 
-    def __decode_read_response(self, response: bytes) -> tuple[int, int, int, int, int, list[int]]:
+    def __decode_read_response(self, response: bytes) -> tuple[float, float, float, float, float, list[int]]:
         FB, VB, IB, Cofe1, Cofe2, Cofe3, Cofe4, Cofe5 = self.__get_cpu_paras()
         # 第四个和第五个字节是目标转速的高8位和低8位,两种方案都可以
         # target_speed = (response[4] << 8) | response[5]
@@ -315,7 +333,7 @@ class FanDriver(DriverBase):
 
     def update_hardware_parameter(self, para_dict: dict[str, any]) -> bool:
         for key in para_dict.keys():
-            if key not in ["device_address", "cpu"]:
+            if key not in ["device_address", "cpu", "port"]:
                 # raise ValueError("Unknown parameter")
                 return False
         for key, value in para_dict.items():
@@ -330,6 +348,10 @@ class FanDriver(DriverBase):
                 if value not in ["M0", "M4"]:
                     # raise ValueError("cpu must be M0 or M4")
                     return False
+            elif key == "port":
+                if not isinstance(value, str):
+                    # raise ValueError("port must be str")
+                    return False
             else:
                 # raise ValueError("Unknown parameter")
                 return False
@@ -338,9 +360,14 @@ class FanDriver(DriverBase):
                 self.set_device_address(value)
             elif key == "cpu":
                 self.set_device_cpu(value)
+            elif key == "port":
+                self.port = value
             else:
                 return False
         return True
+    
+    def get_hardware_parameter(self) -> dict[str, any]:
+        return {"device_address": self.device_address, "cpu": self.cpu, "port": self.port}
 
 
 if __name__ == "__main__":
