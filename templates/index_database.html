@@ -360,15 +360,16 @@
         $('#add-data-form').submit(function(event) {
             event.preventDefault();
             var data = {
-                '风机名称': $('#fan-name').val() || -1,
-                '风机型号': $('#fan-model').val() || -1,
-                '转速': $('#rotation-speed').val() || null,
-                '速度环补偿系数': $('#speed-compensation').val() || null,
-                '电流环带宽': $('#current-bandwidth').val() || null,
-                '观测器补偿系数': $('#observer-compensation').val() || null,
-                '负载量': $('#load').val() || null,
-                '功率': $('#power').val() || null
+                '风机名称': $('#fan-name').val() ,
+                '风机型号': $('#fan-model').val() ,
+                '转速': $('#rotation-speed').val() ,
+                '速度环补偿系数': $('#speed-compensation').val() ,
+                '电流环带宽': $('#current-bandwidth').val() ,
+                '观测器补偿系数': $('#observer-compensation').val() ,
+                '负载量': $('#load').val() ,
+                '功率': $('#power').val()
             };
+
             $.ajax({
                 url: '/api/data',
                 type: 'POST',

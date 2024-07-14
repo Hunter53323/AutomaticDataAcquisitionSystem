@@ -4,20 +4,17 @@ import csv
 import re
 from abc import ABC, abstractmethod
 
+
 class MySQLDatabase:
     def __init__(self, host_name, user_name, user_password, db_name, table_name, table_columns):
         self.connection = self.create_connection(host_name, user_name, user_password, db_name)
         self.table_name = table_name
-        self.columns = {col_name: dtype for col_name, dtype in table_columns.items() if col_name != 'ID'}
+        self.table_columns = table_columns
+        self.columns = {col_name: dtype for col_name, dtype in table_columns.items() if col_name != "ID"}
 
     def create_connection(self, host_name, user_name, user_password, db_name):
         try:
-            return mysql.connector.connect(
-                host=host_name,
-                user=user_name,
-                passwd=user_password,
-                database=db_name
-            )
+            return mysql.connector.connect(host=host_name, user=user_name, passwd=user_password, database=db_name)
         except Error as e:
             print(f"发生错误: {e}")
             return None
@@ -26,9 +23,7 @@ class MySQLDatabase:
         if self.connection and self.connection.is_connected():
             cursor = self.connection.cursor()
             # 动态创建表结构，确保列定义格式正确
-            column_definitions = ',\n                '.join([
-                f"{name} {data_type}" for name, data_type in self.table_columns.items()
-            ])
+            column_definitions = ",\n                ".join([f"{name} {data_type}" for name, data_type in self.table_columns.items()])
             # 确保列定义后没有多余的逗号
             create_table_sql = f"""
             CREATE TABLE IF NOT EXISTS `{self.table_name}` (
@@ -47,7 +42,6 @@ class MySQLDatabase:
     @abstractmethod
     def creat_table(self):
         pass
-
 
     def select_ids(self, conditions=None):
         """
@@ -94,11 +88,11 @@ class MySQLDatabase:
             # 如果指定了列名，则加入列名列表，否则查询所有列
             if columns:
                 # 确保ID列总是被查询，除非用户明确指定不查询ID
-                selected_columns = columns if 'ID' in columns else columns + ['ID']
+                selected_columns = columns if "ID" in columns else columns + ["ID"]
                 query += ", ".join(selected_columns)
             else:
                 # 查询所有定义的列以及ID列
-                all_columns = list(self.columns.keys()) + ['ID']
+                all_columns = list(self.columns.keys()) + ["ID"]
                 query += ", ".join(all_columns)
 
             # 添加FROM子句
@@ -125,16 +119,14 @@ class MySQLDatabase:
         finally:
             cursor.close()
 
-
-
     def delete_data_by_ids(self, ids_input):
-        #ids_input的形式为：[4, 5, 6]。若输入为1,2,3或者1-3,5这种可调用self.parse_ids_input(ids_input)
+        # ids_input的形式为：[4, 5, 6]。若输入为1,2,3或者1-3,5这种可调用self.parse_ids_input(ids_input)
         if ids_input is None:
             self.clear_and_reset_ids()
             query = f"DELETE FROM {self.table_name}"
         else:
             ids = self.parse_ids_input(ids_input)
-            placeholders = ', '.join(['%s'] * len(ids))
+            placeholders = ", ".join(["%s"] * len(ids))
             query = f"DELETE FROM {self.table_name} WHERE ID IN ({placeholders})"
 
         try:
@@ -152,7 +144,6 @@ class MySQLDatabase:
             if cursor:
                 cursor.close()
 
-
     def clear_and_reset_ids(self):
         """
         删除所有数据并重置ID为0。
@@ -168,7 +159,7 @@ class MySQLDatabase:
             self.connection.rollback()
         finally:
             if cursor:
-                cursor.close()        
+                cursor.close()
 
     def rearrange_ids(self):
         """
@@ -186,15 +177,15 @@ class MySQLDatabase:
             if cursor:
                 cursor.close()
 
-
-
     def insert_data(self, data_list):
-        #data_list的形式为:[{'风机名称': '示例风机3', '风机型号': '型号C', '转速': '1200', '速度环补偿系数': '2', '电流环带宽': '300', '观测器补偿系数': '1.2', '负
-        # 载量': '900', '功率': '3'}]
         if not self.connection or not self.connection.is_connected():
             print("数据库连接未建立或已关闭。")
             return
-
+        # data_list = [
+        # {'风机名称': '示例风机1', '风机型号': '型号A', '转速': 1500, '速度环补偿系数': 0.5, '电流环带宽': 100, '观测器补偿系数': 0.9, '负载量': 500, '功率': 1.5}
+        # ,{'风机名称': '示例风机1', '风机型号': '型号A', '转速': 1500}
+        # ,{'风机名称': '示例风机1', '风机型号': '型号A', '观测器补偿系数': 0.9, '负载量': 500, '功率': 1.5}
+        # ]
         cursor = self.connection.cursor()
         try:
             # 检查data_list是否为空
@@ -202,25 +193,27 @@ class MySQLDatabase:
                 print("没有提供要插入的数据。")
                 return
 
-            # 确保数据列表中的字典不包含ID列
-            for data in data_list:
-                if 'ID' in data:
-                    del data['ID']  # 移除ID列，假设ID由数据库自动增加
+            # 从data_list中的第一个字典提取列名
+            columns = list(data_list[0].keys())
 
-            # 提取列名，排除ID列
-            columns = ', '.join([col for col in data_list[0].keys()])
+            # 确保所有数据字典都有相同的列名顺序，如果缺少列，则添加None
+            for data in data_list:
+                for column in columns:
+                    if column not in data:
+                        data[column] = None
 
             # 为每个列创建一个对应数量的占位符
-            placeholders = ', '.join(['%s'] * len(data_list[0]))
+            placeholders = ", ".join(["%s"] * len(columns))
 
             # 构造插入语句
-            query = f"INSERT INTO {self.table_name} ({columns}) VALUES ({placeholders})"
+            query = f"INSERT INTO {self.table_name} ({', '.join(columns)}) VALUES ({placeholders})"
 
             # 准备数据元组列表，每个元组对应一个INSERT语句的参数
-            data_tuples = [tuple(data.values()) for data in data_list]
+            data_tuples = [tuple(data[column] for column in columns) for data in data_list]
 
             # 执行插入操作
             cursor.executemany(query, data_tuples)
+
             self.connection.commit()
 
             print(f"成功插入{len(data_list)}行数据。")
@@ -230,6 +223,11 @@ class MySQLDatabase:
             self.connection.rollback()
         finally:
             cursor.close()
+        # data_list = [
+        # {'风机名称': '示例风机1', '风机型号': '型号A', '转速': 1500, '速度环补偿系数': 0.5, '电流环带宽': 100, '观测器补偿系数': 0.9, '负载量': 500, '功率': 1.5}
+        # ,{'风机名称': '示例风机1', '风机型号': '型号A', '转速': 1500}
+        # ,{'风机名称': '示例风机1', '风机型号': '型号A', '观测器补偿系数': 0.9, '负载量': 500, '功率': 1.5}
+        # ]
 
     def update_data(self, ids, update_data):
         """
@@ -247,7 +245,7 @@ class MySQLDatabase:
             return
 
         # 构造 SET 子句
-        set_clause = ', '.join([f"{key} = %s" for key in update_data.keys()])
+        set_clause = ", ".join([f"{key} = %s" for key in update_data.keys()])
 
         # 使用动态表名
         query = f"UPDATE {self.table_name} SET {set_clause} WHERE ID IN ({','.join(['%s'] * len(ids))})"
@@ -267,14 +265,13 @@ class MySQLDatabase:
         finally:
             cursor.close()
 
-
     def parse_ids_input(self, ids_input):
         """
         解析ID输入，支持单个ID列表、连续ID范围或混合格式。
         :param ids_input: ID输入，可以是具体ID列表、连续ID范围或混合格式。
         :return: 解析后的ID列表。
         """
-        range_regex = re.compile(r'(\d+)-(\d+)')
+        range_regex = re.compile(r"(\d+)-(\d+)")
         flat_list = []
 
         # 拆分输入以处理单个ID或ID范围
@@ -297,11 +294,11 @@ class MySQLDatabase:
             # 使用动态表名
             cursor.execute(f"SELECT COUNT(*) FROM {self.table_name}")
             total_count = cursor.fetchone()[0]
-            
+
             # 使用动态表名
             cursor.execute(f"SELECT * FROM {self.table_name} LIMIT %s OFFSET %s", (per_page, offset))
             data = cursor.fetchall()
-            
+
             return data, total_count
 
     def get_column_names(self):
@@ -311,9 +308,7 @@ class MySQLDatabase:
             column_names = [i[0] for i in cursor.description]
         return column_names
 
-    
-
-    def export_data_with_conditions_to_csv(self, ids_input=None, filename=None, additional_conditions=''):
+    def export_data_with_conditions_to_csv(self, ids_input=None, filename=None, additional_conditions=""):
         if not filename:
             raise ValueError("必须提供CSV文件名")
 
@@ -321,13 +316,13 @@ class MySQLDatabase:
             try:
                 ids = None
                 if ids_input:
-                    ids = [int(id_str.strip()) for id_str in ids_input.split(',') if id_str.strip().isdigit()]
+                    ids = [int(id_str.strip()) for id_str in ids_input.split(",") if id_str.strip().isdigit()]
 
                 query = f"SELECT * FROM {self.table_name}"  # 使用动态表名
                 where_clauses = []
 
                 if ids:
-                    where_clauses.append("ID IN ({})".format(','.join(['%s'] * len(ids))))
+                    where_clauses.append("ID IN ({})".format(",".join(["%s"] * len(ids))))
                 if additional_conditions:
                     where_clauses.append(additional_conditions)
 
@@ -349,7 +344,7 @@ class MySQLDatabase:
                     print("没有找到符合条件要导出的数据。")
                     return
 
-                with open(filename, mode='w', newline='', encoding='utf-8-sig') as file:
+                with open(filename, mode="w", newline="", encoding="utf-8-sig") as file:
                     csv_writer = csv.writer(file)
                     csv_writer.writerow(columns)  # 写入列标题
                     for row_dict in dict_rows:
@@ -360,9 +355,7 @@ class MySQLDatabase:
             except Error as e:
                 print(f"查询失败：{e}")
                 return []
-            
-                                    
-                
+
     def close_connection(self):
         if self.connection and self.connection.is_connected():
             self.connection.close()
