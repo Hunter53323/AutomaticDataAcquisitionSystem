@@ -1,12 +1,12 @@
 import time, itertools
 from core.communication import Communication
-from core.database.mysql_base import MySQLBase
+from core.database.mysql_base import MySQLDatabase
 from collections import deque
 import threading
 
 
 class AutoCollection:
-    def __init__(self, communication: Communication, database: MySQLBase):
+    def __init__(self, communication: Communication, database: MySQLDatabase):
         self.communication = communication
         self.__para_vals: dict[str, list[any]] = {}
         self.__para_queue: deque[dict[str, any]] = deque()
