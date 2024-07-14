@@ -1,11 +1,8 @@
 from . import autocollect
-<<<<<<< HEAD
-=======
 from flask import request, jsonify
 import csv
 from werkzeug.datastructures import FileStorage
 from core.auto_collection import auto_collector
->>>>>>> 2af0e0f2a1be68e0adac5e3c1623b72f595c9ec1
 
 
 @autocollect.route("/csvupload", methods=["POST"])
