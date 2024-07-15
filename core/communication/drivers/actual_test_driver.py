@@ -17,17 +17,9 @@ class TestDevice(DriverBase):
         self.command = "test_device_command"
 
     def __set_client(self, ip: str, port: int):
-        try:
-            ipaddress.ip_address(ip)
-            self.ip = ip
-            self.port = port
-            self.client = ModbusTcpClient(host=ip, port=port)
-            self.connect()
-            self.logger.info(f"client连接到服务器{self.client}")
-            return True
-        except Exception as e:
-            self.logger.error(f"client连接error！ error:{e}")
-            return False
+        self.ip = ip
+        self.port = port
+        self.client = ModbusTcpClient(host=ip, port=port)
 
     def write(self, para_dict: dict[str, any]) -> bool:
         """
@@ -106,11 +98,11 @@ class TestDevice(DriverBase):
     def connect(self) -> bool:
         try:
             self.conn_state = self.client.connect()
+            self.logger.info(f"client连接到服务器{self.client}")
+            return True
         except Exception as e:
-            self.logger.error(f"连接错误！ error：{e}")
-        finally:
-            self.logger.info(f"连接状态：{self.conn_state}")
-            return self.conn_state
+            self.logger.error(f"连接错误！ error:{e}")
+            return False
 
     def disconnect(self) -> bool:
         try:
@@ -213,7 +205,11 @@ class TestDevice(DriverBase):
         selfport = self.port
         for key, value in para_dict.items():
             if key == "ip":
-                selfip = value
+                try:
+                    ipaddress.ip_address(value)
+                    selfip = value
+                except ValueError:
+                    return False
             elif key == "port":
                 if type(value) == int:
                     selfport = value
@@ -222,7 +218,8 @@ class TestDevice(DriverBase):
                     return False
             else:
                 raise KeyError(f"{key} is not a valid parameter.")
-        return self.__set_client(selfip, selfport)
+        self.__set_client(selfip, selfport)
+        return True
 
     def get_hardware_parameter(self) -> dict[str, any]:
         return {"ip": self.ip, "port": self.port}
