@@ -74,7 +74,7 @@ def export():
     additional_conditions = request.args.get("additional_conditions", "")
     print(additional_conditions)
     try:
-        outputdb.export_data_with_conditions_to_csv(ids_input=ids_input, additional_conditions=additional_conditions, filename=filename)
+        outputdb.export_data_with_conditions_to_csv(filename=filename, ids_input=ids_input, additional_conditions=additional_conditions)
         return jsonify({"status": "success", "message": f"Data exported to {filename}"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
@@ -83,5 +83,5 @@ def export():
 @db.route("/clear_data", methods=["DELETE"])
 def api_clear_data():
     # 调用数据库的删除函数，例如删除所有ID的数据
-    outputdb.delete_data_by_ids(None)  # None 表示删除所有数据
+    outputdb.delete_data_by_ids()  # None 表示删除所有数据
     return jsonify({"status": "success", "message": "Database cleared successfully"})
