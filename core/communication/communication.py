@@ -8,6 +8,7 @@ class Communication:
         self.__para_map: dict[str, DriverBase] = {}
         self.__data_map: dict[str, DriverBase] = {}
         self.__command_map: dict[str, DriverBase] = {}
+        self.__is_read_all = False
         self.breakdown_handler = BreakdownHanding()
         pass
 
@@ -108,6 +109,7 @@ class Communication:
         flag = True
         for driver in self.drivers:
             flag = flag & driver.start_read_all()
+        self.__is_read_all = True if flag else False
         return flag
 
     def get_para_map(self) -> dict[str, DriverBase]:
@@ -120,7 +122,11 @@ class Communication:
         flag = True
         for driver in self.drivers:
             flag = flag & driver.stop_read_all()
+        self.__is_read_all = False if flag else True
         return flag
+
+    def is_read_all(self) -> bool:
+        return self.__is_read_all
 
     def check_thread_alive(self) -> bool:
         flag = True
