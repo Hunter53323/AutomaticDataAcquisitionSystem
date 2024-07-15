@@ -129,10 +129,11 @@ class AutoCollection:
         self.communication.write(para_dict)
         print("当前测试的参数为", para_dict)
         curr_time = time.time()
+        count = 0
         while True:
             curr_data: dict[str, any] = self.communication.read()
             # 有故障，进入故障处理模块
-            if curr_data["breakdown"] != []:
+            if curr_data["breakdown"] != [] and curr_data["breakdown"] != 0:
                 status, breakdown_type, err = self.communication.breakdown_handler.error_handle(curr_data["breakdown"])
                 if count == 3:
                     # 错误尝试次数过多，直接退出
@@ -147,7 +148,9 @@ class AutoCollection:
                     # 无故障
                     pass
             # 故障处理完毕，正常运行
-            if abs(curr_data["actual_speed"] - curr_data["target_speed"]) < 2:
+            count += 1
+            # if abs(curr_data["actual_speed"] - curr_data["target_speed"]) < 2:
+            if count == 30:  # TODO:测试阶段使用sleep，后续启用真实的数据采集
                 self.__stable_state = True
                 final_data = self.calculate_result(curr_data)
                 print("稳定后结果为", curr_data)
@@ -155,6 +158,7 @@ class AutoCollection:
             if time.time() - curr_time > 60:
                 # 超时退出，不需人工干预
                 return {}, True, 4, "超时"
+            time.sleep(0.05)
 
     def save_data(self, data_dict: dict[str, any], para_dict: dict[str, any], err: str = "") -> None:
         pass
