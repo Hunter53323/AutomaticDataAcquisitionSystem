@@ -92,7 +92,7 @@ class FanDriver(DriverBase):
         """
         try:
             self.ser.write(byte_data)
-            self.logger.info(f"ser write context:{byte_data.hex()}")
+            # self.logger.info(f"ser write context:{byte_data.hex()}")
             return True, ""
         except SerialTimeoutException as e:
             # print(e)
@@ -206,6 +206,10 @@ class FanDriver(DriverBase):
         """
         控制指令
         """
+        if not self.check_writable():
+            self.logger.error(f"串口不可写!")
+            return False
+        self.__iswriting = True
         # 有无控制命令
         if self.command in para_dict:
             command = para_dict[self.command]
@@ -251,6 +255,7 @@ class FanDriver(DriverBase):
         write_status, err = self.__serwrite(write_bytes)
         if not write_status:
             self.logger.error(f"控制指令写入串口报错！ 控制指令:{write_bytes.hex()},count:{write_count}")
+            self.__iswriting = False
             return False
 
         response = self.ser.read_until(b"\xA5")
@@ -260,6 +265,7 @@ class FanDriver(DriverBase):
             self.logger.error(
                 f"控制回复报错! len(response) != 7?:{len(response) != 7},控制回复:{response.hex()},count:{write_count}")
             if write_count == 3:
+                self.__iswriting = False
                 return False
             return self.write(para_dict, write_count=write_count + 1)
 
@@ -277,16 +283,19 @@ class FanDriver(DriverBase):
                     self.breakdown = False
                 for key in self.curr_para:
                     self.curr_para[key] = para_dict[key]
+                self.__iswriting = False
                 return True
             else:
                 self.logger.error(
                     f"控制回复校验结果报错! recv:{response[4].to_bytes()},shoulder:\x01,count:{write_count}")
                 if write_count == 3:
+                    self.__iswriting = False
                     return False
                 return self.write(para_dict, write_count=write_count + 1)
         else:
             self.logger.error(
                 f"控制回复校验和报错! recv:{response[5].to_bytes()},cal:{response_checksum},count:{write_count}")
+            self.__iswriting = False
             return False
 
     def __decode_read_response(self, response: bytes) -> tuple[float, float, float, float, float, list[int]]:

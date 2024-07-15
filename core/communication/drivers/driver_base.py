@@ -12,7 +12,9 @@ class DriverBase(ABC):
         self.run_state = False
         self.breakdown = False
         self.__read_all_running: bool = False
-        self.curr_data = {key: None for key in data_list}
+        self.__iswriting = False
+        self.__isreading = False
+        self.curr_data = {key: 0 for key in data_list}
         self.curr_para = {key: None for key in para_list}
         self.command = None
         self.hardware_para = []
@@ -109,13 +111,25 @@ class DriverBase(ABC):
             if stop_event.is_set():
                 print(f"{self.device_name}:read_all线程正在退出")
                 break
-            self.read_all()
+            if not self.__iswriting:
+                self.__isreading = True
+                self.read_all()
+                self.__isreading = False
             time.sleep(0.05)
 
     def check_thread_alive(self) -> bool:
         if not self.__read_Thread.is_alive():
             self.start_read_all()
             if not self.__read_Thread.is_alive():
+                return False
+        return True
+
+    def check_writable(self) -> bool:
+        count = 0
+        while self.__isreading:
+            time.sleep(0.005)
+            count += 1
+            if count == 100:
                 return False
         return True
 
