@@ -1,16 +1,11 @@
 from flask_socketio import SocketIO
 from flask import Flask
 import random
-<<<<<<< HEAD
-=======
 from core.communication import communicator
->>>>>>> 2af0e0f2a1be68e0adac5e3c1623b72f595c9ec1
 
 
 def handle_socketio_events(socketio: SocketIO):
 
-<<<<<<< HEAD
-=======
     @socketio.on("connect")
     # 连接对应设备，并开始获取数据
     def connect():
@@ -31,7 +26,6 @@ def handle_socketio_events(socketio: SocketIO):
         communicator.disconnect()
         pass
 
->>>>>>> 2af0e0f2a1be68e0adac5e3c1623b72f595c9ec1
     @socketio.on("current_data")
     def get_data():
         """

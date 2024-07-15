@@ -1,9 +1,6 @@
 from . import control
-<<<<<<< HEAD
-=======
 from core.communication import communicator
 from flask import request, jsonify
->>>>>>> 2af0e0f2a1be68e0adac5e3c1623b72f595c9ec1
 
 
 @control.route("/testdevice", methods=["POST"])
@@ -103,19 +100,4 @@ def check_data():
     检查数采是否正常
     返回{"status": True or False}
     """
-<<<<<<< HEAD
-    pass
-
-
-@control.route("/setdevice", methods=["GET", "POST"])
-# 对设备参数进行设置，修改设备名称，D轴电感、Q轴电感等参数
-def set_device():
-    """
-    POST接收到的数据格式为：{"device_name": "fan1", "para_name": "D_coil", "value": 0.1}
-    返回的是{"status": True or False}
-    GET接收返回的是当前的设备参数，数据格式同上，为全部参数
-    """
-    pass
-=======
     return jsonify({"status": communicator.check_thread_alive()}), 200
->>>>>>> 2af0e0f2a1be68e0adac5e3c1623b72f595c9ec1
