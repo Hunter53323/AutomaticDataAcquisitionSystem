@@ -7,24 +7,42 @@ from core.communication import communicator
 def handle_socketio_events(socketio: SocketIO):
 
     @socketio.on("connect")
-    # 连接对应设备，并开始获取数据
+    # socketio建立连接
     def connect():
+        """
+        返回的数据格式为{"status": True or False}
+        """
+        print("Client connected")
+
+    @socketio.on("disconnect")
+    # socketio断开连接
+    def disconnect():
+        """
+        返回的数据格式为{"status": True or False}
+        """
+        if communicator.is_read_all():
+            communicator.stop_read_all()
+            communicator.disconnect()
+
+    @socketio.on("device_connect")
+    # 连接对应设备，并开始获取数据
+    def device_connect():
         """
         返回的数据格式为{"status": True or False}
         """
         communicator.connect()
         communicator.start_read_all()
-        print("Client connected")
 
-    @socketio.on("disconnect")
-    # 和对应的设备断连
-    def disconnect():
+    @socketio.on("device_disconnect")
+    # 断开设备连接
+    def device_disconnect():
         """
         返回的数据格式为{"status": True or False}
         """
-        communicator.stop_read_all()
-        communicator.disconnect()
-        pass
+        if communicator.is_read_all():
+            communicator.stop_read_all()
+            communicator.disconnect()
+        socketio.emit("device_disconnect", {"status": True})
 
     @socketio.on("current_data")
     def get_data():
