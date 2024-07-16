@@ -38,7 +38,7 @@ class Fan:
         if self.state == False:
             self.target_speed = 0
         else:
-            self.target_speed = set_speed
+            self.target_speed = set_speed * 21.83
 
     def read(self):
         return (
