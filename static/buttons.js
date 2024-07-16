@@ -1,3 +1,5 @@
+var fan_running = false
+
 function sendCSVToServer() {
     const fileInput = document.getElementById('csvFileInput');
     const file = fileInput.files[0];
@@ -35,6 +37,36 @@ function click_connect_button() {
     } else {
         socket.emit('connect_device');
     }
+}
+
+function start_device() {
+  if (fan_running == false) {
+    command = 'start';
+  } else {
+    command = 'stop';
+  }
+  const formData = new FormData();
+  formData.append('command', command);
+  fetch('/control/fan', {
+      method: 'POST',
+      body: formData,
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log('Server response:', data);
+    if ('status' in data) {
+      if (data.status == true){
+        fan_running = !fan_running;
+        if (fan_running == true) {
+          document.getElementById('start_device_button').innerText = '停止风机';
+        } else {
+          document.getElementById('start_device_button').innerText = '启动风机';
+        }
+      } else {
+        alert('设备启动失败');
+      }
+    }
+  })
 }
 
 function click_start_collect_button() {

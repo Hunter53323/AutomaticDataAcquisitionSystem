@@ -2,6 +2,10 @@ from flask_socketio import SocketIO
 from flask import Flask
 import random
 from core.communication import communicator
+import threading
+
+thread = None
+thread_running = threading.Event()
 
 
 def handle_socketio_events(socketio: SocketIO):
@@ -20,61 +24,53 @@ def handle_socketio_events(socketio: SocketIO):
         """
         返回的数据格式为{"status": True or False}
         """
+        thread_running.set()
         if communicator.is_read_all():
             communicator.stop_read_all()
             communicator.disconnect()
 
-    @socketio.on("device_connect")
+    @socketio.on("connect_device")
     # 连接对应设备，并开始获取数据
     def device_connect():
         """
         返回的数据格式为{"status": True or False}
         """
-        communicator.connect()
-        communicator.start_read_all()
+        if communicator.connect():
+            if communicator.start_read_all():
+                thread_running.clear()
+                thread = socketio.start_background_task(target=get_data)
+                socketio.emit("connection", {"status": True})
+            else:
+                socketio.emit("connection", {"status": False})
+        else:
+            socketio.emit("connection", {"status": False})
 
-    @socketio.on("device_disconnect")
+    @socketio.on("disconnect_device")
     # 断开设备连接
     def device_disconnect():
         """
         返回的数据格式为{"status": True or False}
         """
+        thread_running.set()
         if communicator.is_read_all():
             communicator.stop_read_all()
             communicator.disconnect()
-        socketio.emit("device_disconnect", {"status": True})
+        socketio.emit("connection", {"status": False})
 
     @socketio.on("current_data")
     def get_data():
         """
         从数据采集模块获取数据，
         """
-        socketio.emit(
-            "data_from_device",
-            {
-                "currentrotationalspeed": random.randint(0, 100),
-                "faultinformation": random.randint(0, 100),
-                "setrotationalspeed": random.randint(0, 100),
-                "targetrotationalspeed": random.randint(0, 100),
-                "dcbusvoltage": random.randint(0, 100),
-                "uphasecurrent": random.randint(0, 100),
-                "power": random.randint(0, 100),
-                "dissipativeresistance": random.randint(0, 100),
-                "daxieinductor": random.randint(0, 100),
-                "qaxieinductor": random.randint(0, 100),
-                "reverseemfconstant": random.randint(0, 100),
-                "polaritylog": random.randint(0, 100),
-                "motorinputpower": random.randint(0, 100),
-                "torque": random.randint(0, 100),
-                "motoroutputpower": random.randint(0, 100),
-                "addload": random.randint(0, 100),
-                "speedcompensationcoefficient": random.randint(0, 100),
-                "currentbandwidth": random.randint(0, 100),
-                "observercompensationcoefficient": random.randint(0, 100),
-                "load": random.randint(0, 100),
-                "speed": random.randint(0, 100),
-            },
-        )
+        while True:
+            if thread_running.is_set():
+                thread_running.clear()
+                break
+            socketio.sleep(0.05)
+            data = communicator.read()
+            para = communicator.get_curr_para()
+            total = {**data, **para}
+            socketio.emit("data_from_device", total)
 
 
 # 导出函数以便在主应用中调用
