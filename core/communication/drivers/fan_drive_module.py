@@ -65,9 +65,15 @@ class FanDriver(DriverBase):
         if self.port is None:
             self.logger.error("self.port is None")
             return False
-        self.ser.port = self.port
-        if self.ser.is_open == False:
-            self.ser.open()
+        if self.ser.port != self.port:
+            self.ser.port = self.port
+        return self.__connect()        
+
+    def __connect(self) -> bool:
+        if self.conn_state:
+            self.logger.info("self.ser is already open")
+            return True
+        self.ser.open()
         if self.ser.is_open:
             self.conn_state = True
             self.logger.info("self.ser open true")
@@ -118,7 +124,7 @@ class FanDriver(DriverBase):
         byte5 = b"\x5A"
 
         byte_data = byte0to3 + byte4 + byte5
-        self.logger.info(f"查询指令:{byte_data.hex()}")
+        self.logger.debug(f"查询指令:{byte_data.hex()}")
         # self.ser.write(byte_data)
         # 写以及写出错的处理
         write_status, err = self.__serwrite(byte_data)
@@ -127,7 +133,7 @@ class FanDriver(DriverBase):
             return False
 
         response = self.read_msg()
-        self.logger.info(f"查询回复:{response.hex()}")
+        self.logger.debug(f"查询回复:{response.hex()}")
         # response = self.ser.read_until(b"\xA5")
         # 检测收到的数据是否是预期的数据，否则报错
         if len(response) != 18:

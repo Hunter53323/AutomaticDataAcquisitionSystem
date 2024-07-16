@@ -97,6 +97,9 @@ class TestDevice(DriverBase):
 
     def connect(self) -> bool:
         try:
+            if self.client.is_socket_open():
+                self.conn_state = True
+                return True
             self.conn_state = self.client.connect()
             self.logger.info(f"client连接到服务器{self.client}")
             return True
