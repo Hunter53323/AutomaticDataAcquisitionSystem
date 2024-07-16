@@ -14,4 +14,4 @@ TABLE_COLUMNS = {
     "时间戳": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",  # 记录的时间戳，默认为当前时间
 }
 
-outputdb = MySQLDatabase("localhost", "root", "iwin", "test", TABLE_NAME, TABLE_COLUMNS)
+outputdb = MySQLDatabase("localhost", "liuqi", "liuqi9713", "world", TABLE_NAME, TABLE_COLUMNS)
