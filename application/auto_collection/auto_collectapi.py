@@ -1,10 +1,12 @@
 from io import StringIO
+
+from core.database import TABLE_TRANSLATE
 from . import autocollect
 from flask import request, jsonify
 import csv
 from werkzeug.datastructures import FileStorage
 from core.auto_collection import auto_collector
-
+from core import database
 column_mapping = {
             '转速': 'set_speed',
             '速度环补偿系数': 'speed_loop_compensates_bandwidth',
@@ -38,13 +40,23 @@ def upload_csv():
         # csv_context 是一个字典列表，其中每个字典表示 CSV 文件中的一行
         csv_context = list(reader)
         # 将 csv_context 转换为所需的格式
-        para_pool_context = {column_mapping[key]: [] for key in reader.fieldnames if key!='ID'}
+        CH2EN={}
+        translated_csv_context = []
         for row in csv_context:
-            for key, value in row.items():
-                if key != 'ID':
-                    para_pool_context[column_mapping[key]].append(value)
-
-        auto_collector.init_para_pool_from_csv(para_pool_context)
+            del row['ID']
+            translated_row = {}
+            for CHkey, value in row.items():
+                if CHkey not in CH2EN:
+                    for en, ch in TABLE_TRANSLATE.items():
+                        if ch == CHkey:
+                            CH2EN[ch] = en
+                            break
+                    else:
+                        raise Exception(f"没有对应的控制参数：{CHkey}")
+                translated_row[CH2EN[CHkey]] = value
+            translated_csv_context.append(translated_row)
+        print(translated_csv_context)
+        auto_collector.init_para_pool_from_csv(translated_csv_context)
         return jsonify({"line_count": line_count}), 200
 
     return jsonify({"message": "Unknown error"}), 500
