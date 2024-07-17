@@ -132,7 +132,13 @@ class FanDriver(DriverBase):
             self.logger.error(f"查询指令写入串口报错! reason:{err},查询指令:{byte_data.hex()}")
             return False
 
-        response = self.read_msg()
+        response, status = self.read_msg()
+        if not status:
+            self.logger.error(f"查询指令读取串口数据报错!,count:{read_count}")
+            if read_count == 3:
+                return False
+            return self.read_all(read_count=read_count + 1)
+
         self.logger.debug(f"查询回复:{response.hex()}")
         # response = self.ser.read_until(b"\xA5")
         # 检测收到的数据是否是预期的数据，否则报错
@@ -176,14 +182,19 @@ class FanDriver(DriverBase):
             self.breakdown = True
         return True
 
-    def read_msg(self):
-        while self.ser.in_waiting < 4:
-            time.sleep(0.01)
-        recv = self.ser.read(4)
-        while self.ser.in_waiting < recv[3] + 2:
-            time.sleep(0.01)
-        recv = recv + self.ser.read(recv[3] + 2)
-        return recv
+    def read_msg(self) -> tuple[bytes, bool]:
+        try:
+            while self.ser.in_waiting < 4:
+                time.sleep(0.005)
+            recv = self.ser.read(4)
+            while self.ser.in_waiting < recv[3] + 2:
+                time.sleep(0.005)
+            recv = recv + self.ser.read(recv[3] + 2)
+            return recv, True
+        except Exception as e:
+            self.logger.error(f"error:{e}, recv:{recv}")
+            self.logger.error(f"error_data:{self.ser.read_all()}")
+            return b"", False
 
     def handle_breakdown(self, breakdown: int) -> bool:
         try:
@@ -207,15 +218,19 @@ class FanDriver(DriverBase):
         except Exception as e:
             self.logger.error(f"error:{e}")
             return False
-
-    def write(self, para_dict: dict[str, any], write_count: int = 1) -> bool:
-        """
-        控制指令
-        """
+        
+    def write(self, para_dict: dict[str, any]) -> bool:
         if not self.check_writable():
             self.logger.error(f"串口不可写!")
             return False
         self.__iswriting = True
+        status = self.write_execute(para_dict)
+        self.__iswriting = False
+        return status
+    def write_execute(self, para_dict: dict[str, any], write_count: int = 1) -> bool:
+        """
+        控制指令
+        """
         # 有无控制命令
         if self.command in para_dict:
             command = para_dict[self.command]
@@ -261,7 +276,6 @@ class FanDriver(DriverBase):
         write_status, err = self.__serwrite(write_bytes)
         if not write_status:
             self.logger.error(f"控制指令写入串口报错！ 控制指令:{write_bytes.hex()},count:{write_count}")
-            self.__iswriting = False
             return False
 
         response = self.ser.read_until(b"\xA5")
@@ -271,7 +285,6 @@ class FanDriver(DriverBase):
             self.logger.error(
                 f"控制回复报错! len(response) != 7?:{len(response) != 7},控制回复:{response.hex()},count:{write_count}")
             if write_count == 3:
-                self.__iswriting = False
                 return False
             return self.write(para_dict, write_count=write_count + 1)
 
@@ -289,19 +302,16 @@ class FanDriver(DriverBase):
                     self.breakdown = False
                 for key in self.curr_para:
                     self.curr_para[key] = para_dict[key]
-                self.__iswriting = False
                 return True
             else:
                 self.logger.error(
                     f"控制回复校验结果报错! recv:{response[4].to_bytes()},shoulder:\x01,count:{write_count}")
                 if write_count == 3:
-                    self.__iswriting = False
                     return False
                 return self.write(para_dict, write_count=write_count + 1)
         else:
             self.logger.error(
                 f"控制回复校验和报错! recv:{response[5].to_bytes()},cal:{response_checksum},count:{write_count}")
-            self.__iswriting = False
             return False
 
     def __decode_read_response(self, response: bytes) -> tuple[float, float, float, float, float, list[int]]:
