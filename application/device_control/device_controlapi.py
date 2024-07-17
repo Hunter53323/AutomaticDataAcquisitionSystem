@@ -1,5 +1,6 @@
 from . import control
 from core.communication import communicator
+from core.database import TABLE_TRANSLATE
 from flask import request, jsonify
 
 
@@ -101,3 +102,19 @@ def check_data():
     返回{"status": True or False}
     """
     return jsonify({"status": communicator.check_thread_alive()}), 200
+
+
+@control.route("/parameters", methods=["GET"])
+def get_parameters():
+    """
+    获取参数,返回的是所有设备的参数字典的key
+    """
+    return jsonify(communicator.get_para_map().keys()), 200
+
+
+@control.route("/datatranslate", methods=["GET"])
+def get_data_translate():
+    """
+    获取中英参数对照表，返回的是一个字典
+    """
+    return jsonify(TABLE_TRANSLATE), 200
