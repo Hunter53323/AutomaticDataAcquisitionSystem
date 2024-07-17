@@ -1,4 +1,5 @@
 var fan_running = false
+var auto_collect = false
 
 function sendCSVToServer() {
     const fileInput = document.getElementById('csvFileInput');
@@ -71,8 +72,8 @@ function start_device() {
 
 function click_start_collect_button() {
     const formData = new FormData();
-    formData.append('signal', 'start');
-    fetch('/collect', {
+    formData.append('command', 'start');
+    fetch('/collect/control', {
         method: 'POST',
         body: formData,
     })
@@ -83,11 +84,8 @@ function click_start_collect_button() {
             document.getElementById('pause_collect_button').disabled = false;
             document.getElementById('stop_collect_button').disabled = false;
             document.getElementById('start_collect_button').disabled = true;
-            if (!data.complete){
-                setTimeout(current_progress, 5000); // 每2秒轮询一次
-            } else {
-                click_stop_collect_button();
-            }
+            setTimeout(current_progress, 1000); // 每秒轮询一次
+            auto_collect = true
         }
       }
     )
@@ -97,18 +95,18 @@ function click_start_collect_button() {
 }
 
 function current_progress() {
-    const formData = new FormData();
-    formData.append('signal', 'search');
-    fetch('/collect', {
-        method: 'POST',
-        body: formData,
+    fetch('/collect/view', {
+        method: 'GET',
     })
     .then(response => response.json())
     .then(data => {
       console.log('Server response:', data);
-        if (data.status == 'search'){
-            document.getElementById('current-data-count').innerText = data.current_data
-        }
+      document.getElementById('current-data-count').innerText = data.success
+      if (data.complete == true){
+        click_stop_collect_button();
+      } else {
+        setTimeout(current_progress, 1000); // 每秒轮询一次
+      }
       }
     )
     .catch(error => {
@@ -119,11 +117,11 @@ function current_progress() {
 function click_pause_collect_button() {
     const formData = new FormData();
     if (document.getElementById('pause_collect_button').innerText == '暂停') {
-        formData.append('signal', 'pause');
+        formData.append('command', 'pause');
     } else {
-        formData.append('signal', 'continue');
+        formData.append('command', 'continue');
     }
-    fetch('/collect', {
+    fetch('/collect/control', {
         method: 'POST',
         body: formData,
       })
@@ -140,14 +138,14 @@ function click_pause_collect_button() {
       }
     })
     .catch(error => {
-      console.error('Signal error', error);
+      console.error('Command error', error);
     });
 }
 
 function click_stop_collect_button() {
     const formData = new FormData();
-    formData.append('signal', 'stop');
-    fetch('/collect', {
+    formData.append('command', 'stop');
+    fetch('/collect/control', {
         method: 'POST',
         body: formData,
       })
@@ -161,11 +159,12 @@ function click_stop_collect_button() {
             document.getElementById('start_collect_button').disabled = true;
             document.getElementById('export_data').disabled = false;
             document.getElementById('clear').disabled = false;
+            auto_collect = false
         }
       }
     )
     .catch(error => {
-      console.error('Signal error', error);
+      console.error('Command error', error);
     });
 }
 
