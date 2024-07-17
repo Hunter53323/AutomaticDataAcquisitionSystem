@@ -46,9 +46,9 @@ def api_showall():
     offset = (page - 1) * per_page
     cursor = outputdb.connection.cursor()
     try:
-        cursor.execute("SELECT COUNT(*) FROM 风机数据")
+        cursor.execute(f"SELECT COUNT(*) FROM {outputdb.table_name}")
         total_count = cursor.fetchone()[0]
-        cursor.execute("SELECT * FROM 风机数据 LIMIT %s OFFSET %s", (per_page, offset))
+        cursor.execute(f"SELECT * FROM {outputdb.table_name} LIMIT %s OFFSET %s", (per_page, offset))
         data = cursor.fetchall()
         total_pages = (total_count + per_page - 1) // per_page  # 计算总页数
         return jsonify(

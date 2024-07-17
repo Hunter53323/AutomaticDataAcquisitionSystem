@@ -1,5 +1,7 @@
 from .drivers.driver_base import DriverBase
 from .exception_handling import BreakdownHanding
+import logging
+from logging.handlers import RotatingFileHandler
 
 
 class Communication:
@@ -10,7 +12,25 @@ class Communication:
         self.__command_map: dict[str, DriverBase] = {}
         self.__is_read_all = False
         self.breakdown_handler = BreakdownHanding()
-        pass
+        self.logger = self.set_logger()
+
+    def set_logger(self) -> logging.Logger:
+        # 创建一个日志记录器
+        logger = logging.getLogger("communication")
+        logger.setLevel(logging.DEBUG)  # 设置日志级别
+        formatter = logging.Formatter("%(asctime)s-%(module)s-%(funcName)s-%(lineno)d-%(name)s-%(message)s")  # 其中name为getlogger指定的名字
+
+        rHandler = RotatingFileHandler(filename="./log/" + "communication" + ".log", maxBytes=1024 * 1024, backupCount=1)
+        rHandler.setLevel(logging.DEBUG)
+        rHandler.setFormatter(formatter)
+
+        console = logging.StreamHandler()
+        console.setLevel(logging.DEBUG)
+        console.setFormatter(formatter)
+
+        logger.addHandler(rHandler)
+        logger.addHandler(console)
+        return logger
 
     def __update_map(self, driver: DriverBase):
         self.__para_map.update({key: driver for key in driver.curr_para.keys()})
@@ -21,7 +41,7 @@ class Communication:
         para_command_map = {**self.__para_map, **self.__command_map}
         for driver in self.drivers:
             if driver.breakdown == True:
-                print(driver.device_name, "发生故障，请先处理故障")
+                self.logger.error(f"{driver.device_name}发生故障，请先处理故障")
                 return False
         tmp_dict: dict[DriverBase, dict[str, any]] = {}
         error_key_list: list[str] = []
@@ -33,11 +53,12 @@ class Communication:
                 tmp_dict[para_command_map[key]] = {}
             tmp_dict[para_command_map[key]].update({key: val})
         if error_key_list:
-            print("非法参数", *error_key_list)
+            self.logger.error(f"非法参数{error_key_list}")
             return False
         flag = True
         for key, val in tmp_dict.items():
             flag = flag & key.write(val)
+        self.clear_curr_data()
         return flag
 
     def read(self, data_name_list: list[str] = None) -> dict[str, any]:
@@ -56,7 +77,7 @@ class Communication:
                 tmp_dict[self.__data_map[key]] = []
             tmp_dict[self.__data_map[key]].append(key)
         if error_key_list:
-            print("非法参数", *error_key_list)
+            self.logger.error(f"非法参数{error_key_list}")
         for key, val in tmp_dict.items():
             result = {**result, **key.read(val)}
         return result
@@ -77,7 +98,7 @@ class Communication:
                 tmp_dict[self.__para_map[key]] = []
             tmp_dict[self.__para_map[key]].append(key)
         if error_key_list:
-            print("非法参数", *error_key_list)
+            self.logger.error(f"非法参数{error_key_list}")
         for key, val in tmp_dict.items():
             result = {**result, **key.get_curr_para(val)}
         return result
@@ -141,7 +162,7 @@ class Communication:
                 for key in para_dict.keys():
                     if key not in driver.hardware_para:
                         err_key.append(key)
-                        print("非法参数", key)
+                        self.logger.error(f"非法参数{key}")
                 for key in err_key:
                     para_dict.pop(key)
                 return driver.update_hardware_parameter(para_dict)
@@ -152,3 +173,8 @@ class Communication:
             if driver.device_name == device_name:
                 return driver.get_hardware_parameter()
         return {}
+
+    def clear_curr_data(self):
+        for driver in self.drivers:
+            driver.clear_curr_data()
+        return True

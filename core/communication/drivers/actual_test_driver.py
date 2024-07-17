@@ -22,6 +22,15 @@ class TestDevice(DriverBase):
         self.client = ModbusTcpClient(host=ip, port=port)
 
     def write(self, para_dict: dict[str, any]) -> bool:
+        if not self.check_writable():
+            self.logger.error(f"串口不可写!")
+            return False
+        self.__iswriting = True
+        status = self.write_execute(para_dict)
+        self.__iswriting = False
+        return status
+
+    def write_execute(self, para_dict: dict[str, any], write_count: int = 1) -> bool:
         """
         para_dict示例{"test_device_command":"command", "load":float}
         command:"start_device","stop_device","P_mode","N_mode","N1_mode","write"
@@ -32,13 +41,9 @@ class TestDevice(DriverBase):
         # slave = 1  # 设置从机地址
         # result = self.client.read_holding_registers(address=address, count=count * coding, slave=slave,
         #                                             timeout=5)  # 请求应该为00 01 00 00 00 06 01 03 00 01 00 0C
-        if not self.check_writable():
-            self.logger.error(f"串口不可写!")
-            return False
-        self.__iswriting = True
+
         if not self.conn_state:
             self.logger.error(f"服务器未连接! 非法写！")
-            self.__iswriting = False
             return False
         if self.command not in para_dict:
             command = "write"
@@ -76,12 +81,10 @@ class TestDevice(DriverBase):
             result = self.client.write_registers(address, value, slave=1)
         else:
             self.logger.error(f"发送指令错误：{command}")
-            self.__iswriting = False
             return False
         self.logger.info(f"发送指令：{command, value}")
         if result.isError():
             self.logger.error(f"发送失败！")
-            self.__iswriting = False
             return False
         else:
             # 确认写正确后，更改状态值
@@ -92,7 +95,8 @@ class TestDevice(DriverBase):
             for key in self.curr_para:
                 if key in para_dict:
                     self.curr_para[key] = para_dict[key]
-            self.__iswriting = False
+                else:
+                    self.logger.error(f"参数错误！")
             return True
 
     def connect(self) -> bool:

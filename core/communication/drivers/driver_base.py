@@ -15,7 +15,7 @@ class DriverBase(ABC):
         self.__iswriting = False
         self.__isreading = False
         self.curr_data = {key: 0 for key in data_list}
-        self.curr_para = {key: None for key in para_list}
+        self.curr_para = {key: 0 for key in para_list}
         self.command = None
         self.hardware_para = []
         self.logger = self.set_logger()
@@ -111,10 +111,11 @@ class DriverBase(ABC):
             if stop_event.is_set():
                 print(f"{self.device_name}:read_all线程正在退出")
                 break
-            if not self.__iswriting:
-                self.__isreading = True
-                self.read_all()
-                self.__isreading = False
+            while self.__iswriting:
+                time.sleep(0.005)
+            self.__isreading = True
+            self.read_all()
+            self.__isreading = False
             time.sleep(0.05)
 
     def check_thread_alive(self) -> bool:
@@ -140,3 +141,6 @@ class DriverBase(ABC):
         for key in para_name_list:
             result = {**result, key: self.curr_para[key]}
         return result
+
+    def clear_curr_data(self):
+        self.curr_data = {key: 0 for key in self.curr_data.keys()}

@@ -123,14 +123,17 @@
             <thead>
                 <tr>
                     <th>ID</th>
-                    <th>风机名称</th>
-                    <th>风机型号</th>
+                    <!-- <th>风机名称</th>
+                    <th>风机型号</th> -->
                     <th>转速</th>
                     <th>速度环补偿系数</th>
                     <th>电流环带宽</th>
                     <th>观测器补偿系数</th>
                     <th>负载量</th>
-                    <th>功率</th>
+                    <th>输入功率</th>
+                    <th>输出功率</th>
+                    <th>效率</th>
+                    <th>故障</th>
                     <th>时间戳</th>
                 </tr>
             </thead>
@@ -164,7 +167,7 @@
         // fetchData 函数
         function fetchData() {
             $.ajax({
-                url: '/api/data/page',
+                url: '/db/data/page',
                 type: 'GET',
                 data: {page: currentPage, per_page: perPage},
                 dataType: 'json',
@@ -279,6 +282,7 @@
                         '<td>' + row[6] + '</td>' +
                         '<td>' + row[7] + '</td>' +
                         '<td>' + row[8] + '</td>' +
+                        '<td>' + row[9] + '</td>' +
                         '<td>' + timestamp + '</td>' +
                         '</tr>'
                     );
@@ -322,6 +326,7 @@
                         '<td>' + row[6] + '</td>' +
                         '<td>' + row[7] + '</td>' +
                         '<td>' + row[8] + '</td>' +
+                        '<td>' + row[9] + '</td>' +
                         '<td>' + timestamp + '</td>' +
                         '</tr>'
                     );
@@ -371,7 +376,7 @@
             };
 
             $.ajax({
-                url: '/api/data',
+                url: '/db/data',
                 type: 'POST',
                 data: JSON.stringify({'data_list': [data]}),
                 contentType: 'application/json',
@@ -398,7 +403,7 @@
 
             // 发送AJAX请求删除数据
             $.ajax({
-                url: '/api/data',
+                url: '/db/data',
                 type: 'DELETE',
                 data: JSON.stringify({'ids_input': ids}),
                 contentType: 'application/json',
@@ -439,7 +444,7 @@
 
             // 发送AJAX请求更新数据
             $.ajax({
-                url: '/api/data',
+                url: '/db/data',
                 type: 'PUT',
                 data: JSON.stringify({'ids': idsString, 'update_data': updateData}),
                 contentType: 'application/json',
@@ -474,7 +479,7 @@
 
             // 发送AJAX请求
             $.ajax({
-                url: '/api/data',
+                url: '/db/data',
                 type: 'GET',
                 data: params,
                 dataType: 'json',
@@ -508,7 +513,7 @@
 
             // 发送AJAX请求导出数据
             $.ajax({
-                url: '/api/export',
+                url: '/db/export',
                 type: 'GET',
                 data: {
                     ids_input: ids_export.join(','), // 确保这里将数组转换为字符串
@@ -537,7 +542,7 @@
             if (confirmDelete) {
                 // 如果用户点击“是”，则发送请求删除所有数据
                 $.ajax({
-                    url: '/api/clear_data', // 确保这个URL匹配后端定义的路由
+                    url: '/db/clear_data', // 确保这个URL匹配后端定义的路由
                     type: 'DELETE',
                     success: function(response) {
                         if (response.status === 'success') {

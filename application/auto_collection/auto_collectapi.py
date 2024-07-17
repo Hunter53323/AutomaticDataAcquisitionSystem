@@ -6,14 +6,16 @@ from flask import request, jsonify
 import csv
 from werkzeug.datastructures import FileStorage
 from core.auto_collection import auto_collector
-from core import database
+from core.database import TABLE_TRANSLATE
+
 column_mapping = {
-            '转速': 'set_speed',
-            '速度环补偿系数': 'speed_loop_compensates_bandwidth',
-            '电流环带宽': 'current_loop_compensates_bandwidth',
-            '观测器补偿系数': 'observer_compensates_bandwidth',
-            '负载量': 'load'
-        }
+    "转速": "set_speed",
+    "速度环补偿系数": "speed_loop_compensates_bandwidth",
+    "电流环带宽": "current_loop_compensates_bandwidth",
+    "观测器补偿系数": "observer_compensates_bandwidth",
+    "负载量": "load",
+}
+
 
 @autocollect.route("/csvupload", methods=["POST"])
 # 上传设备数据采集相关的csv文件
@@ -32,7 +34,7 @@ def upload_csv():
         # 在这里处理文件，例如保存文件或读取内容
         # file.save(os.path.join('uploads', file.filename))  # 保存文件
         csv_data: str = file.read().decode("utf-8")
-        line_count = csv_data.count("\n")-1  # 行数等于换行符数量加1
+        line_count = csv_data.count("\n") - 1  # 行数等于换行符数量加1
         # 处理CSV数据，例如解析、保存到数据库等
         # ...
         file = StringIO(csv_data)
