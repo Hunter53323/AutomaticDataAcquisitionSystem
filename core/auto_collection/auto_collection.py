@@ -195,8 +195,26 @@ class AutoCollection:
         if self.__auto_running:
             print("正在自动采集，请结束或暂停后初始化参数队列")
             return False
-        pass
+        print("初始化参数队列")
+        self.__para_vals.clear()
+        error_key_list: list[str] = []
+        self.__para_vals = {key: None for key in self.communication.get_para_map().keys()}
+        for key, val in para_dict.items():
+            if key not in self.__para_vals.keys():
+                error_key_list.append(key)
+                continue
+            self.__para_vals[key] = val
+        if error_key_list:
+            self.__para_vals.clear()
+            print("非法参数", *error_key_list)
+            return False
+        if None in self.__para_vals.values():
+            print("存在未指派的参数!")
+            return False
+        para_pool = itertools.product(*self.__para_vals.values())
+        self.__para_queue = deque(para_pool)
         self.__para_queue_inited = True
+        return True
 
     def is_auto_running(self):
         return self.__auto_running
