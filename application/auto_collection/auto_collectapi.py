@@ -40,17 +40,45 @@ def upload_csv():
         # csv_context 是一个字典列表，其中每个字典表示 CSV 文件中的一行
         csv_context = list(reader)
         # 将 csv_context 转换为所需的格式
-        para_pool_context = {column_mapping[key]: [] for key in reader.fieldnames if key != "ID"}
+        CH2EN = {}
+        translated_csv_context = []
         for row in csv_context:
-            for key, value in row.items():
-                if key != "ID":
-                    para_pool_context[column_mapping[key]].append(value)
-
-        auto_collector.init_para_pool_from_csv(para_pool_context)
+            del row["ID"]
+            translated_row = {}
+            for CHkey, value in row.items():
+                if CHkey not in CH2EN:
+                    for en, ch in TABLE_TRANSLATE.items():
+                        if ch == CHkey:
+                            CH2EN[ch] = en
+                            break
+                    else:
+                        auto_collector.logger.error(f"没有对应的控制参数：{CHkey}")
+                translated_row[CH2EN[CHkey]] = value
+            translated_csv_context.append(translated_row)
+        auto_collector.init_para_pool_from_csv(translated_csv_context)
         return jsonify({"line_count": line_count}), 200
+    #     # 在这里处理文件，例如保存文件或读取内容
+    #     # file.save(os.path.join('uploads', file.filename))  # 保存文件
+    #     csv_data: str = file.read().decode("utf-8")
+    #     line_count = csv_data.count("\n") - 1  # 行数等于换行符数量加1
+    #     # 处理CSV数据，例如解析、保存到数据库等
+    #     # ...
+    #     file = StringIO(csv_data)
+    #     reader = csv.DictReader(file)
+    #     # csv_context 是一个字典列表，其中每个字典表示 CSV 文件中的一行
+    #     csv_context = list(reader)
+    #     # 将 csv_context 转换为所需的格式
+    #     para_pool_context = {column_mapping[key]: [] for key in reader.fieldnames if key != "ID"}
+    #     for row in csv_context:
+    #         for key, value in row.items():
+    #             if key != "ID":
+    #                 para_pool_context[column_mapping[key]].append(value)
 
-    return jsonify({"message": "Unknown error"}), 500
-    pass
+    #     auto_collector.init_para_pool_from_csv(para_pool_context)
+    #     return jsonify({"line_count": line_count}), 200
+
+    # return jsonify({"message": "Unknown error"}), 500
+    # pass
 
 
 @autocollect.route("/control", methods=["POST"])
