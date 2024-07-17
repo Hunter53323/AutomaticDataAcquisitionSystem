@@ -1,8 +1,18 @@
+from io import StringIO
 from . import autocollect
 from flask import request, jsonify
 import csv
 from werkzeug.datastructures import FileStorage
 from core.auto_collection import auto_collector
+from core.database import TABLE_TRANSLATE
+
+column_mapping = {
+    "转速": "set_speed",
+    "速度环补偿系数": "speed_loop_compensates_bandwidth",
+    "电流环带宽": "current_loop_compensates_bandwidth",
+    "观测器补偿系数": "observer_compensates_bandwidth",
+    "负载量": "load",
+}
 
 
 @autocollect.route("/csvupload", methods=["POST"])
@@ -22,10 +32,21 @@ def upload_csv():
         # 在这里处理文件，例如保存文件或读取内容
         # file.save(os.path.join('uploads', file.filename))  # 保存文件
         csv_data: str = file.read().decode("utf-8")
-        line_count = csv_data.count("\n")  # 行数等于换行符数量加1
+        line_count = csv_data.count("\n") - 1  # 行数等于换行符数量加1
         # 处理CSV数据，例如解析、保存到数据库等
         # ...
-        auto_collector.init_para_pool(csv_data)
+        file = StringIO(csv_data)
+        reader = csv.DictReader(file)
+        # csv_context 是一个字典列表，其中每个字典表示 CSV 文件中的一行
+        csv_context = list(reader)
+        # 将 csv_context 转换为所需的格式
+        para_pool_context = {column_mapping[key]: [] for key in reader.fieldnames if key != "ID"}
+        for row in csv_context:
+            for key, value in row.items():
+                if key != "ID":
+                    para_pool_context[column_mapping[key]].append(value)
+
+        auto_collector.init_para_pool_from_csv(para_pool_context)
         return jsonify({"line_count": line_count}), 200
 
     return jsonify({"message": "Unknown error"}), 500

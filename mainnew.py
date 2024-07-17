@@ -38,7 +38,7 @@ def get_apis():
 
 
 if __name__ == "__main__":
-    socketio.run(app, debug=True, host="127.0.0.1", port=5000)
+    socketio.run(app, debug=True, host="127.0.0.1", port=5000, allow_unsafe_werkzeug=True)
 
 
 # 考虑浏览器页面意外关闭，也就是disconnect的时候，如何处理，如果有正在进行的自动采集，那么需要暂停自动采集

@@ -223,17 +223,45 @@ class AutoCollection:
         return True
 
     def init_para_pool_from_csv(self, para_dict: dict, data_count: int) -> bool:
-        import random
+        if self.__auto_running:
+            self.logger.warning("正在自动采集，请结束或暂停后初始化参数队列")
+            return False
+        self.logger.info("初始化参数队列")
+        self.__para_vals.clear()
+        error_key_list: list[str] = []
+        self.__para_vals = {key: None for key in self.communication.get_para_map().keys()}
+        for key, val in para_dict.items():
+            if key not in self.__para_vals.keys():
+                error_key_list.append(key)
+                continue
+            self.__para_vals[key] = val
+        if error_key_list:
+            self.__para_vals.clear()
+            self.logger.error(f"非法参数{error_key_list}")
+            return False
+        if None in self.__para_vals.values():
+            self.logger.error("存在未指派的参数!")
+            return False
+        para_pool = itertools.product(*self.__para_vals.values())
+        self.__para_queue = deque(para_pool)
+        self.__para_queue_inited = True
+        return True
 
+    def init_para_pool_from_csv(self, para_dict_list: list[dict]) -> bool:
         if self.__auto_running:
             self.logger.warning("正在自动采集，请结束或暂停后初始化参数队列")
             return False
         self.__para_vals = {key: 0 for key in self.communication.get_para_map().keys()}
+        data_count = len(para_dict_list)
+        para_dict_list_key = para_dict_list[0].keys()
+        for key in self.__para_vals.keys():
+            if key not in para_dict_list_key:
+                self.logger.error(f"参数{key}不存在")
+                return False
 
         for i in range(data_count):
             for key in self.__para_vals.keys():
-                self.__para_vals[key] = random.randint(0, 100)
-            self.__para_vals["set_speed"] = (i + 1) * 200
+                self.__para_vals[key] = para_dict_list[i][key]
             self.__para_queue.append(tuple(self.__para_vals.values()))
 
         self.__para_queue_inited = True
