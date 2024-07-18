@@ -96,6 +96,9 @@ class AutoCollection:
 
     def clear_para(self):
         # 清理参数，结束一次采集循环
+        if self.__auto_running:
+            self.logger.warning("正在自动采集，无法清空参数,请先停止自动采集")
+            return False
         self.__para_vals: dict[str, list[any]] = {}
         self.__para_queue: deque[dict[str, any]] = deque()
         self.__stable_state: bool = False

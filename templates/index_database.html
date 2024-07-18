@@ -69,14 +69,18 @@
         <!-- 数据增加表单 -->
         <h2>增加数据</h2>
         <form id="add-data-form">
-            <input type="text" id="fan-name" placeholder="风机名称" >
-            <input type="text" id="fan-model" placeholder="风机型号" >
-            <input type="text" id="rotation-speed" placeholder="转速">
+            <!-- <input type="text" id="fan-name" placeholder="风机名称" >
+            <input type="text" id="fan-model" placeholder="风机型号" > -->
+            <input type="text" id="set-speed" placeholder="设定转速">
+            <input type="text" id="actual-speed" placeholder="实际转速">
             <input type="text" id="speed-compensation" placeholder="速度环补偿系数">
             <input type="text" id="current-bandwidth" placeholder="电流环带宽">
             <input type="text" id="observer-compensation" placeholder="观测器补偿系数">
             <input type="text" id="load" placeholder="负载量">
-            <input type="text" id="power" placeholder="功率">
+            <input type="text" id="input_power" placeholder="输入功率">
+            <input type="text" id="output_power" placeholder="输出功率">
+            <input type="text" id="efficiency" placeholder="效率">
+            <input type="text" id="fault" placeholder="故障">
             <button type="submit">增加数据</button>
         </form>
         
@@ -109,7 +113,7 @@
         <form id="export-data-form">
             <input type="text" id="export-mixed-ids" placeholder="支持混合ID，用逗号分隔，1-3,4">
             <input type="text" id="export-additional-conditions" placeholder="支持附加条件，用AND连接，例如: 转速 > 1000 AND 风机型号 = '型号A'">
-            <input type="text" id="export-filename" placeholder="输入导出的CSV文件名，例如: fans_data.csv">
+            <input type="text" id="export-filename" placeholder="输入导出的文件名，例如: fans_data">
             <button type="submit">导出数据</button>
         </form>
     </div>
@@ -125,7 +129,9 @@
                     <th>ID</th>
                     <!-- <th>风机名称</th>
                     <th>风机型号</th> -->
-                    <th>转速</th>
+                    <th>设定转速</th>
+                    <th>目标转速</th>
+                    <th>实际转速</th>
                     <th>速度环补偿系数</th>
                     <th>电流环带宽</th>
                     <th>观测器补偿系数</th>
@@ -269,25 +275,32 @@
 
                 // 将获取的数据插入到表格中
                 $.each(data, function(index, row) {
-                    // 转换时间戳为可读格式
-                    var timestamp = new Date(row[9]).toLocaleString();
-                    tbody.append(
-                        '<tr>' +
-                        '<td>' + row[0] + '</td>' +
-                        '<td>' + row[1] + '</td>' +
-                        '<td>' + row[2] + '</td>' +
-                        '<td>' + row[3] + '</td>' +
-                        '<td>' + row[4] + '</td>' +
-                        '<td>' + row[5] + '</td>' +
-                        '<td>' + row[6] + '</td>' +
-                        '<td>' + row[7] + '</td>' +
-                        '<td>' + row[8] + '</td>' +
-                        '<td>' + row[9] + '</td>' +
-                        '<td>' + timestamp + '</td>' +
-                        '</tr>'
-                    );
+                    tbody.append(showData(row));
                 });
             }   
+
+            function showData(row) {
+                // 转换时间戳为可读格式
+                var timestamp = new Date(row[12]).getTime() + (new Date().getTimezoneOffset() * 60000);
+                var localtime = new Date(timestamp).toLocaleString();
+                return (
+                    '<tr>' +
+                    '<td>' + row[0] + '</td>' +
+                    '<td>' + row[1] + '</td>' +
+                    '<td>' + row[2] + '</td>' +
+                    '<td>' + row[3] + '</td>' +
+                    '<td>' + row[4] + '</td>' +
+                    '<td>' + row[5] + '</td>' +
+                    '<td>' + row[6] + '</td>' +
+                    '<td>' + row[7] + '</td>' +
+                    '<td>' + row[8] + '</td>' +
+                    '<td>' + row[9] + '</td>' +
+                    '<td>' + row[10] + '</td>' +
+                    '<td>' + row[11] + '</td>' +
+                    '<td>' + localtime + '</td>' +
+                    '</tr>'
+                );
+            }
 
 
             // 用于显示数据的函数
@@ -313,23 +326,7 @@
 
                 // 将获取的数据插入到表格中
                 $.each(data, function(index, row) {
-                    // 转换时间戳为可读格式
-                    var timestamp = new Date(row[9]).toLocaleString();
-                    tbody.append(
-                        '<tr>' +
-                        '<td>' + row[0] + '</td>' +
-                        '<td>' + row[1] + '</td>' +
-                        '<td>' + row[2] + '</td>' +
-                        '<td>' + row[3] + '</td>' +
-                        '<td>' + row[4] + '</td>' +
-                        '<td>' + row[5] + '</td>' +
-                        '<td>' + row[6] + '</td>' +
-                        '<td>' + row[7] + '</td>' +
-                        '<td>' + row[8] + '</td>' +
-                        '<td>' + row[9] + '</td>' +
-                        '<td>' + timestamp + '</td>' +
-                        '</tr>'
-                    );
+                    tbody.append(showData(row));
                 });
             }   
 
@@ -365,14 +362,18 @@
         $('#add-data-form').submit(function(event) {
             event.preventDefault();
             var data = {
-                '风机名称': $('#fan-name').val() ,
-                '风机型号': $('#fan-model').val() ,
-                '转速': $('#rotation-speed').val() ,
+                // '风机名称': $('#fan-name').val() ,
+                // '风机型号': $('#fan-model').val() ,
+                '设定转速': $('#set-speed').val() ,
+                '实际转速': $('#actual-speed').val() ,
                 '速度环补偿系数': $('#speed-compensation').val() ,
                 '电流环带宽': $('#current-bandwidth').val() ,
                 '观测器补偿系数': $('#observer-compensation').val() ,
                 '负载量': $('#load').val() ,
-                '功率': $('#power').val()
+                '输入功率': $('#input_power').val() ,
+                '输出功率': $('#output_power').val() ,
+                '效率': $('#efficiency').val() ,
+                '故障': $('#fault').val()
             };
 
             $.ajax({
@@ -516,9 +517,9 @@
                 url: '/db/export',
                 type: 'GET',
                 data: {
+                    filename: filename, // 指定导出的CSV文件名
                     ids_input: ids_export.join(','), // 确保这里将数组转换为字符串
                     additional_conditions: additionalConditions, // 将附加条件作为查询参数
-                    filename: filename // 指定导出的CSV文件名
                 },
                 dataType: 'json',
                 success: function(response) {

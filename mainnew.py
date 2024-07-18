@@ -28,7 +28,7 @@ def index():
 
 # 路由到第二个index.html
 @app.route("/second")
-def index1():
+def index_database():
     return render_template("index_database.html")
 
 
@@ -42,3 +42,4 @@ if __name__ == "__main__":
 
 
 # 考虑浏览器页面意外关闭，也就是disconnect的时候，如何处理，如果有正在进行的自动采集，那么需要暂停自动采集
+# TODO：数据库导出的时候选择文件目录与文件名
