@@ -1,4 +1,5 @@
 var fan_running = false
+var test_device_running = false
 var auto_collect = false
 
 function sendCSVToServer() {
@@ -62,6 +63,36 @@ function start_device() {
           document.getElementById('start_device_button').innerText = '停止风机';
         } else {
           document.getElementById('start_device_button').innerText = '启动风机';
+        }
+      } else {
+        alert('设备启动失败');
+      }
+    }
+  })
+}
+
+function start_test_device() {
+  if (test_device_running == false) {
+    command = 'start';
+  } else {
+    command = 'stop';
+  }
+  const formData = new FormData();
+  formData.append('command', command);
+  fetch('/control/testdevice', {
+      method: 'POST',
+      body: formData,
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log('Server response:', data);
+    if ('status' in data) {
+      if (data.status == true){
+        test_device_running = !test_device_running;
+        if (test_device_running == true) {
+          document.getElementById('start_test_device_button').innerText = '停止测试设备';
+        } else {
+          document.getElementById('start_test_device_button').innerText = '启动测试设备';
         }
       } else {
         alert('设备启动失败');
@@ -159,6 +190,7 @@ function click_stop_collect_button() {
             document.getElementById('stop_collect_button').disabled = true;
             document.getElementById('start_collect_button').disabled = true;
             document.getElementById('export_data').disabled = false;
+            document.getElementById('pause_collect_button').innerText = '暂停';
             auto_collect = false
         }
       }
@@ -186,6 +218,7 @@ function click_clear_button() {
         document.getElementById('start_collect_button').disabled = true;
         document.getElementById('data-count').innerText = 0;
         document.getElementById('current-data-count').innerText = 0;
+        document.getElementById('pause_collect_button').innerText = '暂停';
 
         const formData = new FormData();
         formData.append('command', 'clear');

@@ -35,11 +35,14 @@ socket.on('connection', function(devicestatus) {
         document.getElementById('status').innerText = "已连接";
         document.getElementById('connect_button').innerText = '断开连接';
         document.getElementById('start_device_button').disabled = false;
+        document.getElementById('start_test_device_button').disabled = false;
+
     } else {
         isConnected = false;
         document.getElementById('status').innerText = "未连接";
         document.getElementById('connect_button').innerText = '连接设备';
         document.getElementById('start_device_button').disabled = true;
+        document.getElementById('start_test_device_button').disabled = true;
     }
 });
 
@@ -55,6 +58,9 @@ window.addEventListener('beforeunload', function (e) {
     } else {
         if (fan_running) {
             confirmationMessage = '风机正在运行，确定要离开此页吗？可能会导致不可预期的后果';
+        }
+        if (test_device_running) {
+            confirmationMessage = '测试设备正在运行，确定要离开此页吗？可能会导致不可预期的后果';
         }
     }
     
