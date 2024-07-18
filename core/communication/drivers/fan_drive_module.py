@@ -286,7 +286,7 @@ class FanDriver(DriverBase):
                 f"控制回复报错! len(response) != 7?:{len(response) != 7},控制回复:{response.hex()},count:{write_count}")
             if write_count == 3:
                 return False
-            return self.write(para_dict, write_count=write_count + 1)
+            return self.write_execute(para_dict, write_count=write_count + 1)
 
         # 根据校验和和校验结果判断是否成功
         response_checksum = self.__calculate_checksum(response[0:5])
@@ -308,7 +308,7 @@ class FanDriver(DriverBase):
                     f"控制回复校验结果报错! recv:{response[4].to_bytes()},shoulder:\x01,count:{write_count}")
                 if write_count == 3:
                     return False
-                return self.write(para_dict, write_count=write_count + 1)
+                return self.write_execute(para_dict, write_count=write_count + 1)
         else:
             self.logger.error(
                 f"控制回复校验和报错! recv:{response[5].to_bytes()},cal:{response_checksum},count:{write_count}")
