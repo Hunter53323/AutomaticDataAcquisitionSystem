@@ -1,11 +1,12 @@
-<script setup> 
-
+<script setup>
+import { reactive, ref } from 'vue'
 import ViewTitle from '../components/ViewTitle.vue'
+import DBTable from '../components/DBTable.vue'
+
 </script>
 
 <template>
-  <ViewTitle viewTitle="Database" /> 
+  <ViewTitle viewTitle="Database" />
+  <DBTable />
 </template>
 
-<style>
-</style>
