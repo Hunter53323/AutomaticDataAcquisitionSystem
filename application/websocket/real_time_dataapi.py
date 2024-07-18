@@ -1,3 +1,4 @@
+import time
 from flask_socketio import SocketIO
 from flask import Flask
 import random
@@ -16,6 +17,8 @@ def handle_socketio_events(socketio: SocketIO):
         """
         返回的数据格式为{"status": True or False}
         """
+        if communicator.is_read_all():
+            socketio.emit("connection", {"status": True})
         print("Client connected")
 
     @socketio.on("disconnect")
@@ -56,6 +59,8 @@ def handle_socketio_events(socketio: SocketIO):
             communicator.stop_read_all()
             communicator.disconnect()
         socketio.emit("connection", {"status": False})
+        time.sleep(0.1)
+        socketio.emit("data_from_device", {})
 
     @socketio.on("current_data")
     def get_data():

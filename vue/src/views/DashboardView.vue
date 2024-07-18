@@ -7,7 +7,6 @@ import { genFileId } from 'element-plus'
 import { UploadInstance, UploadProps, UploadRawFile } from 'element-plus'
 
 const contentDataShow = ref([])
-const contentParaShow = ref([])
 const url = 'http://127.0.0.1:5000'
 const urlCSV = url + '/collect/csvupload'
 const socket = io(url)
