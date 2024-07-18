@@ -2,7 +2,8 @@ import mysql.connector
 from mysql.connector import Error, MySQLConnection
 import csv
 import re
-from abc import ABC, abstractmethod
+import os
+from datetime import datetime
 import logging
 from logging.handlers import RotatingFileHandler
 
@@ -56,7 +57,7 @@ class MySQLDatabase:
             return self.create_connection()
 
     def create_table(self) -> bool:
-        if not self.check_connection:
+        if not self.check_connection():
             return False
         # 动态创建表结构，确保列定义格式正确
         column_definitions = ",\n                ".join([f"{name} {data_type}" for name, data_type in self.table_columns.items()])
@@ -64,7 +65,7 @@ class MySQLDatabase:
         create_table_sql = f"""
         CREATE TABLE IF NOT EXISTS `{self.table_name}` (
             {column_definitions}
-        );
+        ) character set = utf8;
         """
         try:
             cursor = self.connection.cursor()
@@ -83,7 +84,7 @@ class MySQLDatabase:
         根据给定的条件查询数据的ID，并返回一个包含所有ID的列表。
         :param conditions: 附加的查询条件，格式为字符串。
         """
-        if not self.check_connection:
+        if not self.check_connection():
             return []
         try:
             cursor = self.connection.cursor()
@@ -110,7 +111,7 @@ class MySQLDatabase:
         :param columns: 要查询的列名列表，如果为None，则查询所有列。
         :param conditions: 附加的查询条件，格式为字符串，例如 "转速 > 1000 AND 风机型号 = '类型A'"。
         """
-        if not self.check_connection:
+        if not self.check_connection():
             return []
 
         try:
@@ -157,12 +158,12 @@ class MySQLDatabase:
 
     def delete_data_by_ids(self, ids_input: list = []) -> bool:
         # ids_input的形式为：[4, 5, 6]。若输入为1,2,3或者1-3,5这种可调用self.parse_ids_input(ids_input)
-        if not self.check_connection:
+        if not self.check_connection():
             return False
 
         if not ids_input:
             self.clear_and_reset_ids()
-            query = f"DELETE FROM {self.table_name}"
+            return True
         else:
             ids = self.parse_ids_input(ids_input)
             placeholders = ", ".join(["%s"] * len(ids))
@@ -170,13 +171,19 @@ class MySQLDatabase:
 
         try:
             cursor = self.connection.cursor()
-            cursor.execute(query, ids if ids_input else ())
-            self.connection.commit()
-            if not ids_input:
-                self.logger.info("成功删除所有记录。")
+            cursor.execute(f"SELECT COUNT(*) FROM {self.table_name} WHERE ID IN ({placeholders})", ids)
+            count = cursor.fetchone()[0]
+            if count == len(ids):
+                cursor.execute(query, ids if ids_input else ())
+                self.connection.commit()
+                if not ids_input:
+                    self.logger.info("成功删除所有记录。")
+                else:
+                    self.logger.info(f"成功删除了ID为{ids}的记录。")
+                return True
             else:
-                self.logger.info(f"成功删除了ID为{ids}的记录。")
-            return True
+                self.logger.error(f"要删除的ID中存在不存在的记录。")
+                return False
         except Error as e:
             self.logger.error(f"发生数据库错误: {e}")
             self.connection.rollback()
@@ -189,7 +196,7 @@ class MySQLDatabase:
         """
         删除所有数据并重置ID为0。
         """
-        if not self.check_connection:
+        if not self.check_connection():
             return False
         try:
             cursor = self.connection.cursor()
@@ -210,7 +217,7 @@ class MySQLDatabase:
         """
         删除数据后，对数据的ID重新编排确保其连续性。
         """
-        if not self.check_connection:
+        if not self.check_connection():
             return False
         try:
             cursor = self.connection.cursor()
@@ -227,7 +234,10 @@ class MySQLDatabase:
                 cursor.close()
 
     def insert_data(self, data_list: list[dict]) -> bool:
-        if not self.check_connection:
+        if len(data_list) != 1:
+            return False
+
+        if not self.check_connection():
             return False
 
         try:
@@ -239,12 +249,14 @@ class MySQLDatabase:
 
             # 从data_list中的第一个字典提取列名
             columns = list(data_list[0].keys())
+            data_dict = data_list[0]
+            data = {}
 
-            # 确保所有数据字典都有相同的列名顺序，如果缺少列，则添加None
-            for data in data_list:
-                for column in columns:
-                    if column not in data:
-                        data[column] = None
+            for key in data_dict.keys():
+                if data_dict[key]:
+                    data[key] = data_dict[key]
+                else:
+                    columns.remove(key)
 
             # 为每个列创建一个对应数量的占位符
             placeholders = ", ".join(["%s"] * len(columns))
@@ -253,7 +265,7 @@ class MySQLDatabase:
             query = f"INSERT INTO {self.table_name} ({', '.join(columns)}) VALUES ({placeholders})"
 
             # 准备数据元组列表，每个元组对应一个INSERT语句的参数
-            data_tuples = [tuple(data[column] for column in columns) for data in data_list]
+            data_tuples = [tuple(data[column] for column in columns)]
 
             # 执行插入操作
             cursor.executemany(query, data_tuples)
@@ -266,6 +278,7 @@ class MySQLDatabase:
         except mysql.connector.Error as e:
             self.logger.error(f"发生数据库错误: {e}")
             self.connection.rollback()
+            return False
         finally:
             cursor.close()
 
@@ -275,7 +288,7 @@ class MySQLDatabase:
         :param ids: 要更新的ID列表。
         :param update_data: 要更新的数据，字典格式，键为列名，值为要更新的值。
         """
-        if not self.check_connection:
+        if not self.check_connection():
             return False
 
         if not ids or not update_data:
@@ -346,6 +359,19 @@ class MySQLDatabase:
         return column_names
 
     def export_data_with_conditions_to_csv(self, filename: str, ids_input: str = "", additional_conditions: str = "") -> tuple[bool, str]:
+        # 创建一个名为 export 的文件夹
+        export_folder = os.path.join(os.getcwd(), "export")
+        if not os.path.exists(export_folder):
+            os.makedirs(export_folder)
+
+        # 获取当前时间戳
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        # 构建新的文件名，包括时间戳
+        new_filename = f"{filename}_{timestamp}.csv"
+
+        # 构建完整的文件路径
+        full_path = os.path.join(export_folder, new_filename)
 
         with self.connection.cursor() as cursor:
             try:
@@ -377,13 +403,13 @@ class MySQLDatabase:
                 if not dict_rows:
                     return False, "没有找到符合条件要导出的数据"
 
-                with open(filename, mode="w", newline="", encoding="utf-8-sig") as file:
+                with open(full_path, mode="w", newline="", encoding="utf-8-sig") as file:
                     csv_writer = csv.writer(file)
                     csv_writer.writerow(columns)  # 写入列标题
                     for row_dict in dict_rows:
                         csv_writer.writerow(list(row_dict.values()))  # 写入数据行
 
-                return True, f"数据已成功导出到CSV文件:{filename}"
+                return True, f"数据已成功导出到CSV文件:{full_path}"
 
             except Error as e:
                 return False, "未知异常"

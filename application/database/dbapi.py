@@ -9,8 +9,10 @@ def sqldb():
     if request.method == "POST":
         # 处理数据插入
         data_list = request.get_json().get("data_list", [])
-        outputdb.insert_data(data_list)
-        return jsonify({"status": "success", "message": "Data inserted successfully"})
+        if outputdb.insert_data(data_list):
+            return jsonify({"status": "success", "message": "Data inserted successfully"})
+        else:  # 数据插入失败
+            return jsonify({"status": "error", "message": "Data insert failed"})
     elif request.method == "GET":
         # 默认为GET请求，返回数据列表
         ids_input = request.args.get("ids_input", None)
@@ -64,18 +66,21 @@ def api_showall():
         cursor.close()
 
 
-@db.route("/export", methods=["POST"])
+@db.route("/export", methods=["GET"])
 # 数据导出接口，根据发送的测试人员等信息导出数据，返回csv文件，由客户指定导出目录进行保存
 def export():
     # filename = 'fans_data1.csv'
     filename = request.args.get("filename")
-    ids_input = request.args.get("ids_input", None)
-    print(ids_input)
+    ids_input = request.args.get("ids_input", "")
     additional_conditions = request.args.get("additional_conditions", "")
-    print(additional_conditions)
     try:
-        outputdb.export_data_with_conditions_to_csv(filename=filename, ids_input=ids_input, additional_conditions=additional_conditions)
-        return jsonify({"status": "success", "message": f"Data exported to {filename}"})
+        status, filepath = outputdb.export_data_with_conditions_to_csv(
+            filename=filename, ids_input=ids_input, additional_conditions=additional_conditions
+        )
+        if status:
+            return jsonify({"status": "success", "message": f"{filepath}"})
+        else:
+            return jsonify({"status": "error", "message": "Data export failed"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
