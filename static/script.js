@@ -49,7 +49,9 @@ window.addEventListener('beforeunload', function (e) {
     var confirmationMessage = '确定要离开此页吗？';
   
     if (auto_collect) {
-      confirmationMessage = '数据采集正在进行中，确定要离开此页吗？可能会导致不可预期的后果';
+    //   confirmationMessage = '数据采集正在进行中，确定要离开此页吗？可能会导致不可预期的后果';
+      alert("数据采集正在进行，请先停止数据采集");
+      return;
     } else {
         if (fan_running) {
             confirmationMessage = '风机正在运行，确定要离开此页吗？可能会导致不可预期的后果';

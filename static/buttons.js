@@ -20,10 +20,10 @@ function sendCSVToServer() {
     .then(response => response.json())
     .then(data => {
       console.log('Server response:', data);
+      alert(data.message);
       if ('line_count' in data) {
         document.getElementById('data-count').innerText = data.line_count;
         document.getElementById('start_collect_button').disabled = false;
-        alert('上传成功');
         fileInput.value = '';
       }
     })
@@ -105,8 +105,9 @@ function current_progress() {
       if (data.complete == true){
         click_stop_collect_button();
       } else {
+        if (auto_collect != false) {
         setTimeout(current_progress, 1000); // 每秒轮询一次
-      }
+      }}
       }
     )
     .catch(error => {
@@ -158,7 +159,6 @@ function click_stop_collect_button() {
             document.getElementById('stop_collect_button').disabled = true;
             document.getElementById('start_collect_button').disabled = true;
             document.getElementById('export_data').disabled = false;
-            document.getElementById('clear').disabled = false;
             auto_collect = false
         }
       }
@@ -174,14 +174,38 @@ function click_export_data_button() {
 
 function click_clear_button() {
     // 清空数据库，清空已经上传的文件
-    if (confirm("确定要清空数据库？")){
+    if (auto_collect != false) {
+        alert('请先停止自动采集');
+        return;
+    }
+    if (confirm("确定要清空所有自动采集设置？")){
         // 确定
         document.getElementById('export_data').disabled = true;
-        document.getElementById('clear').disabled = true;
-    }
+        document.getElementById('pause_collect_button').disabled = true;
+        document.getElementById('stop_collect_button').disabled = true;
+        document.getElementById('start_collect_button').disabled = true;
+        document.getElementById('data-count').innerText = 0;
+        document.getElementById('current-data-count').innerText = 0;
+
+        const formData = new FormData();
+        formData.append('command', 'clear');
+        fetch('/collect/control', {
+            method: 'POST',
+            body: formData,
+          })
+        .then(response => response.json())
+        .then(data => {
+          console.log('Server response:', data);
+            if (data.status == 'clear'){
+                alert('自动采集状态已清空，可以重新配置自动采集参数');
+            }})
+        .catch(error => {
+          console.error('Command error', error);
+        });
+        }
     else {
         //取消
-        return
+        return;
     }
     
 }

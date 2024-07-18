@@ -31,10 +31,12 @@ def upload_csv():
     if file:
         # 在这里处理文件，例如保存文件或读取内容
         # file.save(os.path.join('uploads', file.filename))  # 保存文件
-        csv_data: str = file.read().decode("utf-8")
+        try:
+            csv_data: str = file.read().decode("utf-8")
+        except UnicodeDecodeError:
+            return jsonify({"message": "文件编码错误,请使用utf-8格式的csv文件"}), 400
         line_count = csv_data.count("\n") - 1  # 行数等于换行符数量加1
         # 处理CSV数据，例如解析、保存到数据库等
-        # ...
         file = StringIO(csv_data)
         reader = csv.DictReader(file)
         # csv_context 是一个字典列表，其中每个字典表示 CSV 文件中的一行
@@ -42,8 +44,14 @@ def upload_csv():
         # 将 csv_context 转换为所需的格式
         CH2EN = {}
         translated_csv_context = []
+
         for row in csv_context:
-            del row["ID"]
+            if "ID" in row:
+                del row["ID"]
+            elif "\ufeffID" in row:
+                del row["\ufeffID"]
+            else:
+                return jsonify({"message": "文件编码错误,请使用utf-8格式的csv文件"}), 400
             translated_row = {}
             for CHkey, value in row.items():
                 if CHkey not in CH2EN:
@@ -53,32 +61,13 @@ def upload_csv():
                             break
                     else:
                         auto_collector.logger.error(f"没有对应的控制参数：{CHkey}")
-                translated_row[CH2EN[CHkey]] = value
+                        # TODO value目前只能是整数
+                translated_row[CH2EN[CHkey]] = int(value)
             translated_csv_context.append(translated_row)
         auto_collector.init_para_pool_from_csv(translated_csv_context)
-        return jsonify({"line_count": line_count}), 200
-    #     # 在这里处理文件，例如保存文件或读取内容
-    #     # file.save(os.path.join('uploads', file.filename))  # 保存文件
-    #     csv_data: str = file.read().decode("utf-8")
-    #     line_count = csv_data.count("\n") - 1  # 行数等于换行符数量加1
-    #     # 处理CSV数据，例如解析、保存到数据库等
-    #     # ...
-    #     file = StringIO(csv_data)
-    #     reader = csv.DictReader(file)
-    #     # csv_context 是一个字典列表，其中每个字典表示 CSV 文件中的一行
-    #     csv_context = list(reader)
-    #     # 将 csv_context 转换为所需的格式
-    #     para_pool_context = {column_mapping[key]: [] for key in reader.fieldnames if key != "ID"}
-    #     for row in csv_context:
-    #         for key, value in row.items():
-    #             if key != "ID":
-    #                 para_pool_context[column_mapping[key]].append(value)
+        return jsonify({"message": "文件上传成功", "line_count": line_count}), 200
 
-    #     auto_collector.init_para_pool_from_csv(para_pool_context)
-    #     return jsonify({"line_count": line_count}), 200
-
-    # return jsonify({"message": "Unknown error"}), 500
-    # pass
+    return jsonify({"message": "Unknown error"}), 500
 
 
 @autocollect.route("/control", methods=["POST"])
@@ -106,6 +95,12 @@ def auto_collect_control():
         # 停止数采，是终止，无法再次启动
         auto_collector.stop_auto_collect()
         return jsonify({"status": "stop"}), 200
+    elif command == "clear":
+        # 清空当前的采集进度
+        if auto_collector.clear_para():
+            return jsonify({"status": "clear"}), 200
+        else:
+            return jsonify({"status": "error"}), 400
     else:
         return jsonify({"status": "error"}), 400
 
