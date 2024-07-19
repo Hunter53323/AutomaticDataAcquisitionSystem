@@ -28,23 +28,6 @@ class CustomModbusFramer(ModbusSocketFramer):
         return packet
 
 
-def run_server():
-    datablock = ModbusSequentialDataBlock(0x00, [0] * 100)
-    context = ModbusSlaveContext(
-        di=datablock,
-        co=datablock,
-        hr=datablock,
-        ir=datablock,
-    )
-
-    # Build data storage
-    context = ModbusServerContext(slaves=context, single=True)
-
-    address = ("127.0.0.1", 5020)
-
-    StartTcpServer(framer=CustomModbusFramer, address=address, context=context)
-
-
 def build_modbus_tcp_message(torque=0.01, speed=0.1, voltage=0.01):
     # 构建报文头
     tid = 0  # 事务标识符
@@ -60,37 +43,70 @@ def build_modbus_tcp_message(torque=0.01, speed=0.1, voltage=0.01):
     return header + data
 
 
-class Tcpserver():
-    def __init__(self):
+class Tcpserver:
+    def __init__(self, ip="127.0.0.1", port=5020):
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.s.bind(('127.0.0.1', 5021))
+        self.s.bind((ip, port))
         self.s.listen(1)
         self.conn, self.addr = self.s.accept()
-        print('Connected by', self.addr)
+        print("Connected by", self.addr)
+        self.sendcount = 0
         self.run_server()
 
+    def send_one(self):
+        torque = random.uniform(0, 40000)
+        speed = random.uniform(0, 10000)
+        voltage = random.uniform(0, 380)
+        MESSAGE = build_modbus_tcp_message(torque=torque, speed=speed, voltage=voltage)
+        print(f"发送的报文为：{MESSAGE.hex()},count:{self.sendcount}")
+        self.sendcount += 1
+        self.conn.sendall(MESSAGE)
+
+    def recv_one(self, timeout: float = 0.1):
+        self.conn.settimeout(timeout)  # 设置接收超时时间，如果超时即使接收的字节数少于目标值也返回
+        try:
+            msg = self.conn.recv(6)
+            if len(msg) == 6:  # 数据头
+                length = int.from_bytes(msg[-2:], byteorder="big", signed=False)
+                msg += self.conn.recv(length)
+                if len(msg) == 6 + length:
+                    print(f"收到的报文为：{msg.hex()}")
+                    ack = self.modbusTCP_ack(msg)
+                    self.conn.sendall(ack)
+                    return msg
+                else:
+                    raise Exception(f"接收到的数据长度不符合预期:{msg.hex()}")
+            else:
+                raise Exception(f"接收到的数据头长度不符合预期:{msg.hex()}")
+        except Exception as e:
+            print(f"接收错误! error:{e}")
+            return
+        finally:
+            pass  # 收尾
+
+    def modbusTCP_ack(self, msg):
+        tid, pid, length, uid, fc = struct.unpack(">HHHBB", msg[:8])
+        if fc == 0x06:
+            return msg
+        elif fc == 0x10:
+            startRegister, numRegister = struct.unpack(">HH", msg[8:12])
+            body = struct.pack(">HH", startRegister, numRegister)
+            length = len(body) + 2  # 动态计算长度，包括Unit Identifier和Function Code
+            header = struct.pack(">HHHBB", tid, pid, length, uid, fc)
+            # 返回报文
+            return header + body
+
     def run_server(self):
-        count=0
         while True:
-            count+=1
-            torque=random.uniform(0, 40000)
-            speed=random.uniform(0, 10000)
-            voltage=random.uniform(0, 380)
-            MESSAGE = build_modbus_tcp_message(torque=torque,speed=speed,voltage=voltage)
-            print(f"发送的报文为：{MESSAGE.hex()},count:{count}")
-            self.conn.sendall(MESSAGE)
+            self.send_one()  # 定时发
             time.sleep(0.05)
+            self.recv_one()
+            # time.sleep(0.05)
 
 
 if __name__ == "__main__":
     try:
-        thread1 = threading.Thread(target=Tcpserver)
-        thread2 = threading.Thread(target=run_server)
-        # 启动线程
-        thread1.start()
-        thread2.start()
-        # 等待线程完成
-        thread1.join()
-        thread2.join()
+        server = Tcpserver(ip="127.0.0.1", port=5020)
     except Exception as e:
         print(e)
+# TODO:服务器退出之后继续运行，除非手动退出，手动退出的时候也需要能够正常退出
