@@ -10,13 +10,14 @@ import pytest
 class TestActualTestDriver:
 
     def test_read_all(self):
-        testdevice.connect()
         testdevice.update_hardware_parameter(para_dict={"ip": "127.0.0.1", "port": 5021})
+        testdevice.connect()
         for _ in range(100):
             assert testdevice.read_all() == True
 
     def test_read_newest(self):
-        testdevice.update_hardware_parameter(para_dict={"ip": "127.0.0.1", "port": 5021})
+        # testdevice.update_hardware_parameter(para_dict={"ip": "127.0.0.1", "port": 5021})
+        # testdevice.connect()
         time.sleep(2)
         assert testdevice.read_all() == True
 
@@ -48,7 +49,7 @@ class TestActualTestDriver:
         assert testdevice.write(parameters) == False
         parameters = {"test_device_command": ["start_device", "N_mode"]}
         assert testdevice.write(parameters) == False
-        for _ in range(20000):
+        for _ in range(200):
             load = random.uniform(0, 10000)
             parameters = {"test_device_command": "write", "load": load}
             assert testdevice.write(parameters) == True

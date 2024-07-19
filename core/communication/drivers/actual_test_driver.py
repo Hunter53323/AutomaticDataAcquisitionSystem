@@ -23,7 +23,7 @@ class TestDevice(DriverBase):
 
     def write(self, para_dict: dict[str, any]) -> bool:
         if not self.check_writable():
-            self.logger.error(f"串口不可写!")
+            self.logger.error(f"TCP被占用!")
             return False
         self.__iswriting = True
         status = self.write_execute(para_dict)
@@ -45,10 +45,14 @@ class TestDevice(DriverBase):
         if not self.conn_state:
             self.logger.error(f"服务器未连接! 非法写！")
             return False
+
         if self.command not in para_dict:
             command = "write"
         else:
             command = para_dict[self.command]
+        if "load" not in para_dict:
+            para_dict["load"] = 0
+
         if command == "start_device":
             address = 0
             value = 1
@@ -93,10 +97,7 @@ class TestDevice(DriverBase):
             elif command == "stop_device":
                 self.run_state = False
             for key in self.curr_para:
-                if key in para_dict:
-                    self.curr_para[key] = para_dict[key]
-                else:
-                    self.logger.error(f"参数错误！")
+                self.curr_para[key] = para_dict[key]
             return True
 
     def connect(self) -> bool:
@@ -105,8 +106,12 @@ class TestDevice(DriverBase):
                 self.conn_state = True
                 return True
             self.conn_state = self.client.connect()
-            self.logger.info(f"client连接到服务器{self.client}")
-            return True
+            if self.conn_state:
+                self.logger.info(f"client连接到服务器{self.client}")
+                return True
+            else:
+                self.logger.error(f"连接错误！")
+                return False
         except Exception as e:
             self.logger.error(f"连接错误！ error:{e}")
             return False
@@ -121,7 +126,7 @@ class TestDevice(DriverBase):
             self.logger.error(f"连接关闭错误！error:{e}")
             return False
 
-    def recv_one(self, timeout: float = 1):
+    def recv_one(self, timeout: float = 1) -> bytes:
         self.client.comm_params.timeout_connect = timeout  # 设置接收超时时间，如果超时即使接收的字节数少于目标值也返回
         try:
             msg = self.client.recv(6)
@@ -132,16 +137,18 @@ class TestDevice(DriverBase):
                     self.logger.info(f"收到的报文为：{msg.hex()}")
                     return msg
                 else:
-                    raise Exception(f"接收到的数据长度不符合预期:{msg.hex()}")
+                    raise Exception(f"接收到的数据体长度不符合预期:{msg.hex()}")
+            elif len(msg) == 0:
+                return b""
             else:
                 raise Exception(f"接收到的数据头长度不符合预期:{msg.hex()}")
         except Exception as e:
             self.logger.error(f"接收错误! error:{e}")
-            return
+            return b""
         finally:
             pass  # 收尾
 
-    def recv(self, timeout=0.05):
+    def recv(self, timeout=0.02) -> bytes:
         msg = self.recv_one(timeout * 10)  # 放大区间使得可以收到报文
         count = 0
         while msg:  # 如果报文不为空，则可能后面有新报文
@@ -158,8 +165,17 @@ class TestDevice(DriverBase):
         return msg
 
     def read_all(self, num=3, read_count=3, encoding=4) -> bool:
+        # import random
+
+        # self.curr_data["motor_input_power"] = random.randint(0, 100)
+        # self.curr_data["torque"] = random.randint(0, 100)
+        # self.curr_data["motor_output_power"] = random.randint(0, 100)
+        # return True
         for count in range(read_count):
             try:
+                if not self.conn_state:
+                    self.logger.error(f"服务器未连接! 非法读！")
+                    return False
                 result = self.recv()
                 if not result:
                     raise Exception(f"接收失败! result：{result.hex()}")

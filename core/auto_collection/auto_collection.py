@@ -90,6 +90,7 @@ class AutoCollection:
                 self.communication.breakdown_handler.breakdown_warning(code)
                 self.wait_until_no_breakdown()
             # 顺利采集完成一条数据
+        self.__auto_running: bool = False
         self.clear_para()
         self.logger.info("自动采集结束")
         return True
@@ -103,7 +104,6 @@ class AutoCollection:
         self.__para_queue: deque[dict[str, any]] = deque()
         self.__stable_state: bool = False
         self.__para_queue_inited: bool = False
-        self.__auto_running: bool = False
         self.__pause_flag: bool = False
         self.__stop_flag: bool = False
 

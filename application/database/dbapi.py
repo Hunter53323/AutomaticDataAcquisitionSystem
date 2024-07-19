@@ -53,6 +53,11 @@ def api_showall():
         cursor.execute(f"SELECT * FROM {outputdb.table_name} LIMIT %s OFFSET %s", (per_page, offset))
         data = cursor.fetchall()
         total_pages = (total_count + per_page - 1) // per_page  # 计算总页数
+
+        column_names = [desc[0] for desc in cursor.description]
+        data_with_column_names = [dict(zip(column_names, row)) for row in data]
+        print(data_with_column_names)
+
         return jsonify(
             {
                 "data": data,
@@ -62,6 +67,40 @@ def api_showall():
                 "total_pages": total_pages,  # 返回计算后的总页数
             }
         )
+    except Exception as e:
+        return jsonify({"message": "读取数据失败，" + str(e)}), 500
+    finally:
+        cursor.close()
+
+
+@db.route("/data/pagev2", methods=["GET"])
+def api_showall_v2():
+    page = int(request.args.get("page", 1))
+    per_page = int(request.args.get("per_page", 10))
+    offset = (page - 1) * per_page
+    cursor = outputdb.connection.cursor()
+    try:
+        cursor.execute(f"SELECT COUNT(*) FROM {outputdb.table_name}")
+        total_count = cursor.fetchone()[0]
+        cursor.execute(f"SELECT * FROM {outputdb.table_name} LIMIT %s OFFSET %s", (per_page, offset))
+        data = cursor.fetchall()
+
+        column_names = [desc[0] for desc in cursor.description]
+        data_with_column_names = [dict(zip(column_names, row)) for row in data]
+        print(data_with_column_names)
+
+        total_pages = (total_count + per_page - 1) // per_page  # 计算总页数
+        return jsonify(
+            {
+                "data": data,
+                "page": page,
+                "per_page": per_page,
+                "total_count": total_count,  # 确保返回总记录数
+                "total_pages": total_pages,  # 返回计算后的总页数
+            }
+        )
+    except Exception as e:
+        return jsonify({"message": "读取数据失败，" + str(e)}), 500
     finally:
         cursor.close()
 
