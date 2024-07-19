@@ -7,7 +7,7 @@ from application.device_control import control
 from application.websocket.real_time_dataapi import init_socketio_events
 
 app = Flask(__name__)
-socketio = SocketIO(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 CORS(app, supports_credentials=True)
 
 app.register_blueprint(autocollect, url_prefix="/collect")
