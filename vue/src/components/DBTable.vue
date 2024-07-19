@@ -1,11 +1,11 @@
 <script lang="ts" setup>
 import { reactive, ref, onMounted } from 'vue'
 import type { TableInstance } from 'element-plus'
-import { ElTable } from 'element-plus'
+import { ElTable, ElMessage } from 'element-plus'
 import AddDBButton from '../components/AddDBButton.vue'
-import DeleteDBButton from '../components/DeleteDBButton.vue'
+import { useGlobalStore } from '@/stores/global'
 
-const url = 'http://127.0.0.1:5000'
+const global = useGlobalStore()
 const dbDataObjList = ref([])
 
 const multipleSelection = ref([])
@@ -30,9 +30,10 @@ const handleSelectionChange = (val) => {
   console.log(multipleSelection.value)
 }
 
+
 const dbDataUpdate = () => {
   dbDataObjList.value = []
-  fetch(url + "/db/data/page", {
+  fetch(global.url + "/db/data/pagev2", {
     method: 'GET',
   }).then(response => response.json())
     .then(data => {
@@ -46,10 +47,12 @@ const dbDataUpdate = () => {
       })
     })
 }
+
+
 const tableLayout = ref<TableInstance['tableLayout']>('auto')
 
 const handleDBDelete = (id) => {
-  fetch(url + "/db/data", {
+  fetch(global.url + "/db/data", {
     method: 'DELETE',
     body: JSON.stringify({ ids_input: id }),
     headers: {
@@ -58,11 +61,18 @@ const handleDBDelete = (id) => {
   }).then(response => response.json())
     .then(data => {
       dbDataUpdate()
+      ElMessage({
+        message: '数据删除成功',
+        type: 'success'
+      })
+    })
+    .catch(response => {
+      ElMessage.error('数据删除失败')
     })
 }
 
 const handleDBEdit = () => {
-  fetch(url + "/db/data", {
+  fetch(global.url + "/db/data", {
     method: 'PUT',
     body: JSON.stringify({ ids_input: [] }),
     headers: {
@@ -80,8 +90,8 @@ onMounted(() => {
 
 <template>
 
-  <AddDBButton :form="form" />
-  <DeleteDBButton :selectList="multipleSelection" />
+  <AddDBButton class="dbButton" :form="form" @add-finished="dbDataUpdate()" />
+  <el-button class="dbButton" type="primary" @click="handleDBDelete(multipleSelection)">DELETE</el-button>
   <el-table :data="dbDataObjList" style="width: 100%" :table-layout="tableLayout"
     @selection-change="handleSelectionChange">
     <el-table-column type="selection" width="55" />
@@ -96,3 +106,9 @@ onMounted(() => {
   </el-table>
 
 </template>
+
+<style>
+.dbButton {
+  margin: 0 10px 0 10px;
+}
+</style>
