@@ -1,3 +1,8 @@
+from engineio.async_drivers import gevent
+from gevent import monkey
+
+monkey.patch_all(socket=False)
+# 以上部分会将thread等模块替换掉，必须放在最前面多线程会出问题，同时由于是阻塞式的逻辑，需要把socket的替换给去掉
 from flask import Flask, render_template
 from flask_socketio import SocketIO
 from flask_cors import CORS
@@ -7,7 +12,7 @@ from application.device_control import control
 from application.websocket.real_time_dataapi import init_socketio_events
 
 app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="gevent")
 CORS(app, supports_credentials=True)
 
 app.register_blueprint(autocollect, url_prefix="/collect")
@@ -35,6 +40,8 @@ def get_apis():
 
 if __name__ == "__main__":
     socketio.run(app, debug=True, host="127.0.0.1", port=5000, allow_unsafe_werkzeug=True)
+    # httpserver = WSGIServer(("127.0.0.1", 5000), app, log=None)
+    # httpserver.serve_forever()
 
 
 # 考虑浏览器页面意外关闭，也就是disconnect的时候，如何处理，如果有正在进行的自动采集，那么需要暂停自动采集
