@@ -4,23 +4,13 @@ import type { TableInstance } from 'element-plus'
 import { ElTable, ElMessage } from 'element-plus'
 import AddDBButton from '../components/AddDBButton.vue'
 import { useGlobalStore } from '@/stores/global'
+import { useDBStore } from '@/stores/global'
 
 const global = useGlobalStore()
+const db = useDBStore()
 const dbDataObjList = ref([])
 
 const multipleSelection = ref([])
-
-const form = reactive({
-  '风机名称': 0,
-  '风机型号': 0,
-  '转速': 0,
-  '速度环补偿系数': 0,
-  '电流环带宽': 0,
-  '观测器补偿系数': 0,
-  '负载量': 0,
-  '功率': 0
-})
-const dbKeysList = ['ID', ...Object.keys(form), '时间戳']
 
 const handleSelectionChange = (val) => {
   multipleSelection.value = []
@@ -32,19 +22,12 @@ const handleSelectionChange = (val) => {
 
 
 const dbDataUpdate = () => {
-  dbDataObjList.value = []
   fetch(global.url + "/db/data/pagev2", {
     method: 'GET',
   }).then(response => response.json())
     .then(data => {
-      const dbDataRawList = data.data
-      dbDataRawList.forEach((item) => {
-        const tmpDBDataObj = {}
-        item.forEach((element, index) => {
-          tmpDBDataObj[dbKeysList[index]] = element
-        })
-        dbDataObjList.value.push(tmpDBDataObj)
-      })
+      console.log(data)
+      dbDataObjList.value = data.data
     })
 }
 
@@ -52,6 +35,9 @@ const dbDataUpdate = () => {
 const tableLayout = ref<TableInstance['tableLayout']>('auto')
 
 const handleDBDelete = (id) => {
+  if (id == false) {
+    return
+  }
   fetch(global.url + "/db/data", {
     method: 'DELETE',
     body: JSON.stringify({ ids_input: id }),
@@ -70,6 +56,27 @@ const handleDBDelete = (id) => {
       ElMessage.error('数据删除失败')
     })
 }
+const handleDBClear= ()=>{
+  fetch(global.url + "/db/data", {
+    method: 'DELETE',
+    body: JSON.stringify({ ids_input: [] }),
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  }).then(response => response.json())
+    .then(data => {
+      dbDataUpdate()
+      ElMessage({
+        message: '数据清除成功',
+        type: 'success'
+      })
+    })
+    .catch(response => {
+      ElMessage.error('数据清除失败')
+    })
+}
+
+
 
 const handleDBEdit = () => {
   fetch(global.url + "/db/data", {
@@ -90,12 +97,13 @@ onMounted(() => {
 
 <template>
 
-  <AddDBButton class="dbButton" :form="form" @add-finished="dbDataUpdate()" />
-  <el-button class="dbButton" type="primary" @click="handleDBDelete(multipleSelection)">DELETE</el-button>
+  <AddDBButton @add-finished="dbDataUpdate()" />
+  <el-button style="margin: 0 10px 0 10px;" type="primary" @click="handleDBDelete(multipleSelection)">DELETE</el-button>
+  <el-button style="margin: 0 10px 0 10px;" type="primary" @click="handleDBClear()">CLEAR</el-button>
   <el-table :data="dbDataObjList" style="width: 100%" :table-layout="tableLayout"
     @selection-change="handleSelectionChange">
     <el-table-column type="selection" width="55" />
-    <el-table-column v-for="key in dbKeysList" :prop="key" :label="key" />
+    <el-table-column v-for="key in db.columns" :prop="key" :label="key" />
     <el-table-column fixed="right" label="Operations" min-width="120">
       <template #default="scope">
         <el-button link type="primary" size="small" @click="handleDBEdit()">Edit</el-button>
@@ -106,9 +114,3 @@ onMounted(() => {
   </el-table>
 
 </template>
-
-<style>
-.dbButton {
-  margin: 0 10px 0 10px;
-}
-</style>

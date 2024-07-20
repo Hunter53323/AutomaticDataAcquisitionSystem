@@ -2,7 +2,11 @@
 import { reactive, ref } from 'vue'
 import ViewTitle from '../components/ViewTitle.vue'
 import DBTable from '../components/DBTable.vue'
+import { useDBStore } from '@/stores/global'
 
+const db = useDBStore()
+
+db.update()
 </script>
 
 <template>

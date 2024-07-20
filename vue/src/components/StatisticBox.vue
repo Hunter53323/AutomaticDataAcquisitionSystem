@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, reactive, computed } from 'vue'
 
-const props = defineProps(['contentObj', 'title'])
+const props = defineProps(['contentObj', 'title', 'keyMap'])
 const contentLength = computed(() => Object.keys(props.contentObj).length)
 </script>
 
@@ -12,7 +12,7 @@ const contentLength = computed(() => Object.keys(props.contentObj).length)
     </div>
     <el-row v-for="row in Math.ceil(contentLength / 6)">
       <el-col v-for="(value, key, index) in props.contentObj" :span="4">
-        <el-statistic v-if="index < row * 6 && index >= row * 6 - 6" :title="key" :value="value" group-separator=" "
+        <el-statistic v-if="index < row * 6 && index >= row * 6 - 6" :title="keyMap.key" :value="value" group-separator=" "
           :precision="2" />
       </el-col>
     </el-row>

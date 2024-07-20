@@ -89,25 +89,24 @@ socket.on('data_from_device', data => {
   contentDataShow.value = data
   console.log(data)
 })
-
 </script>
 
 <template>
   <ViewTitle viewTitle="DashBoard" />
-  <el-button type="primary" @click="handleConnect">{{ isConnected ? 'Disconnect' : 'Connect' }}</el-button>
-  <el-button type="primary" @click="handleStartDevice" :disabled="!isConnected">
+  <el-button style="margin: 0 10px 0 0px;" type="primary" @click="handleConnect">{{ isConnected ? 'Disconnect' : 'Connect' }}</el-button>
+  <el-button style="margin: 0 10px 0 10px;" type="primary" @click="handleStartDevice" :disabled="!isConnected">
     {{ isFanRunning ? 'Stop Device' : 'Start Device' }}
   </el-button>
 
-  <StatisticBox class="statisticBox" :contentObj="contentDataShow" title="" />
+  <StatisticBox class="statisticBox" :contentObj="contentDataShow" :keyMap="dataMap"  title="" />
   <!-- <StatisticBox class="statisticBox" :contentObj="contentParaShow" title="ParaShow" /> -->
 
   <el-upload ref="upload" class="upload-demo" action="" :limit="1" :on-exceed="handleExceed" :auto-upload="false"
     :http-request="uploadCSV">
     <template #trigger>
-      <el-button type="primary">select file</el-button>
+      <el-button style="margin: 0 10px 0 0px;" type="primary">select file</el-button>
     </template>
-    <el-button class="ml-3" type="success" @click="submitUpload">
+    <el-button style="margin: 0 10px 0 10px;" class="ml-3" type="success" @click="submitUpload">
       upload to server
     </el-button>
   </el-upload>

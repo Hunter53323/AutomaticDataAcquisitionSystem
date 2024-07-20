@@ -1,23 +1,34 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
-import { ElDrawer, ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { useGlobalStore } from '@/stores/global'
+import { useDBStore } from '@/stores/global'
 
-
-const props = defineProps(['form'])
 const emit = defineEmits(['addFinished'])
 const dialog = ref(false)
 const loading = ref(false)
 
-const form = props.form
-
 const global = useGlobalStore()
+const db = useDBStore()
 const formList = ref([])
 
-for (let key in form) {
-  formList.value.push({
-    key: key,
-    value: form[key],
+const onClickAddButton = () => {
+  try {
+    dialog.value = true
+    initFormList()
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+const initFormList = () => {
+  console.log(db.columnsToFill)
+  formList.value = []
+  db.columnsToFill.forEach(item => {
+    formList.value.push({
+      key: item,
+      value: null,
+    })
   })
 }
 
@@ -66,7 +77,7 @@ const cancelForm = () => {
 </script>
 
 <template>
-  <el-button type="primary" @click="dialog = true">ADD</el-button>
+  <el-button type="primary" @click="onClickAddButton">ADD</el-button>
   <el-drawer v-model="dialog" title="Add Database Item" direction="rtl" class="demo-drawer">
     <div class="addDBForm">
       <el-form :model="formList" label-width="auto">
