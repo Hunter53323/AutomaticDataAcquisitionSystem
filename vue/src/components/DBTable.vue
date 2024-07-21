@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { reactive, ref, onMounted } from 'vue'
 import type { TableInstance } from 'element-plus'
-import { ElTable, ElMessage } from 'element-plus'
+import { ElTable, ElMessage, ElMessageBox } from 'element-plus'
 import AddDBButton from '../components/AddDBButton.vue'
 import DBPagination from '../components/DBPagination.vue'
 import { useGlobalStore } from '@/stores/global'
@@ -33,56 +33,123 @@ const dbDataUpdate = () => {
     })
 }
 
-const handleDBDelete = (id) => {
-  if (id == false) {
+const handleDBDelete = () => {
+  if (multipleSelection.value.length == 0) {
+    ElMessage.error('请选择要删除的数据')
     return
   }
-  fetch(global.url + "/db/data", {
-    method: 'DELETE',
-    body: JSON.stringify({ ids_input: id }),
-    headers: {
-      'Content-Type': 'application/json'
+  ElMessageBox.confirm(
+    '此行为将删除选中的数据！',
+    'Warning',
+    {
+      confirmButtonText: 'OK',
+      cancelButtonText: 'Cancel',
+      type: 'warning',
     }
-  }).then(response => response.json())
-    .then(data => {
-      dbDataUpdate()
-      ElMessage({
-        message: '数据删除成功',
-        type: 'success'
-      })
+  )
+    .then(() => {
+      fetch(global.url + "/db/data", {
+        method: 'DELETE',
+        body: JSON.stringify({ ids_input: multipleSelection.value }),
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }).then(response => response.json())
+        .then(data => {
+          if (data.status == 'error') {
+            throw new Error(data.message)
+          }
+          dbDataUpdate()
+          ElMessage({
+            message: '数据删除成功',
+            type: 'success'
+          })
+        })
+        .catch(response => {
+          ElMessage.error('数据删除失败' + response.message)
+        })
     })
-    .catch(response => {
-      ElMessage.error('数据删除失败')
+    .catch(() => {
+      ElMessage({
+        type: 'info',
+        message: '数据删除取消',
+      })
     })
 }
 const handleDBClear = () => {
-  fetch(global.url + "/db/data", {
-    method: 'DELETE',
-    body: JSON.stringify({ ids_input: [] }),
-    headers: {
-      'Content-Type': 'application/json'
+  ElMessageBox.confirm(
+    '此行为将清除数据库中所有数据！',
+    'Warning',
+    {
+      confirmButtonText: 'OK',
+      cancelButtonText: 'Cancel',
+      type: 'warning',
     }
-  }).then(response => response.json())
-    .then(data => {
-      dbDataUpdate()
+  )
+    .then(() => {
+      fetch(global.url + "/db/data", {
+        method: 'DELETE',
+        body: JSON.stringify({ ids_input: [] }),
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }).then(response => response.json())
+        .then(data => {
+          if (data.status == 'error') {
+            throw new Error(data.message)
+          }
+          dbDataUpdate()
+          ElMessage({
+            message: '数据清除成功',
+            type: 'success'
+          })
+        })
+        .catch(response => {
+          ElMessage.error('数据清除失败' + response.message)
+        })
+    })
+    .catch(() => {
       ElMessage({
-        message: '数据清除成功',
-        type: 'success'
+        type: 'info',
+        message: '数据清除取消',
       })
     })
-    .catch(response => {
-      ElMessage.error('数据清除失败')
-    })
+
 }
 
 const handleDBExport = () => {
-  fetch(global.url + "/db/export", {
-    method: 'GET',
-  }).then(response => response.json())
-    .then(data => {
-      dbDataObjList.value = data.data
-      db.updateTotalCount(data.total_count)
+  ElMessageBox.prompt('请输入导出数据文件名', {
+    confirmButtonText: 'OK',
+    cancelButtonText: 'Cancel',
+    // inputPattern:
+    //   /[\w!#$%&'*+/=?^_`{|}~-]+(?:\.[\w!#$%&'*+/=?^_`{|}~-]+)*@(?:[\w](?:[\w-]*[\w])?\.)+[\w](?:[\w-]*[\w])?/,
+    inputErrorMessage: '非法文件名',
+  })
+    .then(({ value }) => {
+      fetch(global.url + "/db/export?filename=" + value, {
+        method: 'GET',
+      }).then(response => response.json())
+        .then(data => {
+          if (data.status == 'error') {
+            throw new Error(data.message)
+          }
+          alert(data.message)
+          ElMessage({
+            message: '数据导出成功',
+            type: 'success'
+          })
+        })
+        .catch(response => {
+          ElMessage.error('数据导出失败' + response.message)
+        })
     })
+    .catch(() => {
+      ElMessage({
+        type: 'info',
+        message: '数据导出取消',
+      })
+    })
+
 }
 
 const handlePageChange = () => {
@@ -114,7 +181,7 @@ onMounted(() => {
 <template>
 
   <AddDBButton @add-finished="dbDataUpdate()" />
-  <el-button style="margin: 0 10px 0 0;" type="primary" @click="handleDBDelete(multipleSelection)">DELETE</el-button>
+  <el-button style="margin: 0 10px 0 0;" type="primary" @click="handleDBDelete">DELETE</el-button>
   <el-button style="margin: 0 10px 0 0;" type="primary" @click="handleDBClear">CLEAR</el-button>
   <el-button style="margin: 0 10px 0 0;" type="primary" @click="handleDBExport">EXPORT</el-button>
   <el-table :data="dbDataObjList" table-layout="auto" @selection-change="handleSelectionChange">
@@ -123,8 +190,7 @@ onMounted(() => {
     <el-table-column fixed="right" label="Operations" min-width="120">
       <template #default="scope">
         <el-button link type="primary" size="small" @click="handleDBEdit()">Edit</el-button>
-        <el-button link type="primary" size="small"
-          @click.prevent="handleDBDelete([dbDataObjList[scope.$index].ID])">Delete</el-button>
+        <el-button link type="primary" size="small" @click.prevent="handleDBDelete()">Delete</el-button>
       </template>
     </el-table-column>
   </el-table>
