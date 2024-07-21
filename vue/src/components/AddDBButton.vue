@@ -77,7 +77,7 @@ const cancelForm = () => {
 </script>
 
 <template>
-  <el-button type="primary" @click="onClickAddButton">ADD</el-button>
+  <el-button style="margin: 0 10px 0 0;" type="primary" @click="onClickAddButton">ADD</el-button>
   <el-drawer v-model="dialog" title="Add Database Item" direction="rtl" class="demo-drawer">
     <div class="addDBForm">
       <el-form :model="formList" label-width="auto">

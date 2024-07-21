@@ -12,18 +12,31 @@ export const useGlobalStore = defineStore('global', {
 export const useDBStore = defineStore('db', {
     state: () => ({
         columns: [],
-        columnsToFill: []
+        columnsToFill: [],
+        totalCount: 0,
+        pageSize: 5,
+        currentPage: 1
     }),
     actions: {
         update() {
-            fetch(useGlobalStore().url + "/db/data/columns", {
+            fetch(useGlobalStore().url + "/db/data/meta", {
                 method: 'GET'
             })
                 .then(response => response.json())
                 .then(data => {
                     this.columns = data.columns
                     this.columnsToFill = data.columns_to_fill
+                    this.totalCount = data.total_count
                 })
+        },
+        changePageSize(pageSize) {
+            this.pageSize = pageSize
+        },
+        updateTotalCount(count) {
+            this.totalCount = count
+        },
+        changeCurrentPage(page) {
+            this.currentPage = page
         }
     }
 })

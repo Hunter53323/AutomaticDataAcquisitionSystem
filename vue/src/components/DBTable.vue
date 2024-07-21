@@ -3,6 +3,7 @@ import { reactive, ref, onMounted } from 'vue'
 import type { TableInstance } from 'element-plus'
 import { ElTable, ElMessage } from 'element-plus'
 import AddDBButton from '../components/AddDBButton.vue'
+import DBPagination from '../components/DBPagination.vue'
 import { useGlobalStore } from '@/stores/global'
 import { useDBStore } from '@/stores/global'
 
@@ -22,17 +23,15 @@ const handleSelectionChange = (val) => {
 
 
 const dbDataUpdate = () => {
-  fetch(global.url + "/db/data/pagev2", {
+  fetch(global.url + "/db/data/pagev2?page=" + db.currentPage + "&per_page=" + db.pageSize, {
     method: 'GET',
   }).then(response => response.json())
     .then(data => {
-      console.log(data)
+      // console.log(data)
       dbDataObjList.value = data.data
+      db.updateTotalCount(data.total_count)
     })
 }
-
-
-const tableLayout = ref<TableInstance['tableLayout']>('auto')
 
 const handleDBDelete = (id) => {
   if (id == false) {
@@ -56,7 +55,7 @@ const handleDBDelete = (id) => {
       ElMessage.error('数据删除失败')
     })
 }
-const handleDBClear= ()=>{
+const handleDBClear = () => {
   fetch(global.url + "/db/data", {
     method: 'DELETE',
     body: JSON.stringify({ ids_input: [] }),
@@ -76,7 +75,24 @@ const handleDBClear= ()=>{
     })
 }
 
+const handleDBExport = () => {
+  fetch(global.url + "/db/export", {
+    method: 'GET',
+  }).then(response => response.json())
+    .then(data => {
+      dbDataObjList.value = data.data
+      db.updateTotalCount(data.total_count)
+    })
+}
 
+const handlePageChange = () => {
+  dbDataUpdate()
+}
+
+const handlePageSizeChange = () => {
+  db.changeCurrentPage(1)
+  dbDataUpdate()
+}
 
 const handleDBEdit = () => {
   fetch(global.url + "/db/data", {
@@ -99,9 +115,9 @@ onMounted(() => {
 
   <AddDBButton @add-finished="dbDataUpdate()" />
   <el-button style="margin: 0 10px 0 0;" type="primary" @click="handleDBDelete(multipleSelection)">DELETE</el-button>
-  <el-button style="margin: 0 10px 0 0;" type="primary" @click="handleDBClear()">CLEAR</el-button>
-  <el-table :data="dbDataObjList" style="width: 100%" :table-layout="tableLayout"
-    @selection-change="handleSelectionChange">
+  <el-button style="margin: 0 10px 0 0;" type="primary" @click="handleDBClear">CLEAR</el-button>
+  <el-button style="margin: 0 10px 0 0;" type="primary" @click="handleDBExport">EXPORT</el-button>
+  <el-table :data="dbDataObjList" table-layout="auto" @selection-change="handleSelectionChange">
     <el-table-column type="selection" width="55" />
     <el-table-column v-for="key in db.columns" :prop="key" :label="key" />
     <el-table-column fixed="right" label="Operations" min-width="120">
@@ -112,5 +128,12 @@ onMounted(() => {
       </template>
     </el-table-column>
   </el-table>
-
+  <DBPagination @page-change="handlePageChange" @size-change="handlePageSizeChange" />
 </template>
+
+<style>
+.el-table {
+  margin-top: 20px;
+  width: 100%;
+}
+</style>

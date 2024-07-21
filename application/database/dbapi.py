@@ -79,10 +79,12 @@ def api_showall():
     finally:
         cursor.close()
 
-@db.route("/data/columns", methods=["GET"])
-def api_show_columns():
+@db.route("/data/meta", methods=["GET"])
+def api_show_meta():
     cursor = outputdb.connection.cursor()
     try:
+        cursor.execute(f"SELECT COUNT(*) FROM {outputdb.table_name}")
+        total_count = cursor.fetchone()[0]
         cursor.execute(
             f"SELECT * FROM {outputdb.table_name} LIMIT %s OFFSET %s", (1, 0)
         )
@@ -95,7 +97,8 @@ def api_show_columns():
         print(column_names_to_fill)
         return jsonify({
             "columns": column_names,
-            "columns_to_fill" : column_names_to_fill
+            "columns_to_fill" : column_names_to_fill,
+            "total_count": total_count
             })
     except Exception as e:
         return jsonify({"message": "读取数据列名失败，" + str(e)}), 500
@@ -159,8 +162,10 @@ def export():
         return jsonify({"status": "error", "message": str(e)})
 
 
-@db.route("/clear_data", methods=["DELETE"])
-def api_clear_data():
-    # 调用数据库的删除函数，例如删除所有ID的数据
-    outputdb.delete_data_by_ids()  # None 表示删除所有数据
-    return jsonify({"status": "success", "message": "Database cleared successfully"})
+
+# NOTE 接口弃用，直接使用 '/data' Method='DELETE'
+# @db.route("/clear_data", methods=["DELETE"])
+# def api_clear_data():
+#     # 调用数据库的删除函数，例如删除所有ID的数据
+#     outputdb.delete_data_by_ids()  # None 表示删除所有数据
+#     return jsonify({"status": "success", "message": "Database cleared successfully"})
