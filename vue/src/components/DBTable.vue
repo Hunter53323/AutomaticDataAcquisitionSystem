@@ -98,8 +98,8 @@ onMounted(() => {
 <template>
 
   <AddDBButton @add-finished="dbDataUpdate()" />
-  <el-button style="margin: 0 10px 0 10px;" type="primary" @click="handleDBDelete(multipleSelection)">DELETE</el-button>
-  <el-button style="margin: 0 10px 0 10px;" type="primary" @click="handleDBClear()">CLEAR</el-button>
+  <el-button style="margin: 0 10px 0 0;" type="primary" @click="handleDBDelete(multipleSelection)">DELETE</el-button>
+  <el-button style="margin: 0 10px 0 0;" type="primary" @click="handleDBClear()">CLEAR</el-button>
   <el-table :data="dbDataObjList" style="width: 100%" :table-layout="tableLayout"
     @selection-change="handleSelectionChange">
     <el-table-column type="selection" width="55" />

@@ -14,6 +14,7 @@ const isConnected = ref(false)
 const isFanRunning = ref(false)
 const collectCount = ref(0)
 const collectCountNow = ref(0)
+const dataMap = ref({})
 
 const handleConnect = () => {
   if (isConnected.value == true) {
@@ -93,8 +94,8 @@ socket.on('data_from_device', data => {
 
 <template>
   <ViewTitle viewTitle="DashBoard" />
-  <el-button style="margin: 0 10px 0 0px;" type="primary" @click="handleConnect">{{ isConnected ? 'Disconnect' : 'Connect' }}</el-button>
-  <el-button style="margin: 0 10px 0 10px;" type="primary" @click="handleStartDevice" :disabled="!isConnected">
+  <el-button style="margin: 0 10px 0 0;" type="primary" @click="handleConnect">{{ isConnected ? 'Disconnect' : 'Connect' }}</el-button>
+  <el-button style="margin: 0 10px 0 0;" type="primary" @click="handleStartDevice" :disabled="!isConnected">
     {{ isFanRunning ? 'Stop Device' : 'Start Device' }}
   </el-button>
 
