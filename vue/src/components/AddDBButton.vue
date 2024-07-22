@@ -17,12 +17,12 @@ const onClickAddButton = () => {
     dialog.value = true
     initFormList()
   } catch (error) {
-    console.log(error)
+    // console.log(error)
   }
 }
 
 const initFormList = () => {
-  console.log(db.columnsToFill)
+  // console.log(db.columnsToFill)
   formList.value = []
   db.columnsToFill.forEach(item => {
     formList.value.push({
@@ -53,7 +53,7 @@ const handleAddDB = () => {
       loading.value = false
       dialog.value = false
       if (data.status == 'error') {
-        throw new Error()
+        throw new Error(data.message)
       }
       ElMessage({
         message: '数据添加成功',
@@ -61,7 +61,7 @@ const handleAddDB = () => {
       })
     })
     .catch(response => {
-      ElMessage.error('数据添加失败！')
+      ElMessage.error('数据添加失败:' + response.message)
     })
   setTimeout(() => {
     loading.value = false

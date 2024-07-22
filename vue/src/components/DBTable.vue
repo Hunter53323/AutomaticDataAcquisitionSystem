@@ -18,7 +18,7 @@ const handleSelectionChange = (val) => {
   val.forEach((element) => {
     multipleSelection.value.push(element.ID)
   })
-  console.log(multipleSelection.value)
+  // console.log(multipleSelection.value)
 }
 
 
@@ -66,7 +66,7 @@ const handleDBDelete = () => {
           })
         })
         .catch(response => {
-          ElMessage.error('数据删除失败' + response.message)
+          ElMessage.error('数据删除失败:' + response.message)
         })
     })
     .catch(() => {
@@ -105,7 +105,7 @@ const handleDBClear = () => {
           })
         })
         .catch(response => {
-          ElMessage.error('数据清除失败' + response.message)
+          ElMessage.error('数据清除失败:' + response.message)
         })
     })
     .catch(() => {
@@ -140,7 +140,7 @@ const handleDBExport = () => {
           })
         })
         .catch(response => {
-          ElMessage.error('数据导出失败' + response.message)
+          ElMessage.error('数据导出失败:' + response.message)
         })
     })
     .catch(() => {

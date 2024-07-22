@@ -94,26 +94,38 @@ socket.on('data_from_device', data => {
 
 <template>
   <ViewTitle viewTitle="DashBoard" />
-  <el-button style="margin: 0 10px 0 0;" type="primary" @click="handleConnect">{{ isConnected ? 'Disconnect' : 'Connect' }}</el-button>
+  <el-button style="margin: 0 10px 0 0;" type="primary" @click="handleConnect">{{ isConnected ? 'Disconnect' : 'Connect'
+    }}</el-button>
   <el-button style="margin: 0 10px 0 0;" type="primary" @click="handleStartDevice" :disabled="!isConnected">
     {{ isFanRunning ? 'Stop Device' : 'Start Device' }}
   </el-button>
 
-  <StatisticBox class="statisticBox" :contentObj="contentDataShow" :keyMap="dataMap"  title="" />
+  <StatisticBox class="statisticBox" :contentObj="contentDataShow" :keyMap="dataMap" title="" />
   <!-- <StatisticBox class="statisticBox" :contentObj="contentParaShow" title="ParaShow" /> -->
 
+  <el-divider />
   <el-upload ref="upload" class="upload-demo" action="" :limit="1" :on-exceed="handleExceed" :auto-upload="false"
     :http-request="uploadCSV">
     <template #trigger>
-      <el-button style="margin: 0 10px 0 0px;" type="primary">select file</el-button>
+      <el-button style="margin: 0 10px 0 0;" type="primary">Select File</el-button>
     </template>
-    <el-button style="margin: 0 10px 0 10px;" class="ml-3" type="success" @click="submitUpload">
-      upload to server
+    <el-button style="margin: 0 10px 0 0;" class="ml-3" type="success" @click="submitUpload">
+      Upload
     </el-button>
   </el-upload>
 
   <el-text class="mx-1">共有{{ collectCount }}条数据需要采集，当前为第{{ collectCountNow }}条。</el-text>
-
+  <div class="collectorControl" style="margin: 20px 10px 0 0;">
+    <el-button style="margin: 0 10px 0 0;" class="ml-3" type="success" @click="submitUpload">
+      开始
+    </el-button>
+    <el-button style="margin: 0 10px 0 0;" class="ml-3" type="success" @click="submitUpload">
+      暂停
+    </el-button>
+    <el-button style="margin: 0 10px 0 0;" class="ml-3" type="success" @click="submitUpload">
+      停止
+    </el-button>
+  </div>
 </template>
 
 <style scoped>
