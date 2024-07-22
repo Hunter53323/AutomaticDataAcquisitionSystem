@@ -134,7 +134,7 @@ class TestDevice(DriverBase):
                 length = int.from_bytes(msg[-2:], byteorder="big", signed=False)
                 msg += self.client.recv(length)
                 if len(msg) == 6 + length:
-                    self.logger.info(f"收到的报文为：{msg.hex()}")
+                    self.logger.debug(f"收到的报文为：{msg.hex()}")
                     return msg
                 else:
                     raise Exception(f"接收到的数据体长度不符合预期:{msg.hex()}")
@@ -183,7 +183,7 @@ class TestDevice(DriverBase):
                     tid, pid, length, uid, fc, data_size = struct.unpack(">HHHBBB", result[:9])
                     if data_size == num * encoding:
                         float_values = [struct.unpack(">f", result[i : i + 4])[0] for i in range(9, 9 + num * encoding, encoding)]
-                        self.logger.info(
+                        self.logger.debug(
                             f"tid, pid, length, uid：{tid, pid, length, uid},Function Code:{fc},data_size:{data_size},数据：{float_values}"
                         )
                         self.curr_data["motor_input_power"] = float_values[0]
