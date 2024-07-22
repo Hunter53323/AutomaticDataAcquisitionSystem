@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import { ref, reactive, computed } from 'vue'
+import { computed } from 'vue'
 
-const props = defineProps(['contentObj', 'title', 'keyMap'])
+const props = defineProps(['contentObj', 'title'])
 const contentLength = computed(() => Object.keys(props.contentObj).length)
 </script>
 

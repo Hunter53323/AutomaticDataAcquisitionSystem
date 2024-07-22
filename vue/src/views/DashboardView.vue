@@ -1,20 +1,43 @@
 <script setup lang="ts">
-import StatisticBox from '../components/StatisticBox.vue'
-import ViewTitle from '../components/ViewTitle.vue'
+import StatisticBox from '@/components/StatisticBox.vue'
+import ViewTitle from '@/components/ViewTitle.vue'
 import { io } from 'socket.io-client'
-import { ref } from 'vue'
-import { genFileId } from 'element-plus'
-import { UploadInstance, UploadProps, UploadRawFile } from 'element-plus'
+import { onMounted, ref } from 'vue'
+import { UploadInstance, UploadProps, UploadRawFile, genFileId } from 'element-plus'
+import { Chart } from '@antv/g2'
+import { useGlobalStore } from '@/stores/global'
 
 const contentDataShow = ref([])
-const url = 'http://127.0.0.1:5000'
-const urlCSV = url + '/collect/csvupload'
-const socket = io(url)
+const global = useGlobalStore()
+const socket = io(global.url)
 const isConnected = ref(false)
 const isFanRunning = ref(false)
 const collectCount = ref(0)
 const collectCountNow = ref(0)
 const dataMap = ref({})
+
+
+const data = [
+  { genre: 'Sports', sold: 275 },
+  { genre: 'Strategy', sold: 115 },
+  { genre: 'Action', sold: 120 },
+  { genre: 'Shooter', sold: 350 },
+  { genre: 'Other', sold: 150 },
+];
+
+
+const renderChart = () => {
+  const chart = new Chart({
+    container: 'chart',
+  })
+  chart
+    .interval()
+    .data(data)
+    .encode('x', 'genre')
+    .encode('y', 'sold')
+  chart.render()
+}
+
 
 const handleConnect = () => {
   if (isConnected.value == true) {
@@ -41,7 +64,7 @@ const submitUpload = () => {
 const uploadCSV = param => {
   const formData = new FormData()
   formData.append('file', param.file)
-  fetch(urlCSV, {
+  fetch(global.url + '/collect/csvupload', {
     method: 'POST',
     body: formData,
   })
@@ -54,12 +77,11 @@ const uploadCSV = param => {
     })
 }
 
-
 const handleStartDevice = () => {
   var command = isFanRunning.value ? 'stop' : 'start'
   const formData = new FormData();
   formData.append('command', command);
-  fetch(url + '/control/fan', {
+  fetch(global.url + '/control/fan', {
     method: 'POST',
     body: formData,
   })
@@ -76,7 +98,6 @@ const handleStartDevice = () => {
     })
 }
 
-
 socket.on('connection', data => {
   if (data.status == true) {
     isConnected.value = true
@@ -90,13 +111,20 @@ socket.on('data_from_device', data => {
   contentDataShow.value = data
   console.log(data)
 })
+
+
+
+// // 渲染可视化
+// chart.render()
+
+
 </script>
 
 <template>
   <ViewTitle viewTitle="DashBoard" />
-  <el-button style="margin: 0 10px 0 0;" type="primary" @click="handleConnect">{{ isConnected ? 'Disconnect' : 'Connect'
+  <el-button type="primary" @click="handleConnect">{{ isConnected ? 'Disconnect' : 'Connect'
     }}</el-button>
-  <el-button style="margin: 0 10px 0 0;" type="primary" @click="handleStartDevice" :disabled="!isConnected">
+  <el-button type="primary" @click="handleStartDevice" :disabled="!isConnected">
     {{ isFanRunning ? 'Stop Device' : 'Start Device' }}
   </el-button>
 
@@ -107,30 +135,47 @@ socket.on('data_from_device', data => {
   <el-upload ref="upload" class="upload-demo" action="" :limit="1" :on-exceed="handleExceed" :auto-upload="false"
     :http-request="uploadCSV">
     <template #trigger>
-      <el-button style="margin: 0 10px 0 0;" type="primary">Select File</el-button>
+      <el-button type="primary">Select File</el-button>
     </template>
-    <el-button style="margin: 0 10px 0 0;" class="ml-3" type="success" @click="submitUpload">
+    <el-button class="ml-3" type="success" @click="submitUpload">
       Upload
     </el-button>
   </el-upload>
 
-  <el-text class="mx-1">共有{{ collectCount }}条数据需要采集，当前为第{{ collectCountNow }}条。</el-text>
-  <div class="collectorControl" style="margin: 20px 10px 0 0;">
-    <el-button style="margin: 0 10px 0 0;" class="ml-3" type="success" @click="submitUpload">
-      开始
-    </el-button>
-    <el-button style="margin: 0 10px 0 0;" class="ml-3" type="success" @click="submitUpload">
-      暂停
-    </el-button>
-    <el-button style="margin: 0 10px 0 0;" class="ml-3" type="success" @click="submitUpload">
-      停止
-    </el-button>
+  <el-text class="collectorCount">共有{{ collectCount }}条数据需要采集，当前为第{{ collectCountNow }}条。</el-text>
+
+  <div class="collectorControl">
+    <el-button type="success" @click="submitUpload">开始</el-button>
+    <el-button type="success" @click="submitUpload">暂停</el-button>
+    <el-button type="success" @click="submitUpload">停止</el-button>
   </div>
+  <el-divider />
+  <el-button style="margin: 0 10px 0 0;" type="primary" @click="renderChart">Load</el-button>
+  <div id="chart"></div>
+
 </template>
+
+
 
 <style scoped>
 .statisticBox {
   margin: auto;
   min-height: 10vh;
+}
+
+.collectorCount {
+  margin: 10px 0;
+}
+
+.collectorControl {
+  margin: 10px 0;
+}
+
+.divider {
+  margin: 10px 0 10px 0;
+}
+
+.el-button {
+  margin: 0 10px 0 0;
 }
 </style>
