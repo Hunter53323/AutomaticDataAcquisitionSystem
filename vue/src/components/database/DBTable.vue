@@ -1,9 +1,8 @@
 <script lang="ts" setup>
 import { reactive, ref, onMounted } from 'vue'
-import type { TableInstance } from 'element-plus'
 import { ElTable, ElMessage, ElMessageBox } from 'element-plus'
-import AddDBButton from '../components/AddDBButton.vue'
-import DBPagination from '../components/DBPagination.vue'
+import AddDBButton from '@/components/database/AddDBButton.vue'
+import DBPagination from '@/components/database/DBPagination.vue'
 import { useGlobalStore } from '@/stores/global'
 import { useDBStore } from '@/stores/global'
 
