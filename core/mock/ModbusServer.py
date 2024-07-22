@@ -6,26 +6,12 @@ import struct
 import threading
 import time
 
-from pymodbus.server import StartTcpServer
-from pymodbus.datastore import ModbusSequentialDataBlock, ModbusSlaveContext, ModbusServerContext
 from pymodbus.transaction import ModbusSocketFramer
 
 # Setup logging
 logging.basicConfig()
 log = logging.getLogger()
 log.setLevel(logging.DEBUG)
-
-
-class CustomModbusFramer(ModbusSocketFramer):
-    def processIncomingPacket(self, data, callback, slave, **kwargs):
-        log.debug("Received data: " + str(data))
-        log.debug("Received header: " + str(self._header))
-        return super().processIncomingPacket(data, callback, slave)
-
-    def buildPacket(self, message):
-        packet = super().buildPacket(message)
-        log.debug("Sending data: " + str(packet))
-        return packet
 
 
 def build_modbus_tcp_message(torque=0.01, speed=0.1, voltage=0.01):
@@ -45,44 +31,51 @@ def build_modbus_tcp_message(torque=0.01, speed=0.1, voltage=0.01):
 
 class Tcpserver:
     def __init__(self, ip="127.0.0.1", port=5020):
-        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.s.bind((ip, port))
-        self.s.listen(1)
-        self.conn, self.addr = self.s.accept()
-        print("Connected by", self.addr)
-        self.sendcount = 0
+        self.ip = ip
+        self.port = port
+        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_socket.bind((self.ip, self.port))
+        self.server_socket.listen(5)
+        print(f"Server listening on {self.ip}:{self.port}")
         self.run_server()
 
-    def send_one(self):
-        torque = random.uniform(0, 40000)
-        speed = random.uniform(0, 10000)
-        voltage = random.uniform(0, 380)
-        MESSAGE = build_modbus_tcp_message(torque=torque, speed=speed, voltage=voltage)
-        print(f"发送的报文为：{MESSAGE.hex()},count:{self.sendcount}")
-        self.sendcount += 1
-        self.conn.sendall(MESSAGE)
-
-    def recv_one(self, timeout: float = 0.1):
-        self.conn.settimeout(timeout)  # 设置接收超时时间，如果超时即使接收的字节数少于目标值也返回
+    def handle_client(self, conn: socket.socket, addr):
+        print(f"Connected by {addr}")
+        sendcount = 0
         try:
-            msg = self.conn.recv(6)
-            if len(msg) == 6:  # 数据头
+            while True:
+                self.send_one(conn, sendcount)
+                sendcount += 1
+                time.sleep(0.05)
+                self.recv_one(conn)
+        except Exception as e:
+            print(f"Connection with {addr} closed: {e}")
+        finally:
+            conn.close()
+
+    def send_one(self, conn: socket.socket, count):
+        torque = random.uniform(30000, 40000)
+        speed = random.uniform(50000, 10000)
+        voltage = random.uniform(200, 380)
+        MESSAGE = build_modbus_tcp_message(torque=torque, speed=speed, voltage=voltage)
+        print(f"发送的报文为：{MESSAGE.hex()},count:{count}")
+        conn.sendall(MESSAGE)
+
+    def recv_one(self, conn: socket.socket, timeout: float = 0.1):
+        conn.settimeout(timeout)
+        try:
+            msg = conn.recv(6)
+            if len(msg) == 6:
                 length = int.from_bytes(msg[-2:], byteorder="big", signed=False)
-                msg += self.conn.recv(length)
+                msg += conn.recv(length)
                 if len(msg) == 6 + length:
                     print(f"收到的报文为：{msg.hex()}")
                     ack = self.modbusTCP_ack(msg)
-                    self.conn.sendall(ack)
-                    return msg
-                else:
-                    raise Exception(f"接收到的数据长度不符合预期:{msg.hex()}")
-            else:
-                raise Exception(f"接收到的数据头长度不符合预期:{msg.hex()}")
+                    conn.sendall(ack)
         except Exception as e:
             print(f"接收错误! error:{e}")
-            return
         finally:
-            pass  # 收尾
+            pass
 
     def modbusTCP_ack(self, msg):
         tid, pid, length, uid, fc = struct.unpack(">HHHBB", msg[:8])
@@ -91,22 +84,21 @@ class Tcpserver:
         elif fc == 0x10:
             startRegister, numRegister = struct.unpack(">HH", msg[8:12])
             body = struct.pack(">HH", startRegister, numRegister)
-            length = len(body) + 2  # 动态计算长度，包括Unit Identifier和Function Code
+            length = len(body) + 2
             header = struct.pack(">HHHBB", tid, pid, length, uid, fc)
-            # 返回报文
             return header + body
 
     def run_server(self):
-        while True:
-            self.send_one()  # 定时发
-            time.sleep(0.05)
-            self.recv_one()
-            # time.sleep(0.05)
+        try:
+            while True:
+                conn, addr = self.server_socket.accept()
+                client_thread = threading.Thread(target=self.handle_client, args=(conn, addr))
+                client_thread.start()
+        except KeyboardInterrupt:
+            print("Server is shutting down.")
+        finally:
+            self.server_socket.close()
 
 
 if __name__ == "__main__":
-    try:
-        server = Tcpserver(ip="127.0.0.1", port=5020)
-    except Exception as e:
-        print(e)
-# TODO:服务器退出之后继续运行，除非手动退出，手动退出的时候也需要能够正常退出
+    server = Tcpserver(ip="127.0.0.1", port=5020)
