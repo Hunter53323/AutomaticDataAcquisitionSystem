@@ -28,7 +28,7 @@ const dbDataUpdate = () => {
     .then(data => {
       // console.log(data)
       dbDataObjList.value = data.data
-      db.updateTotalCount(data.total_count)
+      db.totalCount = data.total_count
     })
 }
 
@@ -156,7 +156,7 @@ const handlePageChange = () => {
 }
 
 const handlePageSizeChange = () => {
-  db.changeCurrentPage(1)
+  db.currentPage = 1
   dbDataUpdate()
 }
 

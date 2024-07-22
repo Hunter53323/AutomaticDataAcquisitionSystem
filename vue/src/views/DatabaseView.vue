@@ -6,7 +6,7 @@ import { useDBStore } from '@/stores/global'
 
 const db = useDBStore()
 
-db.update()
+db.updateMeta()
 </script>
 
 <template>

@@ -18,10 +18,9 @@ const renderChart = () => {
     .scale('y', {
       nice: true,
     })
-    .axis('y', { labelFormatter: (d) => d + '°C' });
+    .axis('y', { labelFormatter: (d) => d + 'rpm' });
 
   chart.line().encode('shape', 'smooth');
-  chart.point().encode('shape', 'point').tooltip(false);
   chart.render();
 }
 

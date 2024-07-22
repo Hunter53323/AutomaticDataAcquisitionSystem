@@ -5,17 +5,13 @@ import DataGraph from '@/components/Dashboard/DataGraph.vue'
 import { io } from 'socket.io-client'
 import { onMounted, ref } from 'vue'
 import { UploadInstance, UploadProps, UploadRawFile, genFileId } from 'element-plus'
-import { useGlobalStore } from '@/stores/global'
+import { useGlobalStore, useDashboardStore } from '@/stores/global'
 import { ElMessage } from 'element-plus'
 
 const contentDataShow = ref([])
 const global = useGlobalStore()
+const dashboard = useDashboardStore()
 const socket = io(global.url)
-const isConnected = ref(false)
-const isFanRunning = ref(false)
-const collectCount = ref(0)
-const collectCountNow = ref(0)
-// const dataMap = ref({})
 const upload = ref<UploadInstance>()
 const timeData = ref([])
 
@@ -36,7 +32,7 @@ const getCurrentTime = () => {
 
 
 const handleConnect = () => {
-  if (isConnected.value == true) {
+  if (dashboard.isConnected == true) {
     socket.emit('disconnect_device')
   }
   else {
@@ -65,7 +61,7 @@ const uploadCSV = param => {
   })
     .then(response => response.json())
     .then(data => {
-      collectCount.value = data.line_count
+      dashboard.collectCount = data.line_count
     })
     .catch(response => {
       console.log('上传失败')
@@ -73,7 +69,8 @@ const uploadCSV = param => {
 }
 
 const handleStartDevice = () => {
-  var command = isFanRunning.value ? 'stop' : 'start'
+  timeData.value = []
+  var command = dashboard.isFanRunning ? 'stop' : 'start'
   const formData = new FormData();
   formData.append('command', command);
   fetch(global.url + '/control/fan', {
@@ -84,7 +81,7 @@ const handleStartDevice = () => {
     .then(data => {
       if ('status' in data) {
         if (data.status == true) {
-          isFanRunning.value = !isFanRunning.value
+          dashboard.isFanRunning = !dashboard.isFanRunning
         } else {
           ElMessage.error('设备启动失败')
         }
@@ -94,9 +91,9 @@ const handleStartDevice = () => {
 
 socket.on('connection', data => {
   if (data.status == true) {
-    isConnected.value = true
+    dashboard.isConnected= true
   } else {
-    isConnected.value = false
+    dashboard.isConnected= false
   }
 })
 
@@ -118,10 +115,10 @@ socket.on('data_from_device', data => {
   <ViewTitle viewTitle="DashBoard" />
 
   <div class="controlBox">
-    <el-button type="primary" @click="handleConnect">{{ isConnected ? 'Disconnect' : 'Connect'
+    <el-button type="primary" @click="handleConnect">{{ dashboard.isConnected ? 'Disconnect' : 'Connect'
       }}</el-button>
-    <el-button type="primary" @click="handleStartDevice" :disabled="!isConnected">
-      {{ isFanRunning ? 'Stop Device' : 'Start Device' }}
+    <el-button type="primary" @click="handleStartDevice" :disabled="!dashboard.isConnected">
+      {{ dashboard.isFanRunning ? 'Stop Device' : 'Start Device' }}
     </el-button>
   </div>
 
@@ -130,8 +127,8 @@ socket.on('data_from_device', data => {
     <!-- <StatisticBox class="statisticBox" :contentObj="contentParaShow" title="ParaShow" /> -->
   </div>
 
-  <div class="collectorBox">
     <el-divider />
+  <div class="collectorBox">
     <el-upload ref="upload" class="upload-demo" action="" :limit="1" :on-exceed="handleExceed" :auto-upload="false"
       :http-request="uploadCSV">
       <template #trigger>
@@ -141,7 +138,7 @@ socket.on('data_from_device', data => {
         Upload
       </el-button>
     </el-upload>
-    <el-text class="collectorCount">共有{{ collectCount }}条数据需要采集，当前为第{{ collectCountNow }}条。</el-text>
+    <el-text class="collectorCount">共有{{ dashboard.collectCount }}条数据需要采集，当前为第{{ dashboard.collectCountNow }}条。</el-text>
     <div class="collectorControl">
       <el-button type="success" @click="">开始</el-button>
       <el-button type="success" @click="">暂停</el-button>
