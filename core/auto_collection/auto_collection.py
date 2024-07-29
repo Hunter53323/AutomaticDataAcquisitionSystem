@@ -248,7 +248,7 @@ class AutoCollection:
         para_pool = itertools.product(*self.__para_vals.values())
         self.__para_queue = deque(para_pool)
         self.__para_queue_inited = True
-        return True
+
 
     def init_para_pool_from_csv(self, para_dict_list: list[dict]) -> bool:
         if self.__auto_running:

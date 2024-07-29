@@ -37,6 +37,7 @@ def upload_csv():
             return jsonify({"message": "文件编码错误,请使用utf-8格式的csv文件"}), 400
         line_count = csv_data.count("\n") - 1  # 行数等于换行符数量加1
         # 处理CSV数据，例如解析、保存到数据库等
+        # ...
         file = StringIO(csv_data)
         reader = csv.DictReader(file)
         # csv_context 是一个字典列表，其中每个字典表示 CSV 文件中的一行
@@ -68,6 +69,7 @@ def upload_csv():
         return jsonify({"message": "文件上传成功", "line_count": line_count}), 200
 
     return jsonify({"message": "Unknown error"}), 500
+    pass
 
 
 @autocollect.route("/control", methods=["POST"])

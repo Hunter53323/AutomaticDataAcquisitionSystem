@@ -1,4 +1,3 @@
-import { column } from 'element-plus/es/components/table-v2/src/common'
 import { defineStore } from 'pinia'
 
 export const useGlobalStore = defineStore('global', {
@@ -18,7 +17,7 @@ export const useDBStore = defineStore('db', {
         currentPage: 1
     }),
     actions: {
-        update() {
+        updateMeta() {
             fetch(useGlobalStore().url + "/db/data/meta", {
                 method: 'GET'
             })
@@ -29,14 +28,14 @@ export const useDBStore = defineStore('db', {
                     this.totalCount = data.total_count
                 })
         },
-        changePageSize(pageSize) {
-            this.pageSize = pageSize
-        },
-        updateTotalCount(count) {
-            this.totalCount = count
-        },
-        changeCurrentPage(page) {
-            this.currentPage = page
-        }
     }
+})
+
+export const useDashboardStore = defineStore('db', {
+    state: () => ({
+        collectCount: 0,
+        collectCountNow: 0,
+        isConnected: false,
+        isFanRunning: false
+    }),
 })
