@@ -33,6 +33,7 @@ socket.on('connection', function(devicestatus) {
     if (devicestatus.status == true) {
         isConnected = true;
         document.getElementById('status').innerText = "已连接";
+        document.getElementById('status').style.color= "green";
         document.getElementById('connect_button').innerText = '断开连接';
         document.getElementById('start_device_button').disabled = false;
         document.getElementById('start_test_device_button').disabled = false;
@@ -40,6 +41,7 @@ socket.on('connection', function(devicestatus) {
     } else {
         isConnected = false;
         document.getElementById('status').innerText = "未连接";
+        document.getElementById('status').style.color= "red";
         document.getElementById('connect_button').innerText = '连接设备';
         document.getElementById('start_device_button').disabled = true;
         document.getElementById('start_test_device_button').disabled = true;

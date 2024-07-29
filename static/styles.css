@@ -2,40 +2,181 @@ body {
     font-family: Arial, sans-serif;
 }
 
+h1,h2{
+    text-align: center; /* 居中文字 */
+  }
+
 .horizontal_pairs_container {
     display: flex;
-    gap: 15px;
+    gap: 45px;
     /* justify-content: space-between; 添加间距 */
 }
 .horizontal_pair {
     display: flex;
     flex-direction: column; /* 内部元素纵向排列 */
     align-items: center; /* 垂直居中对齐 */
-    margin-right: 20px; /* 设置子元素之间的间距 */
+    margin-right: 15px; /* 设置子元素之间的间距 */
 }
 .label {
     margin-right: 10px; /* 调整标签和数值之间的间距 */
 }
 
 .container {
-    border: 2px solid black; /* 边框样式 */
     padding: 20px; /* 内边距 */
-    width: 80%; /* 宽度，根据需要调整 */
+    width: 95%; /* 宽度，根据需要调整 */
     margin: 0 auto; /* 水平居中 */
     background-color: #f9f9f9; /* 背景色 */
-  }
-
-.center-text {
-    text-align: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* 阴影效果，可以调整模糊半径和颜色 */
+    border-radius: 8px; /* 圆角半径，根据需要调整 */
+    /* margin-left: 0; 设置左外边距为0，使元素靠左 */
 }
 
-button {
+
+.fixed-image {
+    /* position: fixed; 使用固定定位 */
+    top: 10px; /* 距离顶部10像素 */
+    left: 10px; /* 距离左侧10像素 */
+    z-index: 1000; /* 确保图片在其他内容之上 */
+    width: 100px; /* 设置图片宽度 */
+    height: auto; /* 高度自适应 */
+}
+
+.center-text {
+    display: inline-block; /* 使用内联块显示 */
+    margin-left: 20px; /* 设置左边距，使文字不与图片重叠 */
+    vertical-align: top; /* 与图片顶部对齐 */
+    line-height: 20px; /* 设置行高，使文字垂直居中 */
+    font: 40px Arial, 华文行楷; /* 设置字体样式 */
+}
+
+.container2 {
+    display: flex;
+  }
+  
+  .left-column {
+    width: 20%; /* 调整宽度 */
+    background-color: #f9f9f9; /* 背景色 */
+    padding: 20px; /* 内边距 */
+  }
+  
+  .main-content {
+    flex-grow: 1; /* 主内容区域会填充剩余空间 */
+    padding: 20px;
+  }
+
+
+/* button {
     margin: 5px;
     padding: 10px 20px;
     font-size: 16px;
-}
+} */
+
+button {
+    background-color: #337AB7; /* 绿色背景 */
+    border: none;
+    color: white; /* 白色文字 */
+    padding: 15px 32px; /* 内边距 */
+    text-align: center; /* 文字居中 */
+    text-decoration: none;
+    display: inline-block; /* 行内块元素 */
+    font-size: 16px; /* 字体大小 */
+    margin: 4px 2px; /* 外边距 */
+    cursor: pointer; /* 鼠标样式 */
+    border-radius: 8px; /* 圆角边框 */
+    box-shadow: 0 4px #999; /* 阴影效果 */
+    transition: background-color 0.3s, box-shadow 0.3s; /* 过渡效果 */
+  }
+  
+  /* 鼠标悬停时的样式 */
+button:hover {
+    background-color: #0094D9; /* 按钮颜色变深 */
+    box-shadow: 0 2px #666; /* 阴影效果减弱 */
+  }
+  
+  /* 按钮被点击时的样式 */
+button:active {
+    background-color: #00B4F4; /* 按钮颜色更深 */
+    box-shadow: 0 0 #666; /* 无阴影效果 */
+    transform: translateY(4px); /* 按钮稍微下沉 */
+  }
+
+button:disabled {
+    background-color: #cccccc; /* 灰色背景 */
+    color: #666666; /* 深灰色文字 */
+    cursor: not-allowed; /* 鼠标样式变为禁止 */
+    box-shadow: none; /* 无阴影 */
+  }
 
 #status {
     font-size: 18px;
     margin-top: 20px;
+    color: red;
+}
+
+#status1 {
+    font-size: 18px;
+    margin-top: 20px;
+}
+
+
+
+/*数据库*/
+
+
+table, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+th, td {
+    padding: 5px;
+    text-align: left;
+}
+table {
+    width: 100%;
+    margin-top: 20px;
+}
+
+/* 查询功能增加输入框的宽度 */
+#query-mixed-ids, #query-conditions {
+width: 30%; /* 占满其父元素的宽度 */
+box-sizing: border-box; /* 边框计算在宽度内 */
+padding: 4px; /* 一些内边距以提高可读性 */
+}
+
+/* 修改功能输入框的宽度 */
+#update-ids, #update-parameter, #update-value {
+width: 20%; /* 占满其父元素的宽度 */
+box-sizing: border-box; /* 边框计算在宽度内 */
+padding: 4px; /* 一些内边距以提高可读性 */
+}    
+/* 删除功能输入框的宽度 */
+#delete-ids {
+width: 20%; /* 占满其父元素的宽度 */
+box-sizing: border-box; /* 边框计算在宽度内 */
+padding: 4px; /* 一些内边距以提高可读性 */
+}    
+ /* 增加功能输入框的宽度 */
+ #fan-name, #fan-model, #rotation-speed, #speed-compensation, #current-bandwidth, #observer-compensation, #load, #power {
+box-sizing: border-box; /* 边框计算在宽度内 */
+padding: 4px; /* 一些内边距以提高可读性 */
+}    
+/* 导出功能输入框的宽度 */
+#export-mixed-ids, #export-additional-conditions, #export-filename {
+width: 90%; /* 占满其父元素的宽度 */
+box-sizing: border-box; /* 边框计算在宽度内 */
+padding: 4px; /* 一些内边距以提高可读性 */
+}    
+
+/* 显示功能 */
+#pagination {
+        margin-top: 20px;
+        text-align: center;
+}
+    .pagination-button {
+        margin: 0 5px;
+}    
+
+#fans-data thead tr:first-child { 
+    background-color: #0099CC; 
+    color: white; /* 同时设置文字颜色为白色，如果需要的话 */ 
 }
