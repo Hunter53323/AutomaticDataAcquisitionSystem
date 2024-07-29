@@ -9,7 +9,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@antv/g2": "^5.2.1",
     "element-plus": "^2.7.6",
+    "pinia": "^2.1.7",
     "socket.io-client": "^4.7.5",
     "vue": "^3.4.29",
     "vue-router": "^4.3.3",

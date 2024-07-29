@@ -35,9 +35,13 @@ function sendCSVToServer() {
 
 function click_connect_button() {
     if (isConnected) {
-        socket.emit('disconnect_device');
+      if (fan_running == true || test_device_running == true || auto_collect == true) {
+        alert('请先停止风机、测试设备或自动采集');
+        return;
+      }
+      socket.emit('disconnect_device');
     } else {
-        socket.emit('connect_device');
+      socket.emit('connect_device');
     }
 }
 

@@ -4,7 +4,8 @@ body {
 
 .horizontal_pairs_container {
     display: flex;
-    justify-content: space-between; /* 添加间距 */
+    gap: 15px;
+    /* justify-content: space-between; 添加间距 */
 }
 .horizontal_pair {
     display: flex;
