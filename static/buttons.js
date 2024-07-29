@@ -106,6 +106,10 @@ function start_test_device() {
 }
 
 function click_start_collect_button() {
+  if (isConnected == false) {
+    alert('请先连接设备');
+    return;
+  }
     const formData = new FormData();
     formData.append('command', 'start');
     fetch('/collect/control', {
@@ -119,8 +123,8 @@ function click_start_collect_button() {
             document.getElementById('pause_collect_button').disabled = false;
             document.getElementById('stop_collect_button').disabled = false;
             document.getElementById('start_collect_button').disabled = true;
+            auto_collect = true;
             setTimeout(current_progress, 1000); // 每秒轮询一次
-            auto_collect = true
         }
       }
     )
@@ -137,7 +141,7 @@ function current_progress() {
     .then(data => {
       console.log('Server response:', data);
       document.getElementById('current-data-count').innerText = data.success
-      if (data.complete == true){
+      if (data.complete == true && auto_collect == true) {
         click_stop_collect_button();
       } else {
         if (auto_collect != false) {
@@ -191,11 +195,11 @@ function click_stop_collect_button() {
         if (data.status == 'stop'){
             alert('数据采集完成');
             document.getElementById('pause_collect_button').disabled = true;
-            document.getElementById('stop_collect_button').disabled = true;
             document.getElementById('start_collect_button').disabled = true;
-            document.getElementById('export_data').disabled = false;
+            // document.getElementById('export_data').disabled = false;
             document.getElementById('pause_collect_button').innerText = '暂停';
-            auto_collect = false
+            auto_collect = false;
+            document.getElementById('stop_collect_button').disabled = true;
         }
       }
     )
