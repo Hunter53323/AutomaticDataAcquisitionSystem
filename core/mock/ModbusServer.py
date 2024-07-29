@@ -6,7 +6,6 @@ import struct
 import threading
 import time
 
-from pymodbus.transaction import ModbusSocketFramer
 
 # Setup logging
 logging.basicConfig()
@@ -74,6 +73,7 @@ class Tcpserver:
                     conn.sendall(ack)
         except Exception as e:
             print(f"接收错误! error:{e}")
+            return
         finally:
             pass
 
@@ -86,6 +86,7 @@ class Tcpserver:
             body = struct.pack(">HH", startRegister, numRegister)
             length = len(body) + 2
             header = struct.pack(">HHHBB", tid, pid, length, uid, fc)
+            # 返回报文
             return header + body
 
     def run_server(self):

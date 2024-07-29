@@ -10,6 +10,8 @@ from application.auto_collection import autocollect
 from application.database import db
 from application.device_control import control
 from application.websocket.real_time_dataapi import init_socketio_events
+from engineio.async_drivers import gevent
+
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="gevent")

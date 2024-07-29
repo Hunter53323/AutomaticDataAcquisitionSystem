@@ -24,15 +24,15 @@ class DriverBase(ABC):
     def set_logger(self):
         # 创建一个日志记录器
         logger = logging.getLogger(self.device_name)
-        logger.setLevel(logging.INFO)  # 设置日志级别
+        logger.setLevel(logging.ERROR)  # 设置日志级别
         formatter = logging.Formatter("%(asctime)s-%(module)s-%(funcName)s-%(lineno)d-%(name)s-%(message)s")  # 其中name为getlogger指定的名字
 
-        rHandler = RotatingFileHandler(filename="./log/" + self.device_name + ".log", maxBytes=1024 * 1024, backupCount=1)
-        rHandler.setLevel(logging.INFO)
+        rHandler = RotatingFileHandler(filename="./log/" + self.device_name + ".log", backupCount=1)
+        rHandler.setLevel(logging.ERROR)
         rHandler.setFormatter(formatter)
 
         console = logging.StreamHandler()
-        console.setLevel(logging.INFO)
+        console.setLevel(logging.ERROR)
         console.setFormatter(formatter)
 
         logger.addHandler(rHandler)
