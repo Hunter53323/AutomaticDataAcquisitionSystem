@@ -27,10 +27,12 @@ def handle_socketio_events(socketio: SocketIO):
         """
         返回的数据格式为{"status": True or False}
         """
-        thread_running.set()
-        if communicator.is_read_all():
-            communicator.stop_read_all()
-            communicator.disconnect()
+        pass
+        # TODO:在网络不稳定的时候，有时候会导致socket突然断掉，这个最好是先不加
+        # thread_running.set()
+        # if communicator.is_read_all():
+        #     communicator.stop_read_all()
+        #     communicator.disconnect()
 
     @socketio.on("connect_device")
     # 连接对应设备，并开始获取数据

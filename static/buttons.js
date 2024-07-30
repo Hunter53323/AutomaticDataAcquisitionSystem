@@ -64,9 +64,9 @@ function start_device() {
       if (data.status == true){
         fan_running = !fan_running;
         if (fan_running == true) {
-          document.getElementById('start_device_button').innerText = '停止风机';
+          document.getElementById('start_device_button').innerText = '停止驱动板';
         } else {
-          document.getElementById('start_device_button').innerText = '启动风机';
+          document.getElementById('start_device_button').innerText = '启动驱动板';
         }
       } else {
         alert('设备启动失败');
@@ -94,9 +94,9 @@ function start_test_device() {
       if (data.status == true){
         test_device_running = !test_device_running;
         if (test_device_running == true) {
-          document.getElementById('start_test_device_button').innerText = '停止测试设备';
+          document.getElementById('start_test_device_button').innerText = '停止测功机';
         } else {
-          document.getElementById('start_test_device_button').innerText = '启动测试设备';
+          document.getElementById('start_test_device_button').innerText = '启动测功机';
         }
       } else {
         alert('设备启动失败');

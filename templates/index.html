@@ -10,7 +10,9 @@
     <!-- <script src="{{ url_for('static', filename='script.js') }}"></script> -->
     <script src="../static/script.js"></script>
     <script src="../static/buttons.js"></script>
-    <script src="../static/database.js"></script>
+    
+
+
     
     
 </head>
@@ -27,8 +29,8 @@
     
     <div>
       <button onclick="click_connect_button()" id="connect_button">连接设备</button>
-      <button onclick="start_device()" id="start_device_button" disabled>启动风机</button>
-      <button onclick="start_test_device()" id="start_test_device_button" disabled>启动测试设备</button>
+      <button onclick="start_device()" id="start_device_button" disabled>启动驱动板</button>
+      <button onclick="start_test_device()" id="start_test_device_button" disabled>启动测功机</button>
     </div>
     <p><span id="status1">通讯状态:</span> <span id="status">未连接</span></p>
     <hr>
@@ -50,20 +52,17 @@
     <hr>
     <!-- 数据库跳转模块 -->
     <!-- <div class="database-module">
-      <button onclick="window.open('/second', '_blank');">前往数据库</button> 
+      
     </div> -->
+    <button onclick="window.open('/second', '_blank');">前往数据库</button>
     <p><br></p>
     <h2>数据库控制</h2>
-      <div>
+    <form id="export-data-form">
         <input type="text" id="export-mixed-ids" placeholder="支持混合ID，用逗号分隔，1-3,4">
-      </div>
-      <div>
         <input type="text" id="export-additional-conditions" placeholder="支持附加条件，用AND连接，例如: 转速 > 1000 AND 风机型号 = '型号A'">
-      </div>  
-      <div>
         <input type="text" id="export-filename" placeholder="输入导出的文件名，例如: fans_data">
-      </div>
         <button type="submit">导出数据</button>
+      </form>
         <!-- 数据清除按钮 -->
         <button id="clear-data-button">清除数据库</button>
         <button id="refresh-button" onclick="fetchData()">刷新数据</button>
@@ -77,7 +76,7 @@
     
     <div class="container">
 
-    <h2>被测设备数据</h2>
+    <h2>驱动板数据</h2>
 
     <div class="horizontal_pairs_container">
     <div class="horizontal_pair">
@@ -174,7 +173,7 @@
     <hr>
 
     <div class="container">
-    <h2>测试设备数据</h2>
+    <h2>测功机数据</h2>
       <div class="horizontal_pairs_container">
       <div class="horizontal_pair">
         <span class="label">电机输入功率:&nbsp;</span>
@@ -287,6 +286,8 @@
     </div>
   </div>
 </div>
+
+<script src="../static/database.js"></script>
 
   
 </body>
