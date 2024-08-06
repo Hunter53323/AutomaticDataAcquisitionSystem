@@ -12,6 +12,7 @@ export const useDBStore = defineStore('db', {
     state: () => ({
         columns: [],
         columnsToFill: [],
+        colunmsShowSelected: [],
         totalCount: 0,
         pageSize: 5,
         currentPage: 1
@@ -25,6 +26,7 @@ export const useDBStore = defineStore('db', {
                 .then(data => {
                     this.columns = data.columns
                     this.columnsToFill = data.columns_to_fill
+                    this.colunmsShowSelected = data.columns
                     this.totalCount = data.total_count
                 })
         },

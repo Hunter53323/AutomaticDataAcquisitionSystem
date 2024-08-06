@@ -63,10 +63,6 @@ const handleAddDB = () => {
     .catch(response => {
       ElMessage.error('数据添加失败:' + response.message)
     })
-  setTimeout(() => {
-    loading.value = false
-    dialog.value = false
-  }, 100)
 }
 
 const cancelForm = () => {
