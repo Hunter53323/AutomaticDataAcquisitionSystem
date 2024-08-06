@@ -172,6 +172,7 @@ const handleDBEdit = () => {
 }
 
 onMounted(() => {
+  db.updateMeta()
   dbDataUpdate()
 })
 

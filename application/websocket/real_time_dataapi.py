@@ -19,6 +19,10 @@ def handle_socketio_events(socketio: SocketIO):
         """
         if communicator.is_read_all():
             socketio.emit("connection", {"status": True})
+            print("Readall is running")
+        else:
+            socketio.emit("connection", {"status": False})
+            print("Readall is shutdown")
         print("Client connected")
 
     @socketio.on("disconnect")
@@ -27,10 +31,10 @@ def handle_socketio_events(socketio: SocketIO):
         """
         返回的数据格式为{"status": True or False}
         """
-        thread_running.set()
-        if communicator.is_read_all():
-            communicator.stop_read_all()
-            communicator.disconnect()
+        # thread_running.set()
+        # if communicator.is_read_all():
+            # communicator.stop_read_all()
+            # communicator.disconnect()
 
     @socketio.on("connect_device")
     # 连接对应设备，并开始获取数据

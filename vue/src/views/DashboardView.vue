@@ -105,7 +105,7 @@ socket.on('data_from_device', data => {
     time: getCurrentTime(),
     value: data['actual_speed']
   })
-  console.log(timeData.value)
+  // console.log(timeData.value)
 })
 
 
