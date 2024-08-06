@@ -8,7 +8,7 @@ export const useGlobalStore = defineStore('global', {
     }
 })
 
-export const useDBStore = defineStore('db', {
+export const useDBStore = defineStore('database', {
     state: () => ({
         columns: [],
         columnsToFill: [],
@@ -33,7 +33,7 @@ export const useDBStore = defineStore('db', {
     }
 })
 
-export const useDashboardStore = defineStore('db', {
+export const useDashboardStore = defineStore('dashboard', {
     state: () => ({
         collectCount: 0,
         collectCountNow: 0,
