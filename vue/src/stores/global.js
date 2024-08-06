@@ -8,10 +8,11 @@ export const useGlobalStore = defineStore('global', {
     }
 })
 
-export const useDBStore = defineStore('db', {
+export const useDBStore = defineStore('database', {
     state: () => ({
         columns: [],
         columnsToFill: [],
+        colunmsShowSelected: [],
         totalCount: 0,
         pageSize: 5,
         currentPage: 1
@@ -25,13 +26,14 @@ export const useDBStore = defineStore('db', {
                 .then(data => {
                     this.columns = data.columns
                     this.columnsToFill = data.columns_to_fill
+                    this.colunmsShowSelected = data.columns
                     this.totalCount = data.total_count
                 })
         },
     }
 })
 
-export const useDashboardStore = defineStore('db', {
+export const useDashboardStore = defineStore('dashboard', {
     state: () => ({
         collectCount: 0,
         collectCountNow: 0,

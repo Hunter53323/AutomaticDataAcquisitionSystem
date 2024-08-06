@@ -1,12 +1,7 @@
 <script setup>
-import { reactive, ref } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 import ViewTitle from '@/components/ViewTitle.vue'
 import DBTable from '@/components/database/DBTable.vue'
-import { useDBStore } from '@/stores/global'
-
-const db = useDBStore()
-
-db.updateMeta()
 </script>
 
 <template>
