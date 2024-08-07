@@ -141,7 +141,7 @@ def export():
     ids_input = request.args.get("ids_input", "")
     additional_conditions = request.args.get("additional_conditions", "")
     try:
-        status, export_filepath = outputdb.export_data_with_conditions_to_csv(
+        status, err, export_filepath = outputdb.export_data_with_conditions_to_csv(
             filename=filename,
             filepath=filepath,
             ids_input=ids_input,
@@ -151,6 +151,32 @@ def export():
             return jsonify({"status": "success", "message": f"{export_filepath}"})
         else:
             return jsonify({"status": "error", "message": "Data export failed"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+
+@db.route("/statement", methods=["GET"])
+# 报表生成接口，根据发送的测试人员等信息生成报表，返回excel文件，由客户指定导出目录进行保存
+def statement():
+    filename = request.args.get("filename")
+    filepath = request.args.get("filepath")
+    ids_input = request.args.get("ids_input", "")
+    additional_conditions = request.args.get("additional_conditions", "")
+    try:
+        (
+            status,
+            err,
+            statement_filepath,
+        ) = outputdb.generate_statement_with_conditions_to_excel(
+            filename=filename,
+            filepath=filepath,
+            ids_input=ids_input,
+            additional_conditions=additional_conditions,
+        )
+        if status:
+            return jsonify({"status": "success", "message": f"{statement_filepath}"})
+        else:
+            return jsonify({"status": "error", "message": "Statement generation failed"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 

@@ -145,6 +145,12 @@ class Communication:
             device_para[driver.device_name] = list(driver.curr_para.keys())
         return device_para
 
+    def get_device_and_data(self) -> dict[str, list]:
+        device_data = {}
+        for driver in self.drivers:
+            device_data[driver.device_name] = list(driver.curr_data.keys())
+        return device_data
+
     def stop_read_all(self) -> bool:
         flag = True
         for driver in self.drivers:

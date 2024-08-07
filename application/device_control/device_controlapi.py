@@ -116,6 +116,19 @@ def get_parameters():
     return jsonify(cn_paras), 200
 
 
+@control.route("/data", methods=["GET"])
+def get_data():
+    """
+    获取数据名称，返回的是设备名为key的数据表，包括数据单位
+    现在是不带单位的版本，带单位的需要改动一下底层，后续再做支持
+    """
+    en_paras = communicator.get_device_and_data()
+    cn_paras = {}
+    for key, value in en_paras.items():
+        cn_paras[key] = [cn_translate(para) for para in value]
+    return jsonify(cn_paras), 200
+
+
 @control.route("/datatranslate", methods=["GET"])
 def get_data_translate():
     """

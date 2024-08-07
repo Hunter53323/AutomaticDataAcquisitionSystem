@@ -428,6 +428,12 @@ class MySQLDatabase:
             except Error as e:
                 return False, "未知异常", ""
 
+    def generate_statement_with_conditions_to_excel(
+        self, filename: str, filepath: str = "", ids_input: str = "", additional_conditions: str = ""
+    ) -> tuple[bool, str, str]:
+        pass
+        return True, "", ""
+
     def close_connection(self):
         if self.connection.is_connected():
             self.connection.close()
