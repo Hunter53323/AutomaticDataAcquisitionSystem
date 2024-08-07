@@ -2,13 +2,15 @@
 import StatisticBox from '@/components/Dashboard/StatisticBox.vue'
 import ViewTitle from '@/components/ViewTitle.vue'
 import DataGraph from '@/components/Dashboard/DataGraph.vue'
+import DataShowSelection from '@/components/Dashboard/DataShowSelection.vue'
 import { io } from 'socket.io-client'
 import { onMounted, ref } from 'vue'
 import { UploadInstance, UploadProps, UploadRawFile, genFileId } from 'element-plus'
 import { useGlobalStore, useDashboardStore } from '@/stores/global'
 import { ElMessage } from 'element-plus'
+import { c } from 'vite/dist/node/types.d-aGj9QkWt'
 
-const contentDataShow = ref([])
+const contentDataShow = ref({})
 const global = useGlobalStore()
 const dashboard = useDashboardStore()
 const socket = io(global.url)
@@ -69,6 +71,7 @@ const uploadCSV = param => {
 }
 
 const handleStartDevice = () => {
+  // TODO 时间数据清空需要等待后端接口返回 stable
   timeData.value = []
   var command = dashboard.isFanRunning ? 'stop' : 'start'
   const formData = new FormData();
@@ -91,16 +94,25 @@ const handleStartDevice = () => {
 
 socket.on('connection', data => {
   if (data.status == true) {
-    dashboard.isConnected= true
+    dashboard.isConnected = true
   } else {
-    dashboard.isConnected= false
+    dashboard.isConnected = false
   }
 })
 
 socket.on('data_from_device', data => {
-  delete data["breakdown"]
-  contentDataShow.value = data
+  // delete data["breakdown"]
+  contentDataShow.value = {}
+  dashboard.dataShowSelected.forEach(element => {
+    // if (element in data) {
+    if (true) {
+      console.log(element)
+      contentDataShow.value[element] = data[element]
+    }
+  });
 
+  // contentDataShow.value = data
+  console.log(contentDataShow.value)
   timeData.value.push({
     time: getCurrentTime(),
     value: data['actual_speed']
@@ -108,6 +120,9 @@ socket.on('data_from_device', data => {
   // console.log(timeData.value)
 })
 
+onMounted(() => {
+  dashboard.updateDataList()
+})
 
 </script>
 
@@ -120,6 +135,7 @@ socket.on('data_from_device', data => {
     <el-button type="primary" @click="handleStartDevice" :disabled="!dashboard.isConnected">
       {{ dashboard.isFanRunning ? 'Stop Device' : 'Start Device' }}
     </el-button>
+    <DataShowSelection />
   </div>
 
   <div class="statisticBox">
@@ -127,7 +143,7 @@ socket.on('data_from_device', data => {
     <!-- <StatisticBox class="statisticBox" :contentObj="contentParaShow" title="ParaShow" /> -->
   </div>
 
-    <el-divider />
+  <el-divider />
   <div class="collectorBox">
     <el-upload ref="upload" class="upload-demo" action="" :limit="1" :on-exceed="handleExceed" :auto-upload="false"
       :http-request="uploadCSV">
@@ -138,7 +154,8 @@ socket.on('data_from_device', data => {
         Upload
       </el-button>
     </el-upload>
-    <el-text class="collectorCount">共有{{ dashboard.collectCount }}条数据需要采集，当前为第{{ dashboard.collectCountNow }}条。</el-text>
+    <el-text class="collectorCount">共有{{ dashboard.collectCount }}条数据需要采集，当前为第{{ dashboard.collectCountNow
+      }}条。</el-text>
     <div class="collectorControl">
       <el-button type="success" @click="">开始</el-button>
       <el-button type="success" @click="">暂停</el-button>

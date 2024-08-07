@@ -1,22 +1,22 @@
-<script lang="ts" setup>
+<script setup>
 import { reactive, ref } from 'vue'
 import { ElDrawer, ElMessageBox } from 'element-plus'
-import { useDBStore } from '@/stores/global'
+import { useDashboardStore } from '@/stores/global'
 
-const db = useDBStore()
+const dashboard = useDashboardStore()
 
 const dialog = ref(false)
 const loading = ref(false)
-const colunmsShowSelected = ref({})
+const dataShowSelected = ref([])
 
 const onClick = () => {
-  db.colunmsShowSelected = db.columns.filter((item) => colunmsShowSelected.value.includes(item))
+  dashboard.dataShowSelected = dashboard.dataList.filter((item) => dataShowSelected.value.includes(item))
   loading.value = false
   dialog.value = false
 }
 
 const handleClose = () => {
-  if (db.colunmsShowSelected == colunmsShowSelected.value) {
+  if (dashboard.dataShowSelected == dataShowSelected.value) {
     dialog.value = false
     return 
   }
@@ -33,34 +33,34 @@ const handleClose = () => {
 const cancelForm = () => {
   loading.value = false
   dialog.value = false
-  colunmsShowSelected.value = ref(db.colunmsShowSelected)
+  dataShowSelected.value = ref(dashboard.dataShowSelected)
 }
 
 const showSelect = () => {
-  // console.log(db.colunmsShowSelected)
+  console.log(dashboard.dataShowSelected)
 }
 
 const openDialog = () => {
   dialog.value = true
-  colunmsShowSelected.value = db.colunmsShowSelected
+  dataShowSelected.value = dashboard.dataShowSelected
 }
+
 
 </script>
 
 <template>
   <el-button style="margin: 0 10px 0 0;" type="primary" @click="openDialog">SETTINGS</el-button>
-  <el-drawer v-model="dialog" title="选择你要显示的列" :before-close="handleClose" direction="rtl" class="demo-drawer">
-    <el-checkbox-group v-model="colunmsShowSelected" @change="showSelect">
-      <div style="margin: 10px 0 10px 25px;" v-for="col in db.columns">
+  <el-drawer v-model="dialog" title="选择你要显示的数据" :before-close="handleClose" direction="rtl" class="demo-drawer">
+    <el-checkbox-group v-model="dataShowSelected" @change="showSelect">
+      <div style="margin: 10px 0 10px 25px;" v-for="col in dashboard.dataList">
         <el-checkbox :key="col" :label="col" :value="col">
           {{ col }}
         </el-checkbox>
       </div>
     </el-checkbox-group>
     <div style="margin: 20px 0 0 0;">
-      <el-button style="margin: 0 10px 0 0;" type="primary" @click="onClick" :loading="loading">Submit</el-button>
-      <el-button style="margin: 0 10px 0 0;" @click="cancelForm">Cancel</el-button>
+      <el-button style="margin: 0 10px 0 0;" type="primary" @click="onClick" :loading="loading">确认</el-button>
+      <el-button style="margin: 0 10px 0 0;" @click="cancelForm">取消</el-button>
     </div>
   </el-drawer>
-
 </template>

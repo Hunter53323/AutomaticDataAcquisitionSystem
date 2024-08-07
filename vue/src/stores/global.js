@@ -38,6 +38,22 @@ export const useDashboardStore = defineStore('dashboard', {
         collectCount: 0,
         collectCountNow: 0,
         isConnected: false,
-        isFanRunning: false
+        isDeviceRunning: false,
+        dataList: [],
+        dataShowSelected:[]
     }),
+    actions: {
+        updateDataList() {
+            fetch(useGlobalStore().url + "/control/datatranslate", {
+                method: 'GET'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    this.dataList = Object.keys(data)
+                    console.log(this.dataList)
+                    this.dataShowSelected = Object.keys(data)
+                    console.log(this.dataShowSelected)
+                })
+        }
+    }
 })
