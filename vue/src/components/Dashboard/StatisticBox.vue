@@ -1,15 +1,17 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
 
-const props = defineProps(['contentObj'])
+const props = defineProps(['contentObj', 'count'])
 const contentLength = computed(() => Object.keys(props.contentObj).length)
+const rowCount = computed(() => Math.ceil(contentLength.value / props.count))
+const cowSpan = computed(() => 24 / props.count)
 </script>
 
 <template>
-  <el-row v-for="row in Math.ceil(contentLength / 6)">
-    <el-col v-for="(value, key, index) in props.contentObj" :span="4">
-      <el-statistic v-if="index < row * 6 && index >= row * 6 - 6" :title="key" :value="value" group-separator=" "
-        :precision="2" />
+  <el-row v-for="row in rowCount">
+    <el-col v-for="(value, key, index) in props.contentObj" :span="cowSpan">
+      <el-statistic v-if="index < row * props.count && index >= row * props.count - props.count" :title="key"
+        :value="value" group-separator=" " :precision="2" />
     </el-col>
   </el-row>
 </template>
@@ -25,5 +27,4 @@ const contentLength = computed(() => Object.keys(props.contentObj).length)
 .el-statistic {
   --el-statistic-title-font-size: --el-font-size-small;
 }
-
 </style>

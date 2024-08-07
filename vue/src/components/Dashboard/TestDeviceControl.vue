@@ -46,13 +46,10 @@ const handleStartDevice = () => {
 
   <div class="controlBox">
     <el-button type="primary" @click="handleConnect">
-      {{ dashboard.isConnected ? 'Disconnect' : 'Connect' }}
+      {{ dashboard.isConnected ? '断连' : '连接' }}
     </el-button>
     <el-button type="primary" @click="handleStartDevice" :disabled="!dashboard.isConnected">
-      {{ dashboard.isFanRunning ? 'Stop Device' : 'Start Device' }}
-    </el-button>
-    <el-button type="primary" @click="handleStartDevice" :disabled="!dashboard.isConnected">
-      {{ dashboard.isFanRunning ? 'Stop Device' : 'Start Device' }}
+      {{ dashboard.isFanRunning ? '停止' : '启动' }}
     </el-button>
     <DataShowSelection />
   </div>

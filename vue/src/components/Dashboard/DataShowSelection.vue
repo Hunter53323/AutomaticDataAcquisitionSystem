@@ -46,7 +46,7 @@ const openDialog = () => {
 </script>
 
 <template>
-  <el-button style="margin: 0 10px 0 0;" type="primary" @click="openDialog">SETTINGS</el-button>
+  <el-button type="primary" @click="openDialog">配置</el-button>
   <el-drawer v-model="dialog" title="选择你要显示的数据" :before-close="handleClose" direction="rtl" class="demo-drawer">
     <el-checkbox-group v-model="dataShowSelected">
       <div style="margin: 10px 0 10px 25px;" v-for="col in dashboard.dataList">

@@ -98,7 +98,7 @@ onMounted(() => {
           </div>
         </template>
         <div class="statisticBox">
-          <StatisticBox :contentObj="contentDataShow" />
+          <StatisticBox :contentObj="contentDataShow" :count="3" />
         </div>
       </el-card>
     </el-col>
@@ -110,7 +110,7 @@ onMounted(() => {
           </div>
         </template>
         <div class="statisticBox">
-          <StatisticBox :contentObj="contentDataShow" />
+          <StatisticBox :contentObj="contentDataShow" :count="4" />
         </div>
       </el-card>
     </el-col>
@@ -137,9 +137,8 @@ onMounted(() => {
       </el-card>
     </el-col>
   </el-row>
- 
 
-  <el-divider />
+
   <DataGraph :data="timeData" />
 
 </template>
@@ -147,15 +146,16 @@ onMounted(() => {
 
 
 <style scoped>
-
-.el-row{
-  margin: 0 0 20px 0;
+.el-card /deep/ .el-card__header {
+  padding: 15px 20px;
 }
 
+.card-header {
+  font-size: larger;
+}
 
-
-.divider {
-  margin: 10px 0 10px 0;
+.el-row {
+  margin: 0 0 10px 0;
 }
 
 .el-button {
