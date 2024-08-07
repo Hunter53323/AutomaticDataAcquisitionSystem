@@ -18,7 +18,7 @@ const onClick = () => {
 const handleClose = () => {
   if (dashboard.dataShowSelected == dataShowSelected.value) {
     dialog.value = false
-    return 
+    return
   }
   ElMessageBox.confirm('配置更改未保存，确认关闭？')
     .then(() => {
@@ -36,9 +36,6 @@ const cancelForm = () => {
   dataShowSelected.value = ref(dashboard.dataShowSelected)
 }
 
-const showSelect = () => {
-  console.log(dashboard.dataShowSelected)
-}
 
 const openDialog = () => {
   dialog.value = true
@@ -49,9 +46,9 @@ const openDialog = () => {
 </script>
 
 <template>
-  <el-button style="margin: 0 10px 0 0;" type="primary" @click="openDialog">SETTINGS</el-button>
+  <el-button type="primary" @click="openDialog">配置</el-button>
   <el-drawer v-model="dialog" title="选择你要显示的数据" :before-close="handleClose" direction="rtl" class="demo-drawer">
-    <el-checkbox-group v-model="dataShowSelected" @change="showSelect">
+    <el-checkbox-group v-model="dataShowSelected">
       <div style="margin: 10px 0 10px 25px;" v-for="col in dashboard.dataList">
         <el-checkbox :key="col" :label="col" :value="col">
           {{ col }}
@@ -60,7 +57,13 @@ const openDialog = () => {
     </el-checkbox-group>
     <div style="margin: 20px 0 0 0;">
       <el-button style="margin: 0 10px 0 0;" type="primary" @click="onClick" :loading="loading">确认</el-button>
-      <el-button style="margin: 0 10px 0 0;" @click="cancelForm">取消</el-button>
+      <el-button @click="cancelForm">取消</el-button>
     </div>
   </el-drawer>
 </template>
+
+<style>
+.el-button {
+  margin: 0 10px 0 0;
+}
+</style>

@@ -7,7 +7,7 @@ const db = useDBStore()
 
 const dialog = ref(false)
 const loading = ref(false)
-const colunmsShowSelected = ref({})
+const colunmsShowSelected = ref<string[]>([])
 
 const onClick = () => {
   db.colunmsShowSelected = db.columns.filter((item) => colunmsShowSelected.value.includes(item))
