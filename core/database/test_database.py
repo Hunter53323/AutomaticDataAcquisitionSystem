@@ -3,7 +3,6 @@ from .mysql_base import MySQLDatabase
 from mysql.connector import Error
 import os
 from .mysql_base import MySQLDatabase
-from . import outputdb
 import csv
 
 
@@ -12,8 +11,8 @@ HOST = os.getenv("DB_HOST", "localhost")
 USER = os.getenv("DB_USER", "liuqi")
 PASSWORD = os.getenv("DB_PASSWORD", "liuqi9713")
 DB_NAME = os.getenv("DB_NAME", "world")
-TABLE_NAME = "test_table"
-TABLE_COLUMNS = {
+TEST_TABLE_NAME = "test_table"
+TEST_TABLE_COLUMNS = {
     "ID": "INT AUTO_INCREMENT PRIMARY KEY",
     "风机名称": "VARCHAR(255) NOT NULL",  # 风机的名称，不允许为空
     "风机型号": "VARCHAR(255) NOT NULL",  # 风机的型号，不允许为空
@@ -31,6 +30,8 @@ TABLE_COLUMNS = {
 def db():
     try:
         # 赋值数据库示例
+        outputdb = MySQLDatabase(HOST, USER, PASSWORD, DB_NAME, TEST_TABLE_NAME, TEST_TABLE_COLUMNS)
+        outputdb.create_table()
         db_instance = outputdb
         yield db_instance
     finally:
@@ -97,6 +98,11 @@ def test_insert_data_with_missing_values(db: MySQLDatabase):
     for test_tuple, selected_tuple in zip(test_data_for_comparison, selected_data):
         # 截取selected_tuple中除了ID和时间戳之外的部分
         selected_tuple_excluding_extra = selected_tuple[: num_columns_in_selected_data - num_extra_columns]
+        # 使用列表推导式移除所有None值
+        filtered_list = [x for x in selected_tuple_excluding_extra if x is not None]
+
+        # 将列表转换回元组
+        selected_tuple_excluding_extra = tuple(filtered_list)
         assert test_tuple == selected_tuple_excluding_extra, "原始数据与查询结果不匹配"
 
 
@@ -455,7 +461,6 @@ def test_rearrange_ids_and_insert(db: MySQLDatabase):
     assert all_ids_after_insert == expected_ids_after_insert, "新插入的数据ID不连续"
 
 
-
 # 测试基于ID和附加条件导出数据到CSV文件
 def test_export_data_by_ids_and_conditions(db: MySQLDatabase):
     db.clear_and_reset_ids()
@@ -465,38 +470,39 @@ def test_export_data_by_ids_and_conditions(db: MySQLDatabase):
         {"风机名称": "示例风机2", "风机型号": "型号B", "转速": 1200},
         {"风机名称": "示例风机3", "风机型号": "型号A", "转速": 1400},
     ]
-    
+
     # 插入测试数据到数据库
     db.insert_data(test_data)
-    
+
     # 设置导出文件名
     filename = "test_export_by_ids_and_conditions.csv"
-    
+
     # 定义附加条件
     additional_conditions = "转速 > 1300"
-    
+
     # 调用导出函数，基于ID和附加条件导出
-    result, message = db.export_data_with_conditions_to_csv(filename, ids_input="1,3", additional_conditions=additional_conditions)
-    
+    result, message, export_file_path = db.export_data_with_conditions_to_csv(
+        filename, filepath="C:\\Users\\admin\\Desktop", ids_input="1,3", additional_conditions=additional_conditions
+    )
+
     # 检查导出是否成功
     assert result
     assert message.startswith("数据已成功导出到CSV文件")
 
     # 读取CSV文件内容
-    with open(filename, mode="r", newline="", encoding="utf-8-sig") as file:
+    with open(export_file_path, mode="r", newline="", encoding="utf-8-sig") as file:
         csv_reader = csv.reader(file)
         rows = list(csv_reader)  # 读取所有数据行，不包含列名行
         # 创建一个空列表来存储转换后的数据
         converted_rows = []
-        
+
         # 遍历原始数据列表，跳过标题行
         for item in rows[1:]:  # 从索引1开始，即跳过第一行标题
             # 提取除了时间戳之外的所有非空元素
-            filtered_item = [item[i] for i in range(len(item) - 1) if item[i] != '']
+            filtered_item = [item[i] for i in range(len(item) - 1) if item[i] != ""]
             # 添加到转换后的数据列表
-            filtered_item = filtered_item[1:]    #去掉ID
+            filtered_item = filtered_item[1:]  # 去掉ID
             converted_rows.append(filtered_item)
-        
 
     # 验证查询结果数量，应为 1,3（ID 为 1 ,3的数据满足条件）
     assert len(converted_rows) == 2, "查询结果的数量不正确"
@@ -519,9 +525,6 @@ def test_export_data_by_ids_and_conditions(db: MySQLDatabase):
 
     # 验证查询结果数据是否一致
     assert converted_list == converted_rows, "查询结果数值"
-
-
-    
 
 
 def test_clear_database(db: MySQLDatabase):

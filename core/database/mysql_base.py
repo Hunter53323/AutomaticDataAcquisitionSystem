@@ -234,6 +234,12 @@ class MySQLDatabase:
                 cursor.close()
 
     def insert_data(self, data_list: list[dict]) -> bool:
+        for data_dict in data_list:
+            if not self.insert_one_data([data_dict]):
+                return False
+        return True
+
+    def insert_one_data(self, data_list: list[dict]) -> bool:
         if len(data_list) != 1:
             return False
 
@@ -358,11 +364,19 @@ class MySQLDatabase:
             column_names = [i[0] for i in cursor.description]
         return column_names
 
-    def export_data_with_conditions_to_csv(self, filename: str, ids_input: str = "", additional_conditions: str = "") -> tuple[bool, str]:
-        # 创建一个名为 export 的文件夹
-        export_folder = os.path.join(os.getcwd(), "export")
-        if not os.path.exists(export_folder):
-            os.makedirs(export_folder)
+    def export_data_with_conditions_to_csv(
+        self, filename: str, filepath: str = "", ids_input: str = "", additional_conditions: str = ""
+    ) -> tuple[bool, str, str]:
+        """
+        文件目录如果为空则默认导出到程序根目录，否则按照用户输入进行导出
+        """
+        if not filepath:
+            # 创建一个名为 export 的文件夹
+            export_folder = os.path.join(os.getcwd(), "export")
+            if not os.path.exists(export_folder):
+                os.makedirs(export_folder)
+        else:
+            export_folder = filepath
 
         # 获取当前时间戳
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -396,12 +410,12 @@ class MySQLDatabase:
                 columns = [column[0] for column in cursor.description]
 
                 if not rows:
-                    return False, "没有找到符合条件要导出的数据"
+                    return False, "没有找到符合条件要导出的数据", ""
 
                 dict_rows = [dict(zip(columns, row)) for row in rows]
 
                 if not dict_rows:
-                    return False, "没有找到符合条件要导出的数据"
+                    return False, "没有找到符合条件要导出的数据", ""
 
                 with open(full_path, mode="w", newline="", encoding="utf-8-sig") as file:
                     csv_writer = csv.writer(file)
@@ -409,10 +423,10 @@ class MySQLDatabase:
                     for row_dict in dict_rows:
                         csv_writer.writerow(list(row_dict.values()))  # 写入数据行
 
-                return True, f"数据已成功导出到CSV文件:{full_path}"
+                return True, f"数据已成功导出到CSV文件:{full_path}", full_path
 
             except Error as e:
-                return False, "未知异常"
+                return False, "未知异常", ""
 
     def close_connection(self):
         if self.connection.is_connected():

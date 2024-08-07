@@ -10,9 +10,7 @@ def sqldb():
         # 处理数据插入
         data_list = request.get_json().get("data_list", [])
         if outputdb.insert_data(data_list):
-            return jsonify(
-                {"status": "success", "message": "Data inserted successfully"}
-            )
+            return jsonify({"status": "success", "message": "Data inserted successfully"})
         else:  # 数据插入失败
             return jsonify({"status": "error", "message": "Data insert failed"})
     elif request.method == "GET":
@@ -25,9 +23,7 @@ def sqldb():
             ids = [int(id_str) for id_str in ids_input.split(",")]
         else:
             ids = None
-        selected_data = outputdb.select_data(
-            ids_input=ids, columns=columns, conditions=conditions
-        )
+        selected_data = outputdb.select_data(ids_input=ids, columns=columns, conditions=conditions)
         return jsonify(selected_data)
     elif request.method == "PUT":
         # 处理数据更新
@@ -79,15 +75,14 @@ def api_showall():
     finally:
         cursor.close()
 
+
 @db.route("/data/meta", methods=["GET"])
 def api_show_meta():
     cursor = outputdb.connection.cursor()
     try:
         cursor.execute(f"SELECT COUNT(*) FROM {outputdb.table_name}")
         total_count = cursor.fetchone()[0]
-        cursor.execute(
-            f"SELECT * FROM {outputdb.table_name} LIMIT %s OFFSET %s", (1, 0)
-        )
+        cursor.execute(f"SELECT * FROM {outputdb.table_name} LIMIT %s OFFSET %s", (1, 0))
         data = cursor.fetchall()
         column_names = [desc[0] for desc in cursor.description]
         column_names_to_fill = column_names.copy()
@@ -95,11 +90,7 @@ def api_show_meta():
         column_names_to_fill.remove("时间戳")
         print(column_names)
         print(column_names_to_fill)
-        return jsonify({
-            "columns": column_names,
-            "columns_to_fill" : column_names_to_fill,
-            "total_count": total_count
-            })
+        return jsonify({"columns": column_names, "columns_to_fill": column_names_to_fill, "total_count": total_count})
     except Exception as e:
         return jsonify({"message": "读取数据列名失败，" + str(e)}), 500
     finally:
@@ -146,21 +137,22 @@ def api_showall_v2():
 def export():
     # filename = 'fans_data1.csv'
     filename = request.args.get("filename")
+    filepath = request.args.get("filepath")
     ids_input = request.args.get("ids_input", "")
     additional_conditions = request.args.get("additional_conditions", "")
     try:
-        status, filepath = outputdb.export_data_with_conditions_to_csv(
+        status, export_filepath = outputdb.export_data_with_conditions_to_csv(
             filename=filename,
+            filepath=filepath,
             ids_input=ids_input,
             additional_conditions=additional_conditions,
         )
         if status:
-            return jsonify({"status": "success", "message": f"{filepath}"})
+            return jsonify({"status": "success", "message": f"{export_filepath}"})
         else:
             return jsonify({"status": "error", "message": "Data export failed"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
-
 
 
 # NOTE 接口弃用，直接使用 '/data' Method='DELETE'
