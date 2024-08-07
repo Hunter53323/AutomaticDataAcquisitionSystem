@@ -10,7 +10,7 @@ const loading = ref(false)
 const dataShowSelected = ref([])
 
 const onClick = () => {
-  dashboard.dataShowSelected = dataShowSelected.value
+  dashboard.dataShowSelected = dashboard.dataList.filter((item) => dataShowSelected.value.includes(item))
   loading.value = false
   dialog.value = false
 }
@@ -33,16 +33,16 @@ const handleClose = () => {
 const cancelForm = () => {
   loading.value = false
   dialog.value = false
-  dataShowSelected.value = ref(dashboard.colunmsShowSelected)
+  dataShowSelected.value = ref(dashboard.dataShowSelected)
 }
 
 const showSelect = () => {
-  console.log(dashboard.colunmsShowSelected)
+  console.log(dashboard.dataShowSelected)
 }
 
 const openDialog = () => {
   dialog.value = true
-  dataShowSelected.value = dashboard.colunmsShowSelected
+  dataShowSelected.value = dashboard.dataShowSelected
 }
 
 
@@ -59,8 +59,8 @@ const openDialog = () => {
       </div>
     </el-checkbox-group>
     <div style="margin: 20px 0 0 0;">
-      <el-button style="margin: 0 10px 0 0;" type="primary" @click="onClick" :loading="loading">Submit</el-button>
-      <el-button style="margin: 0 10px 0 0;" @click="cancelForm">Cancel</el-button>
+      <el-button style="margin: 0 10px 0 0;" type="primary" @click="onClick" :loading="loading">确认</el-button>
+      <el-button style="margin: 0 10px 0 0;" @click="cancelForm">取消</el-button>
     </div>
   </el-drawer>
 </template>

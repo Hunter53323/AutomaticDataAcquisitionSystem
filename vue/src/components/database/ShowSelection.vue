@@ -7,10 +7,10 @@ const db = useDBStore()
 
 const dialog = ref(false)
 const loading = ref(false)
-const colunmsShowSelected = ref([])
+const colunmsShowSelected = ref({})
 
 const onClick = () => {
-  db.colunmsShowSelected = colunmsShowSelected.value
+  db.colunmsShowSelected = db.columns.filter((item) => colunmsShowSelected.value.includes(item))
   loading.value = false
   dialog.value = false
 }
@@ -37,7 +37,7 @@ const cancelForm = () => {
 }
 
 const showSelect = () => {
-  console.log(db.colunmsShowSelected)
+  // console.log(db.colunmsShowSelected)
 }
 
 const openDialog = () => {

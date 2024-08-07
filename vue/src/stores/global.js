@@ -42,4 +42,18 @@ export const useDashboardStore = defineStore('dashboard', {
         dataList: [],
         dataShowSelected:[]
     }),
+    actions: {
+        updateDataList() {
+            fetch(useGlobalStore().url + "/control/datatranslate", {
+                method: 'GET'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    this.dataList = Object.keys(data)
+                    console.log(this.dataList)
+                    this.dataShowSelected = Object.keys(data)
+                    console.log(this.dataShowSelected)
+                })
+        }
+    }
 })
