@@ -129,17 +129,12 @@ onMounted(() => {
     </el-col>
     <el-col :span="12">
       <el-card shadow="hover">
-        <template #header>
-          <div class="card-header">
-            <span>被测设备控制</span>
-          </div>
-        </template>
+        <DataGraph :data="timeData" />
       </el-card>
     </el-col>
   </el-row>
 
 
-  <DataGraph :data="timeData" />
 
 </template>
 
@@ -158,7 +153,4 @@ onMounted(() => {
   margin: 0 0 10px 0;
 }
 
-.el-button {
-  margin: 0 10px 0 0;
-}
 </style>

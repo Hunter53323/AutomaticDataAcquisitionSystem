@@ -1,5 +1,5 @@
 <script setup>
-import { defineProps } from 'vue'
+import { defineProps, onMounted } from 'vue'
 import { Chart } from '@antv/g2'
 
 const props = defineProps(['data'])
@@ -18,16 +18,22 @@ const renderChart = () => {
     .scale('y', {
       nice: true,
     })
-    .axis('y', { labelFormatter: (d) => d + 'rpm' });
+    .axis('y', { labelFormatter: (d) => d});
 
   chart.line().encode('shape', 'smooth');
   chart.render();
 }
 
+onMounted(() => {
+  setInterval(() => {
+    renderChart()
+  }, 1000)
+})
+
 </script>
 
 
 <template>
-  <el-button style="margin: 0 10px 0 0;" type="primary" @click="renderChart">Load</el-button>
+  
   <div id="container"></div>
 </template>

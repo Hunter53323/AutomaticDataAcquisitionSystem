@@ -39,7 +39,7 @@ const submitUpload = () => {
   <el-upload ref="upload" class="upload-demo" action="" :limit="1" :on-exceed="handleExceed" :auto-upload="false"
     :http-request="uploadCSV">
     <template #trigger>
-      <el-button style="margin: 0 10px 0 0;" type="primary">选择</el-button>
+      <el-button  type="primary">选择</el-button>
     </template>
     <el-button type="success" @click="submitUpload">上传</el-button>
     <el-button type="primary" @click="">开始</el-button>
@@ -47,7 +47,7 @@ const submitUpload = () => {
     <el-button type="primary" @click="">停止</el-button>
   </el-upload>
   <div>
-    <el-text class="collectorCount">
+    <el-text class="collectorCount" size="large" type="primary">
       共有{{ dashboard.collectCount }}条数据需要采集，当前为第{{ dashboard.collectCountNow }}条。
     </el-text>
   </div>
@@ -56,10 +56,10 @@ const submitUpload = () => {
 
 <style>
 .collectorCount {
-  margin: 10px 0;
+  margin: 15px 0;
 }
 
-.el-button {
-  margin: 10px 0;
+.upload-demo .el-button {
+  margin: 0 10px 0 0;
 }
 </style>
