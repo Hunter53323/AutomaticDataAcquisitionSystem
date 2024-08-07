@@ -2,6 +2,7 @@
 import StatisticBox from '@/components/Dashboard/StatisticBox.vue'
 import ViewTitle from '@/components/ViewTitle.vue'
 import DataGraph from '@/components/Dashboard/DataGraph.vue'
+import DataShowSelection from '@/components/Dashboard/DataShowSelection.vue'
 import { io } from 'socket.io-client'
 import { onMounted, ref } from 'vue'
 import { UploadInstance, UploadProps, UploadRawFile, genFileId } from 'element-plus'
@@ -120,6 +121,7 @@ socket.on('data_from_device', data => {
     <el-button type="primary" @click="handleStartDevice" :disabled="!dashboard.isConnected">
       {{ dashboard.isFanRunning ? 'Stop Device' : 'Start Device' }}
     </el-button>
+    <DataShowSelection />
   </div>
 
   <div class="statisticBox">

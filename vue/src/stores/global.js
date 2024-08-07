@@ -38,6 +38,8 @@ export const useDashboardStore = defineStore('dashboard', {
         collectCount: 0,
         collectCountNow: 0,
         isConnected: false,
-        isFanRunning: false
+        isDeviceRunning: false,
+        dataList: [],
+        dataShowSelected:[]
     }),
 })
