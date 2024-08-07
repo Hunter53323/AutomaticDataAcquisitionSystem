@@ -139,6 +139,12 @@ class Communication:
     def get_data_map(self) -> dict[str, DriverBase]:
         return self.__data_map
 
+    def get_device_and_para(self) -> dict[str, list]:
+        device_para = {}
+        for driver in self.drivers:
+            device_para[driver.device_name] = list(driver.curr_para.keys())
+        return device_para
+
     def stop_read_all(self) -> bool:
         flag = True
         for driver in self.drivers:

@@ -107,9 +107,13 @@ def check_data():
 @control.route("/parameters", methods=["GET"])
 def get_parameters():
     """
-    获取参数,返回的是所有设备的参数字典的key
+    获取参数,返回的是设备名为key的参数表
     """
-    return jsonify(communicator.get_para_map().keys()), 200
+    en_paras = communicator.get_device_and_para()
+    cn_paras = {}
+    for key, value in en_paras.items():
+        cn_paras[key] = [cn_translate(para) for para in value]
+    return jsonify(cn_paras), 200
 
 
 @control.route("/datatranslate", methods=["GET"])
@@ -118,3 +122,10 @@ def get_data_translate():
     获取中英参数对照表，返回的是一个字典
     """
     return jsonify(TABLE_TRANSLATE), 200
+
+
+def cn_translate(en: str):
+    """
+    将英文参数名翻译为中文
+    """
+    return TABLE_TRANSLATE.get(en, en)
