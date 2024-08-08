@@ -51,7 +51,6 @@ const handleStartDevice = () => {
     <el-button type="primary" @click="handleStartDevice" :disabled="!dashboard.isConnected">
       {{ dashboard.isFanRunning ? '停止' : '启动' }}
     </el-button>
-    <DataShowSelection />
   </div>
 
 

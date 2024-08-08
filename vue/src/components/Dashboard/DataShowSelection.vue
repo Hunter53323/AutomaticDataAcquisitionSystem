@@ -1,69 +1,44 @@
 <script setup>
-import { reactive, ref } from 'vue'
+import { reactive, ref, defineProps } from 'vue'
 import { ElDrawer, ElMessageBox } from 'element-plus'
 import { useDashboardStore } from '@/stores/global'
+import { Edit } from '@element-plus/icons-vue'
+
+const props = defineProps(['device'])
 
 const dashboard = useDashboardStore()
 
-const dialog = ref(false)
-const loading = ref(false)
 const dataShowSelected = ref([])
-
-const onClick = () => {
-  dashboard.dataShowSelected = dashboard.dataList.filter((item) => dataShowSelected.value.includes(item))
-  loading.value = false
-  dialog.value = false
-}
-
-const handleClose = () => {
-  if (dashboard.dataShowSelected == dataShowSelected.value) {
-    dialog.value = false
-    return
-  }
-  ElMessageBox.confirm('配置更改未保存，确认关闭？')
-    .then(() => {
-      loading.value = false
-      dialog.value = false
-    })
-    .catch(() => {
-      // catch error
-    })
-}
-
-const cancelForm = () => {
-  loading.value = false
-  dialog.value = false
-  dataShowSelected.value = ref(dashboard.dataShowSelected)
-}
-
-
-const openDialog = () => {
-  dialog.value = true
-  dataShowSelected.value = dashboard.dataShowSelected
-}
+const visible = ref(false)
 
 
 </script>
 
 <template>
-  <el-button type="primary" @click="openDialog">配置</el-button>
-  <el-drawer v-model="dialog" title="选择你要显示的数据" :before-close="handleClose" direction="rtl" class="demo-drawer">
-    <el-checkbox-group v-model="dataShowSelected">
-      <div style="margin: 10px 0 10px 25px;" v-for="col in dashboard.dataList">
-        <el-checkbox :key="col" :label="col" :value="col">
-          {{ col }}
-        </el-checkbox>
-      </div>
+  <el-popover popper-class="dataPopover" placement="top" trigger="click" :width="400" title="选择你要显示的数据">
+    <el-checkbox-group v-model="dashboard.dataShowSelected[props.device]" size="small">
+      <el-checkbox-button v-for="col in dashboard.dataList[props.device]" :key="col" :value="col">
+        {{ col }}
+      </el-checkbox-button>
     </el-checkbox-group>
-    <div style="margin: 20px 0 0 0;">
-      <el-button style="margin: 0 10px 0 0;" type="primary" @click="onClick" :loading="loading">确认</el-button>
-      <el-button @click="cancelForm">取消</el-button>
-    </div>
-  </el-drawer>
+    <template #reference>
+      <el-button :icon="Edit" link />
+    </template>
+  </el-popover>
+
 </template>
 
 <style>
 .el-button {
   margin: 0 10px 0 0;
+}
+
+
+.dataPopover .el-checkbox-group .el-checkbox-button {
+  margin: 5px 0;
+}
+
+.dataPopover .el-button {
+  margin: 0 0 0 0;
 }
 </style>

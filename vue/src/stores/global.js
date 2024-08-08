@@ -39,20 +39,29 @@ export const useDashboardStore = defineStore('dashboard', {
         collectCountNow: 0,
         isConnected: false,
         isDeviceRunning: false,
-        dataList: [],
-        dataShowSelected:[]
+        dataList: {},
+        dataShowSelected:{},
+        paraList: {},
+        paraShowSelected:{}
     }),
     actions: {
-        updateDataList() {
-            fetch(useGlobalStore().url + "/control/datatranslate", {
+        initDataList() {
+            fetch(useGlobalStore().url + "/control/data", {
                 method: 'GET'
             })
                 .then(response => response.json())
                 .then(data => {
-                    this.dataList = Object.keys(data)
-                    console.log(this.dataList)
-                    this.dataShowSelected = Object.keys(data)
-                    console.log(this.dataShowSelected)
+                    console.log(data)
+                    this.dataList = Object.assign({},data)
+                    this.dataShowSelected = Object.assign({},data)
+                })
+            fetch(useGlobalStore().url + "/control/parameters", {
+                method: 'GET'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    this.paraList = Object.assign({},data)
+                    this.paraShowSelected = Object.assign({},data)
                 })
         }
     }

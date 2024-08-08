@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import StatisticBox from '@/components/Dashboard/StatisticBox.vue'
-import ViewTitle from '@/components/ViewTitle.vue'
+// import ViewTitle from '@/components/ViewTitle.vue'
 import DataGraph from '@/components/Dashboard/DataGraph.vue'
-import TestDeviceControl from '@/components/Dashboard/TestDeviceControl.vue'
+import FanControl from '@/components/Dashboard/FanControl.vue'
+import TestControl from '@/components/Dashboard/TestControl.vue'
 import collectorBox from '@/components/Dashboard/CollectorBox.vue'
+import DataShowSelection from '@/components/Dashboard/DataShowSelection.vue'
 import { io } from 'socket.io-client'
 import { onMounted, ref } from 'vue'
 import { UploadInstance, UploadProps, UploadRawFile, genFileId } from 'element-plus'
@@ -40,7 +42,6 @@ socket.on('connection', data => {
 })
 
 socket.on('data_from_device', data => {
-  // delete data["breakdown"]
   contentDataShow.value = {}
   dashboard.dataShowSelected.forEach(element => {
     // if (element in data) {
@@ -59,7 +60,7 @@ socket.on('data_from_device', data => {
 })
 
 onMounted(() => {
-  dashboard.updateDataList()
+  dashboard.initDataList()
 })
 
 </script>
@@ -74,7 +75,7 @@ onMounted(() => {
             <span>测试设备控制</span>
           </div>
         </template>
-        <TestDeviceControl :socket="socket" />
+        <FanControl :socket="socket" />
       </el-card>
     </el-col>
     <el-col :span="12">
@@ -84,7 +85,7 @@ onMounted(() => {
             <span>被测设备控制</span>
           </div>
         </template>
-        <TestDeviceControl :socket="socket" />
+        <TestControl :socket="socket" />
       </el-card>
     </el-col>
   </el-row>
@@ -95,6 +96,7 @@ onMounted(() => {
         <template #header>
           <div class="card-header">
             <span>测试设备数据</span>
+            <DataShowSelection device="TestDevice" />
           </div>
         </template>
         <div class="statisticBox">
@@ -107,6 +109,7 @@ onMounted(() => {
         <template #header>
           <div class="card-header">
             <span>测试设备数据</span>
+            <DataShowSelection device="FanDriver" />
           </div>
         </template>
         <div class="statisticBox">
@@ -141,7 +144,7 @@ onMounted(() => {
 
 
 <style scoped>
-.el-card /deep/ .el-card__header {
+.el-card :deep() .el-card__header {
   padding: 15px 20px;
 }
 
@@ -152,5 +155,7 @@ onMounted(() => {
 .el-row {
   margin: 0 0 10px 0;
 }
-
+.DataShowSelection {
+  margin: 0 0 0 10px;
+}
 </style>
