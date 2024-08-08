@@ -4,7 +4,7 @@ from flask import Flask
 import random
 from core.communication import communicator
 import threading
-from application.utils import cn_translate
+from application.utils import cn_translate, TABLE_TRANSLATE
 
 thread = None
 thread_running = threading.Event()
@@ -82,9 +82,9 @@ def handle_socketio_events(socketio: SocketIO):
             data = communicator.read()
             para = communicator.get_curr_para()
             total = {**data, **para}
-            for key in total:
-                if key in cn_translate:
-                    total[cn_translate[key]] = total.pop(key)
+            for key in list(total.keys()).copy():
+                # if key in TABLE_TRANSLATE.keys():
+                total[cn_translate(key)] = total.pop(key)
             socketio.emit("data_from_device", total)
 
 

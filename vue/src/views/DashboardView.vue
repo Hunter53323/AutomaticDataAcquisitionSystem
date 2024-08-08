@@ -45,7 +45,6 @@ const dataShow = reactive({
 watch(() => [dashboard.dataShowSelected, dataAll], ([newSelected, newData]) => {
   dataShow.FanDriver = subObj(newData, newSelected.FanDriver)
   dataShow.TestDevice = subObj(newData, newSelected.TestDevice)
-  console.log(newSelected)
 }, { deep: true })
 
 
@@ -73,6 +72,7 @@ socket.on('connection', data => {
 
 socket.on('data_from_device', data => {
   dataAll.value = data
+  console.log(data)
   timeData.value.push({
     time: getCurrentTime(),
     value: data['actual_speed']
@@ -119,7 +119,7 @@ onMounted(() => {
             <span>测试设备数据</span>
             <ShowSelection :refList="dashboard.dataList.TestDevice"
               :selectedList="dashboard.dataShowSelected.TestDevice"
-              @selected-change="(selectedList) => {console.log(1);dashboard.dataShowSelected.TestDevice = selectedList}" />
+              @selected-change="(selectedList) => dashboard.dataShowSelected.TestDevice = selectedList" />
           </div>
         </template>
         <div class="statisticBox">
@@ -133,7 +133,7 @@ onMounted(() => {
           <div class="card-header">
             <span>测试设备数据</span>
             <ShowSelection :refList="dashboard.dataList.FanDriver" :selectedList="dashboard.dataShowSelected.FanDriver"
-              @selected-change="(selectedList) => {console.log(2);dashboard.dataShowSelected.FanDriver= selectedList}" />
+              @selected-change="(selectedList) => dashboard.dataShowSelected.FanDriver= selectedList" />
           </div>
         </template>
         <div class="statisticBox">
