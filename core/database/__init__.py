@@ -41,5 +41,5 @@ TABLE_TRANSLATE = {
     "torque": "转矩",
 }
 
-outputdb = MySQLDatabase("localhost", "liuqi", "liuqi9713", "world", TABLE_NAME, TABLE_COLUMNS)
+outputdb = MySQLDatabase("localhost", "root", "511427", "world", TABLE_NAME, TABLE_COLUMNS)
 outputdb.create_table()
