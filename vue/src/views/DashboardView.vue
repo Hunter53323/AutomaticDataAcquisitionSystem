@@ -4,13 +4,14 @@ import StatisticBox from '@/components/Dashboard/StatisticBox.vue'
 import DataGraph from '@/components/Dashboard/DataGraph.vue'
 import FanControl from '@/components/Dashboard/FanControl.vue'
 import TestControl from '@/components/Dashboard/TestControl.vue'
-import collectorBox from '@/components/Dashboard/CollectorBox.vue'
-import DataShowSelection from '@/components/Dashboard/DataShowSelection.vue'
+import CollectorBox from '@/components/Dashboard/CollectorBox.vue'
+import ShowSelection from '@/components/Dashboard/ShowSelection.vue'
 import { io } from 'socket.io-client'
 import { onMounted, ref } from 'vue'
 import { UploadInstance, UploadProps, UploadRawFile, genFileId } from 'element-plus'
 import { useGlobalStore, useDashboardStore } from '@/stores/global'
 import { ElMessage } from 'element-plus'
+import { select } from '@antv/g2'
 
 const contentDataShow = ref({})
 const global = useGlobalStore()
@@ -96,7 +97,9 @@ onMounted(() => {
         <template #header>
           <div class="card-header">
             <span>测试设备数据</span>
-            <DataShowSelection device="TestDevice" />
+            <ShowSelection :refList="dashboard.dataList.TestDevice"
+              :selectedList="dashboard.dataShowSelected.TestDevice"
+              @selected-change="(selectedList) => dashboard.dataShowSelected.TestDevice = selectedList" />
           </div>
         </template>
         <div class="statisticBox">
@@ -109,7 +112,9 @@ onMounted(() => {
         <template #header>
           <div class="card-header">
             <span>测试设备数据</span>
-            <DataShowSelection device="FanDriver" />
+            <ShowSelection :refList="dashboard.dataList.FanDriver"
+              :selectedList="dashboard.dataShowSelected.FanDriver"
+              @selected-change="(selectedList) => dashboard.dataShowSelected.FanDriver = selectedList" />
           </div>
         </template>
         <div class="statisticBox">
@@ -155,6 +160,7 @@ onMounted(() => {
 .el-row {
   margin: 0 0 10px 0;
 }
+
 .DataShowSelection {
   margin: 0 0 0 10px;
 }
