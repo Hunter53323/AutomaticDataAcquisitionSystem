@@ -4,28 +4,31 @@ from core.database import TABLE_TRANSLATE
 from flask import request, jsonify
 
 
-@control.route("/testdevice", methods=["POST"])
+@control.route("/testdevice", methods=["GET", "POST"])
 # 测试设备控制
 def testdevice_control():
     """
-    测试设备控制
+    测试设备控制和状态获取
     """
     test_device = communicator.find_driver("TestDevice")
-    command = request.form.get("command")
-    if command == "start":
-        status = test_device.write({"test_device_command": "start_device"})
-    elif command == "stop":
-        status = test_device.write({"test_device_command": "stop_device"})
-    elif command == "P_mode":
-        status = test_device.write({"test_device_command": "P_mode"})
-    elif command == "N_mode":
-        status = test_device.write({"test_device_command": "N_mode"})
-    elif command == "N1_mode":
-        status = test_device.write({"test_device_command": "N1_mode"})
-    else:
-        status = False
+    if request.method == "GET":
+        return jsonify(test_device.get_device_state()), 200
+    if request.method == "POST":
+        command = request.form.get("command")
+        if command == "start":
+            status = test_device.write({"test_device_command": "start_device"})
+        elif command == "stop":
+            status = test_device.write({"test_device_command": "stop_device"})
+        elif command == "P_mode":
+            status = test_device.write({"test_device_command": "P_mode"})
+        elif command == "N_mode":
+            status = test_device.write({"test_device_command": "N_mode"})
+        elif command == "N1_mode":
+            status = test_device.write({"test_device_command": "N1_mode"})
+        else:
+            status = False
 
-    return jsonify({"status": status}), 200
+        return jsonify({"status": status}), 200
 
 
 @control.route("/testdevice/set", methods=["GET", "POST"])
@@ -43,7 +46,7 @@ def set_testdevice():
         return jsonify({"status": status}), 200
 
 
-@control.route("/fan", methods=["POST"])
+@control.route("/fan", methods=["GET", "POST"])
 # 风机控制
 def fan_control():
     """
@@ -51,33 +54,36 @@ def fan_control():
     返回{"status": True or False}
     """
     fan = communicator.find_driver("FanDriver")
-    command = request.form.get("command")
-    if command == "start":
-        status = fan.write(
-            {
-                "fan_command": "start",
-                "set_speed": 100,
-                "speed_loop_compensates_bandwidth": 0,
-                "current_loop_compensates_bandwidth": 0,
-                "observer_compensates_bandwidth": 0,
-            }
-        )
-    elif command == "stop":
-        status = fan.write(
-            {
-                "fan_command": "stop",
-                "set_speed": 0,
-                "speed_loop_compensates_bandwidth": 0,
-                "current_loop_compensates_bandwidth": 0,
-                "observer_compensates_bandwidth": 0,
-            }
-        )
-    elif command == "clear_breakdown":
-        status = fan.handle_breakdown(1)
-    else:
-        status = False
+    if request.method == "GET":
+        return jsonify(fan.get_device_state()), 200
+    if request.method == "POST":
+        command = request.form.get("command")
+        if command == "start":
+            status = fan.write(
+                {
+                    "fan_command": "start",
+                    "set_speed": 100,
+                    "speed_loop_compensates_bandwidth": 0,
+                    "current_loop_compensates_bandwidth": 0,
+                    "observer_compensates_bandwidth": 0,
+                }
+            )
+        elif command == "stop":
+            status = fan.write(
+                {
+                    "fan_command": "stop",
+                    "set_speed": 0,
+                    "speed_loop_compensates_bandwidth": 0,
+                    "current_loop_compensates_bandwidth": 0,
+                    "observer_compensates_bandwidth": 0,
+                }
+            )
+        elif command == "clear_breakdown":
+            status = fan.handle_breakdown(1)
+        else:
+            status = False
 
-    return jsonify({"status": status}), 200
+        return jsonify({"status": status}), 200
 
 
 @control.route("/fan/set", methods=["GET", "POST"])
@@ -129,12 +135,13 @@ def get_data():
     return jsonify(cn_paras), 200
 
 
-@control.route("/datatranslate", methods=["GET"])
-def get_data_translate():
+@control.route("/state", methods=["GET"])
+def state():
     """
-    获取中英参数对照表，返回的是一个字典
+    获取设备当前的状态
     """
-    return jsonify(TABLE_TRANSLATE), 200
+    state_dict = communicator.get_device_state()
+    return jsonify(state_dict), 200
 
 
 def cn_translate(en: str):

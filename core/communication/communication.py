@@ -186,6 +186,12 @@ class Communication:
                 return driver.get_hardware_parameter()
         return {}
 
+    def get_device_state(self) -> dict[str, any]:
+        state_dict = {}
+        for driver in self.drivers:
+            state_dict[driver.device_name] = driver.get_device_state()
+        return state_dict
+
     def clear_curr_data(self):
         for driver in self.drivers:
             driver.clear_curr_data()
