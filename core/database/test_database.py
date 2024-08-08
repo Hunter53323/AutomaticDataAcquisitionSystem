@@ -106,6 +106,22 @@ def test_insert_data_with_missing_values(db: MySQLDatabase):
         assert test_tuple == selected_tuple_excluding_extra, "原始数据与查询结果不匹配"
 
 
+def test_change_current_table(db: MySQLDatabase):
+    db.clear_and_reset_ids()
+    NEW_TABLE_NAME = "test_table2"
+    NEW_TABLE_COLUMNS = {
+        "ID": "INT AUTO_INCREMENT PRIMARY KEY",
+        "配置1": "VARCHAR(255)",  # 风机的名称，不允许为空
+        "配置2": "VARCHAR(255)",  # 风机的型号，不允许为空
+    }
+    assert db.change_current_table(NEW_TABLE_NAME, NEW_TABLE_COLUMNS) == True
+    db.insert_data([{"配置1": "2", "配置2": "3"}])
+    selected_data = db.select_data()
+    assert len(selected_data) == 1
+    db.clear_and_reset_ids()
+    assert db.change_current_table(TEST_TABLE_NAME) == True
+
+
 # 测试查询功能，查询所有列且不带条件的情况
 from datetime import datetime
 
