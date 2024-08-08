@@ -1,6 +1,7 @@
 # -*- coding:utf-8 -*-
 import logging
 from enum import Enum
+from typing import Tuple
 
 from sympy import symbols, Eq, solve, sympify
 
@@ -106,6 +107,22 @@ class Framer:
         self.cal_len()
         return True
 
+    def export_framer(self):
+        return {"header": self.header, "tail": self.tail, "cmd": self.cmd, "addr": self.addr,
+                 "data": self.export_data()}
+
+    def load_framer(self,framer:dict)-> tuple[bool, None] | tuple[bool, Exception]:
+        try:
+            self.set_header(framer["header"])
+            self.set_tail(framer["tail"])
+            self.set_addr(framer["addr"])
+            self.set_cmd(framer["cmd"])
+            self.load_data(framer["data"])
+            return True,None
+        except Exception as e:
+            print(e)
+            return False,e
+
     def get_data(self):
         real_data = {}
         for _, value in self.data.items():
@@ -114,9 +131,17 @@ class Framer:
             real_data[value.name] = value.real_data
         return real_data
 
-    def encode_data(self) -> bytes:  # human->computer
+    def encode_framer(self) -> bytes:  # human->computer
         all_msg = b''
-        all_msg += self.header + self.addr + self.cmd + self.tail
+        self.cal_len()
+        all_msg += self.header + self.addr + self.cmd+self.len.to_bytes()
+        for _,value in self.data.items():
+            if value.evaluate_formula(to_real=False)[0]:
+                # print(value.raw_data)
+                all_msg+=value.raw_data.to_bytes(value.size)
+            else:
+                print("转换错误")
+        all_msg+=self.check_check(all_msg).to_bytes()+self.tail
         print(all_msg.hex())
         return all_msg
 
@@ -133,7 +158,7 @@ class Framer:
                 # 先假设字典有序
                 cur = 4
                 for key, value in self.data.items():
-                    value.updata_data(msg[cur:cur + value.size])
+                    value.decode_data(msg[cur:cur + value.size])
                     cur += value.size
             else:
                 raise Exception("校验错误")
@@ -152,7 +177,6 @@ class Framer:
         checksum_low8 = checksum & 0xFF
         # print(checksum_low8.to_bytes())
         return checksum_low8
-
 
 class Fieldtype(Enum):
     int16 = 1
@@ -174,12 +198,21 @@ class Field:
         self.raw_data = 0  # bytes([0]*self.size)
         self.real_data = 0
 
-    def updata_data(self, data: bytes):
+    def decode_data(self, data: bytes):
         if self.type == "int16":
             self.raw_data = int.from_bytes(data, byteorder="big", signed=False)
             self.evaluate_formula(to_real=True)
         elif self.type == ("bit16" or "bit8"):
             self.real_data = int.from_bytes(data, byteorder="big", signed=False)
+        else:
+            pass
+
+    def set_realdata(self,real_data:int):
+        self.real_data=real_data
+        if self.type == "int16":
+            self.evaluate_formula(to_real=False)
+        elif self.type == ("bit16" or "bit8"):
+            self.raw_data=real_data
         else:
             pass
 
@@ -193,27 +226,37 @@ class Field:
             raw_data_inverse_expr = solve(Eq(real_data_sym, expr), raw_data_sym)[0]
             return f"raw_data={raw_data_inverse_expr}"
 
-    def evaluate_formula(self, to_real=True):
-        local_vars = {}
-        if to_real:
-            local_vars['raw_data'] = self.raw_data
-            exec(self.formula, {}, local_vars)
-            self.real_data = local_vars.get('real_data')
-            return self.real_data
-        else:
-            local_vars['real_data'] = self.real_data
-            exec(self.inv_formula, {}, local_vars)
-            self.raw_data = local_vars.get('raw_data')
-            return self.raw_data
-
+    def evaluate_formula(self, to_real=True)-> tuple[bool, None] | tuple[bool, Exception]:
+        try:
+            if self.type == ("bit16" or "bit8"):
+                if to_real:
+                    self.real_data = self.raw_data
+                else:
+                    self.raw_data = self.real_data
+            else:
+                local_vars = {}
+                if to_real:
+                    local_vars['raw_data'] = self.raw_data
+                    exec(self.formula, {}, local_vars)
+                    self.real_data = local_vars.get('real_data')
+                else:
+                    local_vars['real_data'] = self.real_data
+                    exec(self.inv_formula, {}, local_vars)
+                    self.raw_data = local_vars.get('raw_data')
+            return True,None
+        except Exception as e:
+            print(e)
+            return False,e
 
 if __name__ == "__main__":
     ff = Framer()
-    ff.set_data(index=1, name="speed", type="int16", size=2, formula="real_data=(raw_data+2)/3")
-    ff.set_data(index=2, name="torp", type="int16", size=2, formula="real_data=(raw_data+2)/3")
-    ff.set_data(index=3, name="power", type="int16", size=2, formula="real_data=(raw_data+2)/3")
+    ff.set_data(index=1, name="speed", type="int16", size=2, formula="real_data=raw_data")
+    ff.set_data(index=2, name="torp", type="int16", size=2, formula="real_data=raw_data")
+    ff.set_data(index=3, name="power", type="int16", size=2, formula="real_data=raw_data")
     ff.set_data(index=4, name="breakdown", type="bit16", size=2, formula="")
-    ff.cofirm_framer(b'\xA5\xFF\x00\x03\x00\x01\x00\x02\x03\x03\x01\x02\xb4\x5A')
-    data = ff.get_data()
-    print(data)
-    ff.encode_data()
+    for _,v in ff.data.items():
+        v.set_realdata(100)
+    ff.encode_framer()
+    # ff.cofirm_framer(b'\xA5\xFF\x00\x03\x00\x01\x00\x02\x03\x03\x01\x02\xb4\x5A')
+    # data = ff.get_data()
+    # print(data)
