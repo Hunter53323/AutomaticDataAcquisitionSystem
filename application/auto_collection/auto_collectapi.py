@@ -72,6 +72,19 @@ def upload_csv():
     pass
 
 
+@autocollect.route("/uploadparameter", methods=["POST"])
+def upload_parameter():
+    """
+    上传设备用于数采的控制参数，返回上传的参数列表
+    """
+    para_dict = request.json
+    state, count = auto_collector.init_para_pool(para_dict)
+    if state:
+        return jsonify({"message": "参数上传成功", "line_count": count}), 200
+    else:
+        return jsonify({"message": "参数上传失败"}), 400
+
+
 @autocollect.route("/control", methods=["POST"])
 # 自动数采的控制，包括启动、停止、暂停、停止、继续
 def auto_collect_control():

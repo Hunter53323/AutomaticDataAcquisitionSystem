@@ -200,7 +200,7 @@ class AutoCollection:
         # TODO: 后面需要加上真实的计算
         return data_dict
 
-    def init_para_pool(self, para_pool_dict: dict[str, list[any]]) -> bool:
+    def init_para_pool(self, para_pool_dict: dict[str, list[any]]) -> tuple[bool, int]:
         if self.__auto_running:
             self.logger.warning("正在自动采集，请结束或暂停后初始化参数队列")
             return False
@@ -223,7 +223,7 @@ class AutoCollection:
         para_pool = itertools.product(*self.__para_vals.values())
         self.__para_queue = deque(para_pool)
         self.__para_queue_inited = True
-        return True
+        return True, len(self.__para_queue)
 
     def init_para_pool_from_csv(self, para_dict: dict, data_count: int) -> bool:
         if self.__auto_running:
