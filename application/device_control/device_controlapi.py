@@ -1,31 +1,35 @@
 from . import control
 from core.communication import communicator
-from core.database import TABLE_TRANSLATE
 from flask import request, jsonify
+from core.database import outputdb
+from application.utils import cn_translate
 
 
-@control.route("/testdevice", methods=["POST"])
+@control.route("/testdevice", methods=["GET", "POST"])
 # 测试设备控制
 def testdevice_control():
     """
-    测试设备控制
+    测试设备控制和状态获取
     """
     test_device = communicator.find_driver("TestDevice")
-    command = request.form.get("command")
-    if command == "start":
-        status = test_device.write({"test_device_command": "start_device"})
-    elif command == "stop":
-        status = test_device.write({"test_device_command": "stop_device"})
-    elif command == "P_mode":
-        status = test_device.write({"test_device_command": "P_mode"})
-    elif command == "N_mode":
-        status = test_device.write({"test_device_command": "N_mode"})
-    elif command == "N1_mode":
-        status = test_device.write({"test_device_command": "N1_mode"})
-    else:
-        status = False
+    if request.method == "GET":
+        return jsonify(test_device.get_device_state()), 200
+    if request.method == "POST":
+        command = request.form.get("command")
+        if command == "start":
+            status = test_device.write({"test_device_command": "start_device"})
+        elif command == "stop":
+            status = test_device.write({"test_device_command": "stop_device"})
+        elif command == "P_mode":
+            status = test_device.write({"test_device_command": "P_mode"})
+        elif command == "N_mode":
+            status = test_device.write({"test_device_command": "N_mode"})
+        elif command == "N1_mode":
+            status = test_device.write({"test_device_command": "N1_mode"})
+        else:
+            status = False
 
-    return jsonify({"status": status}), 200
+        return jsonify({"status": status}), 200
 
 
 @control.route("/testdevice/set", methods=["GET", "POST"])
@@ -43,7 +47,7 @@ def set_testdevice():
         return jsonify({"status": status}), 200
 
 
-@control.route("/fan", methods=["POST"])
+@control.route("/fan", methods=["GET", "POST"])
 # 风机控制
 def fan_control():
     """
@@ -51,33 +55,36 @@ def fan_control():
     返回{"status": True or False}
     """
     fan = communicator.find_driver("FanDriver")
-    command = request.form.get("command")
-    if command == "start":
-        status = fan.write(
-            {
-                "fan_command": "start",
-                "set_speed": 100,
-                "speed_loop_compensates_bandwidth": 0,
-                "current_loop_compensates_bandwidth": 0,
-                "observer_compensates_bandwidth": 0,
-            }
-        )
-    elif command == "stop":
-        status = fan.write(
-            {
-                "fan_command": "stop",
-                "set_speed": 0,
-                "speed_loop_compensates_bandwidth": 0,
-                "current_loop_compensates_bandwidth": 0,
-                "observer_compensates_bandwidth": 0,
-            }
-        )
-    elif command == "clear_breakdown":
-        status = fan.handle_breakdown(1)
-    else:
-        status = False
+    if request.method == "GET":
+        return jsonify(fan.get_device_state()), 200
+    if request.method == "POST":
+        command = request.form.get("command")
+        if command == "start":
+            status = fan.write(
+                {
+                    "fan_command": "start",
+                    "set_speed": 100,
+                    "speed_loop_compensates_bandwidth": 0,
+                    "current_loop_compensates_bandwidth": 0,
+                    "observer_compensates_bandwidth": 0,
+                }
+            )
+        elif command == "stop":
+            status = fan.write(
+                {
+                    "fan_command": "stop",
+                    "set_speed": 0,
+                    "speed_loop_compensates_bandwidth": 0,
+                    "current_loop_compensates_bandwidth": 0,
+                    "observer_compensates_bandwidth": 0,
+                }
+            )
+        elif command == "clear_breakdown":
+            status = fan.handle_breakdown(1)
+        else:
+            status = False
 
-    return jsonify({"status": status}), 200
+        return jsonify({"status": status}), 200
 
 
 @control.route("/fan/set", methods=["GET", "POST"])
@@ -93,6 +100,36 @@ def set_device():
     else:
         status = communicator.update_hardware_parameter(device_name="FanDriver", para_dict=request.json)
         return jsonify({"status": status}), 200
+
+
+@control.route("config", methods=["GET", "POST"])
+def config():
+    """
+    配置的保存、加载等，读取当前具有的所有配置，保存当前配置，GET为读取配置，POST为保存配置
+    """
+    if request.method == "GET":
+        driver_name = request.args.get("driver_name", None)
+        driver = communicator.find_driver("driver_name")
+        outputdb.change_current_table(driver_name, COLUMN)
+        driver_config = outputdb.select_data()
+        outputdb.change_default_table()
+        # 将当前具有的所有配置返回,也可以只显示配置名字
+        return jsonify({driver_config}), 200
+    else:
+        driver_name = request.form.get("driver_name")
+        config_name = request.form.get("config_name")
+        driver = communicator.find_driver("driver_name")
+        config_dict = driver.export_config()
+        config_dict.update({"config_name": config_name})
+        # 将配置文件保存到数据库中
+        COLUMN = config_to_columns(config_dict)
+        outputdb.change_current_table(driver_name, COLUMN)
+        outputdb.insert_data([config_dict])
+        outputdb.change_default_table()
+
+        driver_config = driver.save_config()
+        # 将配置文件保存到数据库中
+        return jsonify({"status": True}), 200
 
 
 @control.route("/checkdata", methods=["GET"])
@@ -129,16 +166,19 @@ def get_data():
     return jsonify(cn_paras), 200
 
 
-@control.route("/datatranslate", methods=["GET"])
-def get_data_translate():
+@control.route("/state", methods=["GET"])
+def state():
     """
-    获取中英参数对照表，返回的是一个字典
+    获取设备当前的状态
     """
-    return jsonify(TABLE_TRANSLATE), 200
+    state_dict = communicator.get_device_state()
+    return jsonify(state_dict), 200
 
-
-def cn_translate(en: str):
+def config_to_columns(config: dict[str, any]) -> dict[str, str]:
     """
-    将英文参数名翻译为中文
+    将配置文件转换为数据库的列名
     """
-    return TABLE_TRANSLATE.get(en, en)
+    columns = {"ID": "INT AUTO_INCREMENT PRIMARY KEY"}
+    for key, _ in config.items():
+        columns[key] = "VARCHAR(255)"
+    return columns

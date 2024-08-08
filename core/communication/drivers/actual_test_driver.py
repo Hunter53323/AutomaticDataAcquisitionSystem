@@ -247,6 +247,14 @@ class TestDevice(DriverBase):
     def get_hardware_parameter(self) -> dict[str, any]:
         return {"ip": self.ip, "port": self.port}
 
+    def export_config(self) -> dict[str, any]:
+        # 导出设备的所有配置为一个字典，value只能为int,float,str,bool
+        pass
+
+    def load_config(self, config: dict[str, any]) -> bool:
+        # 从一个字典中加载配置
+        pass
+
 
 if __name__ == "__main__":
     testdevice = TestDevice(
