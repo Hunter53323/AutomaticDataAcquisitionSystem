@@ -7,17 +7,46 @@ import TestControl from '@/components/Dashboard/TestControl.vue'
 import CollectorBox from '@/components/Dashboard/CollectorBox.vue'
 import ShowSelection from '@/components/ShowSelection.vue'
 import { io } from 'socket.io-client'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { UploadInstance, UploadProps, UploadRawFile, genFileId } from 'element-plus'
 import { useGlobalStore, useDashboardStore } from '@/stores/global'
 import { ElMessage } from 'element-plus'
 import { select } from '@antv/g2'
+import { c } from 'vite/dist/node/types.d-aGj9QkWt'
+import { da } from 'element-plus/es/locale'
 
-const contentDataShow = ref({})
+const dataAll = ref({})
 const global = useGlobalStore()
 const dashboard = useDashboardStore()
 const socket = io(global.url)
 const timeData = ref([])
+
+const subObj = ((obj, arr) => {
+  const res = {}
+  try {
+    arr.forEach(key => {
+      if (obj[key]) {
+        res[key] = obj[key]
+      } else {
+        res[key] = 0
+      }
+    })
+  } catch (error) {
+    console.log(error)
+  }
+  return res
+})
+
+const dataShow = reactive({
+  FanDriver: {},
+  TestDevice: {}
+})
+
+watch(() => [dashboard.dataShowSelected, dataAll], ([newSelected, newData]) => {
+  dataShow.FanDriver = subObj(newData, newSelected.FanDriver)
+  dataShow.TestDevice = subObj(newData, newSelected.TestDevice)
+  console.log(newSelected)
+}, { deep: true })
 
 
 const getCurrentTime = () => {
@@ -43,16 +72,7 @@ socket.on('connection', data => {
 })
 
 socket.on('data_from_device', data => {
-  contentDataShow.value = {}
-  dashboard.dataShowSelected.forEach(element => {
-    // if (element in data) {
-    if (true) {
-      contentDataShow.value[element] = data[element]
-    }
-  });
-
-  // contentDataShow.value = data
-  // console.log(contentDataShow.value)
+  dataAll.value = data
   timeData.value.push({
     time: getCurrentTime(),
     value: data['actual_speed']
@@ -99,11 +119,11 @@ onMounted(() => {
             <span>测试设备数据</span>
             <ShowSelection :refList="dashboard.dataList.TestDevice"
               :selectedList="dashboard.dataShowSelected.TestDevice"
-              @selected-change="(selectedList) => dashboard.dataShowSelected.TestDevice = selectedList" />
+              @selected-change="(selectedList) => {console.log(1);dashboard.dataShowSelected.TestDevice = selectedList}" />
           </div>
         </template>
         <div class="statisticBox">
-          <StatisticBox :contentObj="contentDataShow" :count="3" />
+          <StatisticBox :contentObj="dataShow.TestDevice" :count="3" />
         </div>
       </el-card>
     </el-col>
@@ -112,13 +132,12 @@ onMounted(() => {
         <template #header>
           <div class="card-header">
             <span>测试设备数据</span>
-            <ShowSelection :refList="dashboard.dataList.FanDriver"
-              :selectedList="dashboard.dataShowSelected.FanDriver"
-              @selected-change="(selectedList) => dashboard.dataShowSelected.FanDriver = selectedList" />
+            <ShowSelection :refList="dashboard.dataList.FanDriver" :selectedList="dashboard.dataShowSelected.FanDriver"
+              @selected-change="(selectedList) => {console.log(2);dashboard.dataShowSelected.FanDriver= selectedList}" />
           </div>
         </template>
         <div class="statisticBox">
-          <StatisticBox :contentObj="contentDataShow" :count="4" />
+          <StatisticBox :contentObj="dataShow.FanDriver" :count="4" />
         </div>
       </el-card>
     </el-col>
