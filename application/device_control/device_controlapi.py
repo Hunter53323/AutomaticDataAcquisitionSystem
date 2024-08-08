@@ -1,7 +1,8 @@
 from . import control
 from core.communication import communicator
-from core.database import TABLE_TRANSLATE
 from flask import request, jsonify
+from core.database import outputdb
+from application.utils import cn_translate
 
 
 @control.route("/testdevice", methods=["GET", "POST"])
@@ -101,6 +102,36 @@ def set_device():
         return jsonify({"status": status}), 200
 
 
+@control.route("config", methods=["GET", "POST"])
+def config():
+    """
+    配置的保存、加载等，读取当前具有的所有配置，保存当前配置，GET为读取配置，POST为保存配置
+    """
+    if request.method == "GET":
+        driver_name = request.args.get("driver_name", None)
+        driver = communicator.find_driver("driver_name")
+        outputdb.change_current_table(driver_name, COLUMN)
+        driver_config = outputdb.select_data()
+        outputdb.change_default_table()
+        # 将当前具有的所有配置返回,也可以只显示配置名字
+        return jsonify({driver_config}), 200
+    else:
+        driver_name = request.form.get("driver_name")
+        config_name = request.form.get("config_name")
+        driver = communicator.find_driver("driver_name")
+        config_dict = driver.export_config()
+        config_dict.update({"config_name": config_name})
+        # 将配置文件保存到数据库中
+        COLUMN = config_to_columns(config_dict)
+        outputdb.change_current_table(driver_name, COLUMN)
+        outputdb.insert_data([config_dict])
+        outputdb.change_default_table()
+
+        driver_config = driver.save_config()
+        # 将配置文件保存到数据库中
+        return jsonify({"status": True}), 200
+
+
 @control.route("/checkdata", methods=["GET"])
 def check_data():
     """
@@ -143,9 +174,11 @@ def state():
     state_dict = communicator.get_device_state()
     return jsonify(state_dict), 200
 
-
-def cn_translate(en: str):
+def config_to_columns(config: dict[str, any]) -> dict[str, str]:
     """
-    将英文参数名翻译为中文
+    将配置文件转换为数据库的列名
     """
-    return TABLE_TRANSLATE.get(en, en)
+    columns = {"ID": "INT AUTO_INCREMENT PRIMARY KEY"}
+    for key, _ in config.items():
+        columns[key] = "VARCHAR(255)"
+    return columns
