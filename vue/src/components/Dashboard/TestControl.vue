@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useGlobalStore, useDashboardStore } from '@/stores/global'
-import DataShowSelection from '@/components/Dashboard/ShowSelection.vue'
+import DataShowSelection from '@/components/ShowSelection.vue'
 import { ElMessage } from 'element-plus'
 
 const props = defineProps(['socket'])
