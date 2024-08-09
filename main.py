@@ -9,8 +9,8 @@ from flask_cors import CORS
 from application.auto_collection import autocollect
 from application.database import db
 from application.device_control import control
+from application.websocket import socketio_http
 from application.websocket.real_time_dataapi import init_socketio_events
-from engineio.async_drivers import gevent
 
 
 app = Flask(__name__)
@@ -21,6 +21,7 @@ app.register_blueprint(autocollect, url_prefix="/collect")
 app.register_blueprint(db, url_prefix="/db")
 app.register_blueprint(control, url_prefix="/control")
 init_socketio_events(app)
+app.register_blueprint(socketio_http, url_prefix="/socketio_http")
 
 
 @app.route("/")
