@@ -31,7 +31,8 @@ function updateWidth() {
   <el-popover popper-class="dataPopover" placement="top" trigger="click" :width="width" title="选择你要显示的数据"
     @before-enter="updateWidth">
     <div ref="checkboxGroup">
-      <el-checkbox-group v-model="selectedList" size="small" @change="$emit('selectedChange',selectedList)">
+      <el-checkbox-group v-model="selectedList" size="small"
+        @change="$emit('selectedChange', props.refList.filter((item) => selectedList.includes(item)))">
         <el-checkbox-button v-for="col in props.refList" :key="col" :value="col">
           {{ col }}
         </el-checkbox-button>

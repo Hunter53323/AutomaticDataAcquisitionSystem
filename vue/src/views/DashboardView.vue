@@ -20,6 +20,7 @@ const global = useGlobalStore()
 const dashboard = useDashboardStore()
 const socket = io(global.url)
 const timeData = ref([])
+const graphSelected = ref("实际转速")
 
 const subObj = ((obj, arr) => {
   const res = {}
@@ -42,25 +43,10 @@ const dataShow = reactive({
   TestDevice: {}
 })
 
-watch(() => [dashboard.dataShowSelected, dataAll], ([newSelected, newData]) => {
-  dataShow.FanDriver = subObj(newData, newSelected.FanDriver)
-  dataShow.TestDevice = subObj(newData, newSelected.TestDevice)
+watch(() => [dashboard.dataShowSelected, dataAll.value], ([newSelected, newData]) => {
+  dataShow.FanDriver = subObj(newData, newSelected['FanDriver'])
+  dataShow.TestDevice = subObj(newData, newSelected['TestDevice'])
 }, { deep: true })
-
-
-const getCurrentTime = () => {
-  //获取当前时间并打印
-  let dt = new Date()
-  // let yy = dt.getFullYear();
-  // let mm = dt.getMonth() + 1;
-  // let dd = dt.getDate();
-  let hh = dt.getHours();
-  let mf = dt.getMinutes() < 10 ? '0' + dt.getMinutes() : dt.getMinutes();
-  let ss = dt.getSeconds() < 10 ? '0' + dt.getSeconds() : dt.getSeconds();
-  let ms = dt.getMilliseconds() < 10 ? '0' + dt.getMilliseconds() : dt.getMilliseconds();
-  // return yy + '/' + mm + '/' + dd + ' ' + hh + ':' + mf + ':' + ss;
-  return hh + ':' + mf + ':' + ss + '.' + ms;
-}
 
 socket.on('connection', data => {
   if (data.status == true) {
@@ -72,11 +58,13 @@ socket.on('connection', data => {
 
 socket.on('data_from_device', data => {
   dataAll.value = data
-  console.log(data)
   timeData.value.push({
-    time: getCurrentTime(),
-    value: data['actual_speed']
+    time: Date.now(),
+    value: data[graphSelected.value]
   })
+  if(timeData.value.at(-1).time - timeData.value.at(0).time > 10000){
+    timeData.value = timeData.value.filter((val, index, arr) => index !== 0);
+  }
   // console.log(timeData.value)
 })
 
@@ -112,14 +100,22 @@ onMounted(() => {
   </el-row>
 
   <el-row :gutter="20">
+    <el-col :span="24">
+      <el-card shadow="hover">
+        <DataGraph :data="timeData" unit="rpm" :title="graphSelected"/>
+      </el-card>
+    </el-col>
+  </el-row>
+
+  <el-row :gutter="20">
     <el-col :span="12">
       <el-card shadow="hover">
         <template #header>
           <div class="card-header">
             <span>测试设备数据</span>
-            <ShowSelection :refList="dashboard.dataList.TestDevice"
-              :selectedList="dashboard.dataShowSelected.TestDevice"
-              @selected-change="(selectedList) => dashboard.dataShowSelected.TestDevice = selectedList" />
+            <ShowSelection :refList="dashboard.dataList['TestDevice']"
+              :selectedList="dashboard.dataShowSelected['TestDevice']"
+              @selected-change="(selectedList) => dashboard.dataShowSelected['TestDevice'] = selectedList" />
           </div>
         </template>
         <div class="statisticBox">
@@ -132,8 +128,8 @@ onMounted(() => {
         <template #header>
           <div class="card-header">
             <span>测试设备数据</span>
-            <ShowSelection :refList="dashboard.dataList.FanDriver" :selectedList="dashboard.dataShowSelected.FanDriver"
-              @selected-change="(selectedList) => dashboard.dataShowSelected.FanDriver= selectedList" />
+            <ShowSelection :refList="dashboard.dataList['FanDriver']" :selectedList="dashboard.dataShowSelected['FanDriver']"
+              @selected-change="(selectedList) => dashboard.dataShowSelected['FanDriver'] = selectedList" />
           </div>
         </template>
         <div class="statisticBox">
@@ -143,8 +139,10 @@ onMounted(() => {
     </el-col>
   </el-row>
 
+
+
   <el-row :gutter="20">
-    <el-col :span="12">
+    <el-col :span="24">
       <el-card shadow="hover">
         <template #header>
           <div class="card-header">
@@ -152,11 +150,6 @@ onMounted(() => {
           </div>
         </template>
         <collectorBox />
-      </el-card>
-    </el-col>
-    <el-col :span="12">
-      <el-card shadow="hover">
-        <DataGraph :data="timeData" />
       </el-card>
     </el-col>
   </el-row>

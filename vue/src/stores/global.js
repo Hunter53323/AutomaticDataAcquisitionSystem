@@ -42,7 +42,7 @@ export const useDashboardStore = defineStore('dashboard', {
         dataList: {},
         dataShowSelected:{},
         paraList: {},
-        paraShowSelected:{}
+        paraShowSelected:{},
     }),
     actions: {
         initDataList() {
