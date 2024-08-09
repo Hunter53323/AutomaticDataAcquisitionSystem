@@ -7,6 +7,7 @@ from core.communication import communicator
 import threading
 from application.utils import cn_translate, TABLE_TRANSLATE
 from . import socketio_http
+from core.communication.drivers.fan_drive_module import breakdownmap
 
 thread = None
 thread_running = threading.Event()
@@ -68,7 +69,22 @@ def handle_socketio_events(socketio: SocketIO):
             for key in list(total.keys()).copy():
                 # if key in TABLE_TRANSLATE.keys():
                 total[cn_translate(key)] = total.pop(key)
+            breakdown_list = breakdown_replace(total["故障"])
+            total["故障"] = breakdown_list
             socketio.emit("data_from_device", total)
+
+
+def breakdown_replace(breakdown: list[str]) -> list[str]:
+    """
+    将故障代码翻译为中文
+    """
+    result = []
+    for item in breakdown:
+        if item in breakdownmap.keys():
+            result.append(breakdownmap[item])
+        else:
+            result.append(item)
+    return result
 
 
 # 导出函数以便在主应用中调用

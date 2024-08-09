@@ -40,9 +40,12 @@ def set_testdevice():
     返回的是{"status": True or False}
     GET接收返回的是当前的设备参数，数据格式同上，为全部参数
     """
+
     if request.method == "GET":
         return jsonify(communicator.get_hardware_parameter(device_name="TestDevice")), 200
     else:
+        if communicator.is_connected("TestDevice"):
+            return jsonify({"status": False, "error": "请先关闭所有设备连接"}), 400
         status = communicator.update_hardware_parameter(device_name="TestDevice", para_dict=request.json)
         return jsonify({"status": status}), 200
 
@@ -88,7 +91,7 @@ def fan_control():
 
 
 @control.route("/fan/set", methods=["GET", "POST"])
-# 对风机进行设置，修改端口、cpu、地址等参数
+# 对风机及其通信接口进行设置，修改端口、cpu、地址等参数
 def set_device():
     """
     POST接收到的数据格式为：{"para_name1": value, "para_name2": value}
@@ -98,6 +101,8 @@ def set_device():
     if request.method == "GET":
         return jsonify(communicator.get_hardware_parameter(device_name="FanDriver")), 200
     else:
+        if communicator.is_connected("FanDriver"):
+            return jsonify({"status": False, "error": "请先关闭所有设备连接"}), 400
         status = communicator.update_hardware_parameter(device_name="FanDriver", para_dict=request.json)
         return jsonify({"status": status}), 200
 
@@ -144,7 +149,7 @@ def check_data():
 @control.route("/parameters", methods=["GET"])
 def get_parameters():
     """
-    获取参数,返回的是设备名为key的参数表
+    获取参数名称,返回的是设备名为key的参数表
     """
     en_paras = communicator.get_device_and_para()
     cn_paras = {}
@@ -173,6 +178,7 @@ def state():
     """
     state_dict = communicator.get_device_state()
     return jsonify(state_dict), 200
+
 
 def config_to_columns(config: dict[str, any]) -> dict[str, str]:
     """
