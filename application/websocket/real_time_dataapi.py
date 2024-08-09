@@ -2,9 +2,12 @@ import time
 from flask_socketio import SocketIO
 from flask import Flask
 import random
+from flask import request, jsonify
 from core.communication import communicator
 import threading
 from application.utils import cn_translate, TABLE_TRANSLATE
+from . import socketio_http
+from core.communication.drivers.fan_drive_module import breakdownmap
 
 thread = None
 thread_running = threading.Event()
@@ -12,62 +15,43 @@ thread_running = threading.Event()
 
 def handle_socketio_events(socketio: SocketIO):
 
-    @socketio.on("connect")
-    # socketio建立连接
-    def connect():
-        """
-        返回的数据格式为{"status": True or False}
-        """
-        if communicator.is_read_all():
-            socketio.emit("connection", {"status": True})
-            print("Readall is running")
-        else:
-            socketio.emit("connection", {"status": False})
-            print("Readall is shutdown")
-        print("Client connected")
-
-    @socketio.on("disconnect")
-    # socketio断开连接
-    def disconnect():
-        """
-        返回的数据格式为{"status": True or False}
-        """
-        pass
-        # TODO:在网络不稳定的时候，有时候会导致socket突然断掉，这个最好是先不加
-        # # thread_running.set()
-        # # if communicator.is_read_all():
-        #     # communicator.stop_read_all()
-        #     # communicator.disconnect()
-
-    @socketio.on("connect_device")
+    @socketio_http.route("/connect_device", methods=["POST"])
     # 连接对应设备，并开始获取数据
     def device_connect():
         """
         返回的数据格式为{"status": True or False}
         """
-        if communicator.connect():
-            if communicator.start_read_all():
-                thread_running.clear()
-                thread = socketio.start_background_task(target=get_data)
-                socketio.emit("connection", {"status": True})
+        global thread
+        command = request.form.get("command")
+        device_name = request.form.get("device_name")
+        if command == "connect":
+            if communicator.connect(device_name):
+                if communicator.start_read_all(device_name):
+                    if thread == None:
+                        thread_running.clear()
+                        thread = socketio.start_background_task(target=get_data)
+                    return jsonify({"err": ""}), 200
+                else:
+                    return jsonify({"err": "启动读数据失败"}), 400
             else:
-                socketio.emit("connection", {"status": False})
+                return jsonify({"err": "连接设备失败"}), 400
+        elif command == "disconnect":
+            if communicator.is_read_all(device_name):
+                if communicator.stop_read_all(device_name):
+                    if communicator.disconnect(device_name):
+                        if communicator.read_all_driver_number() == 0:
+                            # 如果此时已经没有设备在读取数据，就清空读数据线程
+                            thread_running.set()
+                            thread = None
+                        return jsonify({"err": ""}), 200
+                    else:
+                        return jsonify({"err": "断连失败"}), 400
+                else:
+                    return jsonify({"err": "停止读数据失败"}), 400
+            else:
+                return jsonify({"err": "设备未读数据"}), 400
         else:
-            socketio.emit("connection", {"status": False})
-
-    @socketio.on("disconnect_device")
-    # 断开设备连接
-    def device_disconnect():
-        """
-        返回的数据格式为{"status": True or False}
-        """
-        thread_running.set()
-        if communicator.is_read_all():
-            communicator.stop_read_all()
-            communicator.disconnect()
-        socketio.emit("connection", {"status": False})
-        time.sleep(0.1)
-        socketio.emit("data_from_device", {})
+            return jsonify({"err": "未知命令"}), 400
 
     @socketio.on("current_data")
     def get_data():
@@ -85,7 +69,22 @@ def handle_socketio_events(socketio: SocketIO):
             for key in list(total.keys()).copy():
                 # if key in TABLE_TRANSLATE.keys():
                 total[cn_translate(key)] = total.pop(key)
+            breakdown_list = breakdown_replace(total["故障"])
+            total["故障"] = breakdown_list
             socketio.emit("data_from_device", total)
+
+
+def breakdown_replace(breakdown: list[str]) -> list[str]:
+    """
+    将故障代码翻译为中文
+    """
+    result = []
+    for item in breakdown:
+        if item in breakdownmap.keys():
+            result.append(breakdownmap[item])
+        else:
+            result.append(item)
+    return result
 
 
 # 导出函数以便在主应用中调用

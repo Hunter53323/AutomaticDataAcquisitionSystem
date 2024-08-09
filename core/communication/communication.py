@@ -10,9 +10,10 @@ class Communication:
         self.__para_map: dict[str, DriverBase] = {}
         self.__data_map: dict[str, DriverBase] = {}
         self.__command_map: dict[str, DriverBase] = {}
-        self.__is_read_all = False
+        self.__is_read_all: list = []
         self.breakdown_handler = BreakdownHanding()
         self.logger = self.set_logger()
+        self.conn_state: list = []
 
     def set_logger(self) -> logging.Logger:
         # 创建一个日志记录器
@@ -61,46 +62,18 @@ class Communication:
         self.clear_curr_data()
         return flag
 
-    def read(self, data_name_list: list[str] = None) -> dict[str, any]:
+    def read(self) -> dict[str, any]:
         result: dict[str, any] = {}
-        if not data_name_list:
-            for driver in self.drivers:
-                result = {**result, **driver.read()}
-            return result
-        error_key_list: list[str] = []
-        tmp_dict: dict[DriverBase, list[str]] = {}
-        for key in data_name_list:
-            if key not in self.__data_map.keys():
-                error_key_list.append(key)
-                continue
-            if self.__data_map[key] not in tmp_dict.keys():
-                tmp_dict[self.__data_map[key]] = []
-            tmp_dict[self.__data_map[key]].append(key)
-        if error_key_list:
-            self.logger.error(f"非法参数{error_key_list}")
-        for key, val in tmp_dict.items():
-            result = {**result, **key.read(val)}
+        for driver_name in self.__is_read_all:
+            driver = self.find_driver(driver_name)
+            result = {**result, **driver.read()}
         return result
 
-    def get_curr_para(self, para_name_list: list[str] = None) -> dict[str, any]:
+    def get_curr_para(self) -> dict[str, any]:
         result: dict[str, any] = {}
-        if not para_name_list:
-            for driver in self.drivers:
-                result = {**result, **driver.get_curr_para()}
-            return result
-        error_key_list: list[str] = []
-        tmp_dict: dict[DriverBase, list[str]] = {}
-        for key in para_name_list:
-            if key not in self.__para_map.keys():
-                error_key_list.append(key)
-                continue
-            if self.__para_map[key] not in tmp_dict.keys():
-                tmp_dict[self.__para_map[key]] = []
-            tmp_dict[self.__para_map[key]].append(key)
-        if error_key_list:
-            self.logger.error(f"非法参数{error_key_list}")
-        for key, val in tmp_dict.items():
-            result = {**result, **key.get_curr_para(val)}
+        for driver_name in self.__is_read_all:
+            driver = self.find_driver(driver_name)
+            result = {**result, **driver.get_curr_para()}
         return result
 
     def register_device(self, driver: DriverBase) -> bool:
@@ -114,24 +87,102 @@ class Communication:
                 return driver
         return None
 
-    def connect(self) -> bool:
-        flag = True
+    def connect(self, device_name: str = "") -> bool:
+        if not device_name:
+            flag = True
+            for driver in self.drivers:
+                flag = flag & driver.connect()
+            self.conn_state = [driver.device_name for driver in self.drivers]
+            return flag
+        if device_name in self.conn_state:
+            return True
         for driver in self.drivers:
-            flag = flag & driver.connect()
-        return flag
+            if driver.device_name == device_name:
+                flag = driver.connect()
+                break
+        if flag:
+            self.conn_state.append(device_name)
+            return True
+        return False
 
-    def disconnect(self) -> bool:
-        flag = True
+    def disconnect(self, device_name: str = "") -> bool:
+        if not device_name:
+            flag = True
+            for driver in self.drivers:
+                flag = flag & driver.disconnect()
+            self.conn_state = []
+            return flag
+        if device_name not in self.conn_state:
+            return False
         for driver in self.drivers:
-            flag = flag & driver.disconnect()
-        return flag
+            if driver.device_name == device_name:
+                flag = driver.disconnect()
+                break
+        if flag:
+            self.conn_state.remove(device_name)
+            return True
+        return False
 
-    def start_read_all(self) -> bool:
-        flag = True
+    def is_connected(self, device_name: str = "") -> bool:
+        if not device_name:
+            return len(self.conn_state) == len(self.drivers)
+        if device_name in self.conn_state:
+            return True
+        return False
+
+    def start_read_all(self, device_name: str = "") -> bool:
+        if not device_name:
+            flag = True
+            for driver in self.drivers:
+                flag = flag & driver.start_read_all()
+            self.__is_read_all = [driver.device_name for driver in self.drivers]
+            return flag
         for driver in self.drivers:
-            flag = flag & driver.start_read_all()
-        self.__is_read_all = True if flag else False
-        return flag
+            if driver.device_name == device_name:
+                flag = driver.start_read_all()
+                break
+        if flag:
+            self.__is_read_all.append(device_name)
+            return True
+        return False
+
+    def stop_read_all(self, device_name: str = "") -> bool:
+        if not device_name:
+            flag = True
+            for driver in self.drivers:
+                flag = flag & driver.stop_read_all()
+            self.__is_read_all = []
+            return flag
+        for driver in self.drivers:
+            if driver.device_name == device_name:
+                flag = driver.stop_read_all()
+                break
+        if flag:
+            self.__is_read_all.remove(device_name)
+            return True
+        return False
+
+    def is_read_all(self, device_name: str = "") -> bool:
+        # 判断是否所有设备都在读取数据，或者判断某个设备是否在读取数据,返回值为是否在读取数据以及当前正在读取的设备数量
+        if not device_name:
+            return len(self.__is_read_all) == len(self.drivers)
+        if device_name in self.__is_read_all:
+            return True
+        return False
+
+    def read_all_driver_number(self) -> int:
+        return len(self.__is_read_all)
+
+    def check_thread_alive(self, device_name: str = "") -> bool:
+        if not device_name:
+            flag = True
+            for driver in self.drivers:
+                flag = flag & driver.check_thread_alive()
+            return flag
+        for driver in self.drivers:
+            if driver.device_name == device_name:
+                return driver.check_thread_alive()
+        return False
 
     def get_para_map(self) -> dict[str, DriverBase]:
         return self.__para_map
@@ -150,22 +201,6 @@ class Communication:
         for driver in self.drivers:
             device_data[driver.device_name] = list(driver.curr_data.keys())
         return device_data
-
-    def stop_read_all(self) -> bool:
-        flag = True
-        for driver in self.drivers:
-            flag = flag & driver.stop_read_all()
-        self.__is_read_all = False if flag else True
-        return flag
-
-    def is_read_all(self) -> bool:
-        return self.__is_read_all
-
-    def check_thread_alive(self) -> bool:
-        flag = True
-        for driver in self.drivers:
-            flag = flag & driver.check_thread_alive()
-        return flag
 
     def update_hardware_parameter(self, device_name: str, para_dict: dict[str, any]) -> bool:
         err_key = []
@@ -196,3 +231,9 @@ class Communication:
         for driver in self.drivers:
             driver.clear_curr_data()
         return True
+
+    def reset():
+        pass
+
+    def reload():
+        pass

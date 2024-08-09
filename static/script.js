@@ -3,49 +3,30 @@ var socket = io.connect('http://' + document.domain + ':' + location.port);
 var isConnected = false;
 
 socket.on('data_from_device', function(data) {
-    document.getElementById('currentrotationalspeed').innerText = data.actual_speed.toFixed(2);
-    document.getElementById('setrotationalspeed').innerText = data.set_speed.toFixed(2);
-    document.getElementById('targetrotationalspeed').innerText = data.target_speed.toFixed(2);
-    document.getElementById('dcbusvoltage').innerText = data.dc_bus_voltage.toFixed(2);
-    document.getElementById('uphasecurrent').innerText = data.U_phase_current.toFixed(2);
-    document.getElementById('power').innerText = data.power.toFixed(2);
-    // document.getElementById('dissipativeresistance').innerText = data.dissipativeresistance.toFixed(2);
-    // document.getElementById('daxieinductor').innerText = data.daxieinductor.toFixed(2);
-    // document.getElementById('qaxieinductor').innerText = data.qaxieinductor.toFixed(2);
-    // document.getElementById('reverseemfconstant').innerText = data.reverseemfconstant.toFixed(2);
-    // document.getElementById('polaritylog').innerText = data.polaritylog.toFixed(2);
-    document.getElementById('motorinputpower').innerText = data.motor_input_power.toFixed(2);
-    document.getElementById('torque').innerText = data.torque.toFixed(2);
-    document.getElementById('motoroutputpower').innerText = data.motor_output_power.toFixed(2);
-    document.getElementById('addload').innerText = data.load.toFixed(2);
+    document.getElementById('currentrotationalspeed').innerText = data.实际转速.toFixed(2);
+    document.getElementById('setrotationalspeed').innerText = data.设定转速.toFixed(2);
+    document.getElementById('targetrotationalspeed').innerText = data.目标转速.toFixed(2);
+    // document.getElementById('dcbusvoltage').innerText = data.dc_bus_voltage.toFixed(2);
+    // document.getElementById('uphasecurrent').innerText = data.U_phase_current.toFixed(2);
+    // document.getElementById('power').innerText = data.power.toFixed(2);
+    // // document.getElementById('dissipativeresistance').innerText = data.dissipativeresistance.toFixed(2);
+    // // document.getElementById('daxieinductor').innerText = data.daxieinductor.toFixed(2);
+    // // document.getElementById('qaxieinductor').innerText = data.qaxieinductor.toFixed(2);
+    // // document.getElementById('reverseemfconstant').innerText = data.reverseemfconstant.toFixed(2);
+    // // document.getElementById('polaritylog').innerText = data.polaritylog.toFixed(2);
+    // document.getElementById('motorinputpower').innerText = data.motor_input_power.toFixed(2);
+    // document.getElementById('torque').innerText = data.torque.toFixed(2);
+    // document.getElementById('motoroutputpower').innerText = data.motor_output_power.toFixed(2);
+    // document.getElementById('addload').innerText = data.load.toFixed(2);
 
-    document.getElementById('speedcompensationcoefficient').innerText = data.speed_loop_compensates_bandwidth.toFixed(2);
-    document.getElementById('currentbandwidth').innerText = data.current_loop_compensates_bandwidth.toFixed(2);
-    document.getElementById('observercompensationcoefficient').innerText = data.observer_compensates_bandwidth.toFixed(2);
-    document.getElementById('load').innerText = data.load.toFixed(2);
-    document.getElementById('speed').innerText = data.set_speed.toFixed(2);
-    if (data.breakdown != [])
-        document.getElementById('faultinformation').innerText = "故障";
-    else document.getElementById('faultinformation').innerText = "良好";
-});
-
-socket.on('connection', function(devicestatus) {
-    if (devicestatus.status == true) {
-        isConnected = true;
-        document.getElementById('status').innerText = "已连接";
-        document.getElementById('status').style.color= "green";
-        document.getElementById('connect_button').innerText = '断开连接';
-        document.getElementById('start_device_button').disabled = false;
-        document.getElementById('start_test_device_button').disabled = false;
-
-    } else {
-        isConnected = false;
-        document.getElementById('status').innerText = "未连接";
-        document.getElementById('status').style.color= "red";
-        document.getElementById('connect_button').innerText = '连接设备';
-        document.getElementById('start_device_button').disabled = true;
-        document.getElementById('start_test_device_button').disabled = true;
-    }
+    // document.getElementById('speedcompensationcoefficient').innerText = data.speed_loop_compensates_bandwidth.toFixed(2);
+    // document.getElementById('currentbandwidth').innerText = data.current_loop_compensates_bandwidth.toFixed(2);
+    // document.getElementById('observercompensationcoefficient').innerText = data.observer_compensates_bandwidth.toFixed(2);
+    // document.getElementById('load').innerText = data.load.toFixed(2);
+    // document.getElementById('speed').innerText = data.set_speed.toFixed(2);
+    // if (data.breakdown != [])
+    //     document.getElementById('faultinformation').innerText = "故障";
+    // else document.getElementById('faultinformation').innerText = "良好";
 });
 
 

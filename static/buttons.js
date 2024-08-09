@@ -39,10 +39,46 @@ function click_connect_button() {
         alert('请先停止风机、测试设备或自动采集');
         return;
       }
-      socket.emit('disconnect_device');
+      command = 'disconnect';
     } else {
-      socket.emit('connect_device');
+      command = 'connect';
     }
+    const formData = new FormData();
+    formData.append('command', command);
+    formData.append('device_name', 'FanDriver');
+    fetch('/socketio_http/connect_device', {
+        method: 'POST',
+        body: formData,
+    })
+    .then(response => {
+      if (response.ok) {
+        return response.json();
+      } else {
+        alert(response.status);
+        throw new Error('Network response was not ok ' + response.status);
+      }
+    })
+    .then(() => {
+      if (command == 'connect'){
+        isConnected = true;
+        document.getElementById('status').innerText = "已连接";
+        document.getElementById('status').style.color= "green";
+        document.getElementById('connect_button').innerText = '断开连接';
+        document.getElementById('start_device_button').disabled = false;
+        document.getElementById('start_test_device_button').disabled = false;
+      }
+      if (command == 'disconnect'){
+        isConnected = false;
+        document.getElementById('status').innerText = "未连接";
+        document.getElementById('status').style.color= "red";
+        document.getElementById('connect_button').innerText = '连接设备';
+        document.getElementById('start_device_button').disabled = true;
+        document.getElementById('start_test_device_button').disabled = true;
+      }
+    })
+    .catch(error => {
+      console.error('Error connecting device:', error);
+    });
 }
 
 function start_device() {
