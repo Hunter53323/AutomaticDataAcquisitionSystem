@@ -2,7 +2,7 @@ from typing import Tuple, List
 
 import serial
 from serial.serialutil import SerialTimeoutException
-from .driver_base import DriverBase
+from driver_base import DriverBase
 import time
 import copy
 
@@ -67,7 +67,7 @@ class FanDriver(DriverBase):
             return False
         if self.ser.port != self.port:
             self.ser.port = self.port
-        return self.__connect()        
+        return self.__connect()
 
     def __connect(self) -> bool:
         if self.conn_state:
@@ -149,7 +149,7 @@ class FanDriver(DriverBase):
             if read_count == 3:
                 return False
             return self.read_all(read_count=read_count + 1)
-        
+
         if response[17].to_bytes() != b"\xA5":
             self.logger.error(
                 f"查询回复报错! response[17].to_bytes()!=\xA5?:{response[17].to_bytes() != b"\xA5"},查询回复:{response.hex()},count:{read_count}")
@@ -218,7 +218,7 @@ class FanDriver(DriverBase):
         except Exception as e:
             self.logger.error(f"error:{e}")
             return False
-        
+
     def write(self, para_dict: dict[str, any]) -> bool:
         if not self.check_writable():
             self.logger.error(f"串口不可写!")
@@ -227,6 +227,7 @@ class FanDriver(DriverBase):
         status = self.write_execute(para_dict)
         self.__iswriting = False
         return status
+
     def write_execute(self, para_dict: dict[str, any], write_count: int = 1) -> bool:
         """
         控制指令
@@ -314,32 +315,40 @@ class FanDriver(DriverBase):
                 f"控制回复校验和报错! recv:{response[5].to_bytes()},cal:{response_checksum},count:{write_count}")
             return False
 
-    def __decode_read_response(self, response: bytes) -> tuple[float, float, float, float, float, list[int]]:
+    config = {
+        'target_speed': 2,
+        'actual_speed': 2,
+        'dc_bus_voltage': 2,
+        'U_phase_current': 2,
+        'power': 2,
+        'breakdown': 2
+    }
+
+    def __decode_read_response(self, response: bytes, config: dict) -> list[float | list[int]]:
         FB, VB, IB, Cofe1, Cofe2, Cofe3, Cofe4, Cofe5 = self.__get_cpu_paras()
-        # 第四个和第五个字节是目标转速的高8位和低8位,两种方案都可以
-        # target_speed = (response[4] << 8) | response[5]
-        # 默认是大端序，无符号
-        target_speed = int.from_bytes(response[4:6], byteorder="big", signed=False) * FB * Cofe1 / Cofe2
-        # 第六个和第七个字节是实际转速的高8位和低8位
-        actual_speed = int.from_bytes(response[6:8]) * FB * Cofe1 / Cofe2
-        # 第八个和第九个字节是直流母线电压的高8位和低8位
-        dc_bus_voltage = int.from_bytes(response[8:10]) * VB / Cofe2
-        # 第十个和第十一个字节是U相电流的高8位和低8位
-        U_phase_current = int.from_bytes(response[10:12]) * IB / Cofe2 / Cofe5
-        # 第十二个和第十三个字节是功率的高8位和低8位
-        power = int.from_bytes(response[12:14]) * IB * VB * Cofe3 / Cofe4 / Cofe2 / Cofe5
-        # 第14个字节的每一个位都表示一种故障，8个位表示8种故障，用不同的字符串表示
-        # 按照协议上从上到下的顺序从0开始罗列故障码
-        breakdown = []
-        for i in range(8):
-            if (response[14] & (1 << i)) != 0:
-                breakdown.append(i)
-        for i in range(4):
-            if (response[15] & (1 << i)) != 0:
-                breakdown.append(i+8)
-        # 第16个字节是校验和低8位，检查校验和,前面已经检查过了，因此此处不用再次检查
-        # if self.__calculate_checksum(response[0:16]) == response[16].to_bytes():
-        return target_speed, actual_speed, dc_bus_voltage, U_phase_current, power, breakdown
+        cur = 4  # 从4开始是数据
+        ans = []
+        for key, value in config:
+            if key == 'target_speed' or 'actual_speed':
+                ans.append(int.from_bytes(response[cur:value], byteorder="big", signed=False) * FB * Cofe1 / Cofe2)
+            if key == 'dc_bus_voltage':
+                ans.append(int.from_bytes(response[cur:value], byteorder="big", signed=False) * VB / Cofe2)
+            if key == 'U_phase_current':
+                ans.append(int.from_bytes(response[cur:value], byteorder="big", signed=False) * IB / Cofe2 / Cofe5)
+            if key == 'power':
+                ans.append(int.from_bytes(response[cur:value], byteorder="big",
+                                          signed=False) * IB * VB * Cofe3 / Cofe4 / Cofe2 / Cofe5)
+            if key == 'breakdown':
+                breakdown = []
+                for i in range(8):
+                    if (response[cur] & (1 << i)) != 0:
+                        breakdown.append(i)
+                for i in range(4):
+                    if (response[cur + 1] & (1 << i)) != 0:
+                        breakdown.append(i + 8)
+                ans.append(breakdown)
+            cur += value
+        return ans
 
     def __get_cpu_paras(self) -> tuple[int, int, int, int, int, int, int, int]:
         if self.cpu == "M0":
@@ -395,7 +404,7 @@ class FanDriver(DriverBase):
             else:
                 return False
         return True
-    
+
     def get_hardware_parameter(self) -> dict[str, any]:
         return {"device_address": self.device_address, "cpu": self.cpu, "port": self.port}
 
