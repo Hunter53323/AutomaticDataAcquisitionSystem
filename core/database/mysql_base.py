@@ -9,20 +9,19 @@ from logging.handlers import RotatingFileHandler
 
 
 class MySQLDatabase:
-    def __init__(self, host_name: str, user_name: str, user_password: str, db_name: str, table_name: str, table_columns: dict[str, str]):
+    def __init__(self, host_name: str, user_name: str, user_password: str, db_name: str):
         self.connection: MySQLConnection
         self.__host_name: str = host_name
         self.__user_name: str = user_name
         self.__user_password: str = user_password
         self.__db_name: str = db_name
-        self.table_name = table_name
-        self.default_table_name = table_name
-        self.table_columns = table_columns
-        self.columns: dict = {col_name: dtype for col_name, dtype in table_columns.items() if col_name != "ID"}
+        self.table_name:str = None
+        self.table_columns:dict[str, str] = {}
+        self.columns: dict = {}
 
-        self.table_name_list: list = [table_name]
-        self.table_columns_list: list = [table_columns]
-        self.columns_list: list = [{col_name: dtype for col_name, dtype in table_columns.items() if col_name != "ID"}]
+        self.table_name_list: list = []
+        self.table_columns_list: list = []
+        self.columns_list: list[dict] = []
         self.logger = self.set_logger()
 
         self.create_connection()
@@ -53,12 +52,6 @@ class MySQLDatabase:
             self.table_columns = self.table_columns_list[table_name_index]
             self.columns = self.columns_list[table_name_index]
         return True
-
-    def change_default_table(self):
-        """
-        切换回默认的数据库表。
-        """
-        self.change_current_table(self.default_table_name)
 
     def set_logger(self) -> logging.Logger:
         # 创建一个日志记录器
