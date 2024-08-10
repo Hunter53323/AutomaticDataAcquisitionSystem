@@ -21,6 +21,9 @@ const cowSpan = computed(() => 24 / props.count)
 .el-col {
   text-align: center;
 }
+.el-row {
+  margin: 10px 0;
+}
 
 
 

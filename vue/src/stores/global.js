@@ -42,7 +42,7 @@ export const useDashboardStore = defineStore('dashboard', {
         dataList: {},
         dataShowSelected:{},
         paraList: {},
-        paraShowSelected:{}
+        paraShowSelected:{},
     }),
     actions: {
         initDataList() {
@@ -51,7 +51,7 @@ export const useDashboardStore = defineStore('dashboard', {
             })
                 .then(response => response.json())
                 .then(data => {
-                    console.log(data)
+                    // console.log(data)
                     this.dataList = Object.assign({},data)
                     this.dataShowSelected = Object.assign({},data)
                 })

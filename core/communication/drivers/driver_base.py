@@ -67,6 +67,20 @@ class DriverBase(ABC):
     def get_hardware_parameter(self) -> dict[str, any]:
         pass
 
+    @abstractmethod
+    def export_config(self) -> dict[str, any]:
+        # 导出设备的所有配置为一个字典，value只能为int,float,str,bool
+        pass
+
+    @abstractmethod
+    def load_config(self, config: dict[str, any]) -> bool:
+        # 从一个字典中加载配置
+        pass
+
+    def get_device_state(self) -> dict[str, any]:
+        # 当前是否连接，设备当前是否启动，设备当前是否故障
+        return {"connected": self.conn_state, "running": self.run_state, "breakdown": self.breakdown}
+
     def is_connected(self) -> bool:
         return self.conn_state
 

@@ -408,6 +408,14 @@ class FanDriver(DriverBase):
     def get_hardware_parameter(self) -> dict[str, any]:
         return {"device_address": self.device_address, "cpu": self.cpu, "port": self.port}
 
+    def export_config(self) -> dict[str, any]:
+        # 导出设备的所有配置为一个字典，value只能为int,float,str,bool
+        pass
+
+    def load_config(self, config: dict[str, any]) -> bool:
+        # 从一个字典中加载配置
+        pass
+
 
 if __name__ == "__main__":
     fan_driver = FanDriver("Fan", ["speed", "temperature"], ["speed", "temperature"], device_address=b"\x01", cpu="M0")

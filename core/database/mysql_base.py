@@ -16,19 +16,57 @@ class MySQLDatabase:
         self.__user_password: str = user_password
         self.__db_name: str = db_name
         self.table_name = table_name
+        self.default_table_name = table_name
         self.table_columns = table_columns
-        self.columns = {col_name: dtype for col_name, dtype in table_columns.items() if col_name != "ID"}
+        self.columns: dict = {col_name: dtype for col_name, dtype in table_columns.items() if col_name != "ID"}
+
+        self.table_name_list: list = [table_name]
+        self.table_columns_list: list = [table_columns]
+        self.columns_list: list = [{col_name: dtype for col_name, dtype in table_columns.items() if col_name != "ID"}]
         self.logger = self.set_logger()
 
         self.create_connection()
 
+    def change_current_table(self, table_name: str, table_columns: dict[str, str] = {}) -> True:
+        """
+        切换当前数据库表，如果表不存在则创建。
+        :param table_name: 要切换到的表名。
+        :param table_columns: 要创建的表的列名和数据类型。
+        """
+        if not self.check_connection():
+            return False
+        if table_name not in self.table_name_list:
+            if not table_columns:
+                self.logger.error(f"表'{table_name}'不存在，且未提供列定义。")
+                return False
+            self.table_name_list.append(table_name)
+            self.table_columns_list.append(table_columns)
+            self.columns_list.append({col_name: dtype for col_name, dtype in table_columns.items() if col_name != "ID"})
+
+            self.table_name = table_name
+            self.table_columns = table_columns
+            self.columns = {col_name: dtype for col_name, dtype in table_columns.items() if col_name != "ID"}
+            self.create_table()
+        else:
+            table_name_index = self.table_name_list.index(table_name)
+            self.table_name = table_name
+            self.table_columns = self.table_columns_list[table_name_index]
+            self.columns = self.columns_list[table_name_index]
+        return True
+
+    def change_default_table(self):
+        """
+        切换回默认的数据库表。
+        """
+        self.change_current_table(self.default_table_name)
+
     def set_logger(self) -> logging.Logger:
         # 创建一个日志记录器
-        logger = logging.getLogger(self.table_name)
+        logger = logging.getLogger(self.__db_name)
         logger.setLevel(logging.DEBUG)  # 设置日志级别
         formatter = logging.Formatter("%(asctime)s-%(module)s-%(funcName)s-%(lineno)d-%(name)s-%(message)s")  # 其中name为getlogger指定的名字
 
-        rHandler = RotatingFileHandler(filename="./log/" + self.table_name + ".log", maxBytes=1024 * 1024, backupCount=1)
+        rHandler = RotatingFileHandler(filename="./log/" + self.__db_name + ".log", maxBytes=1024 * 1024, backupCount=1)
         rHandler.setLevel(logging.DEBUG)
         rHandler.setFormatter(formatter)
 

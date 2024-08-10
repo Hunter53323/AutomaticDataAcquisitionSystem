@@ -36,7 +36,7 @@ TABLE_TRANSLATE = {
     "dc_bus_voltage": "直流母线电压",
     "U_phase_current": "U相电流",
     "power": "功率",
-    # "breakdown": "故障",
+    "breakdown": "故障",
     "set_speed": "设定转速",
     "torque": "转矩",
 }
