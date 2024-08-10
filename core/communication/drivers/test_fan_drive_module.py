@@ -133,11 +133,12 @@ class TestFanDriver:
         )
 
     def test_update_parameter(self):
-        assert fandriver.update_hardware_parameter({"device_address": b"\x01", "cpu": "M0"}) == True
-        assert fandriver.update_hardware_parameter({"cpu": "M0"}) == True
-        assert fandriver.update_hardware_parameter({"device_address": b"\x01"}) == True
-        assert fandriver.update_hardware_parameter({"device_address": b"\x01", "cpu": "M3"}) == False
-        assert fandriver.update_hardware_parameter({"device_address": b"\x01", "k1": "M0"}) == False
+
+        assert fandriver.update_hardware_parameter({"device_address": "034", "cpu": "M0", "port": "COM6"}) == True
+        assert fandriver.update_hardware_parameter({"device_address": "4", "cpu": "M0", "port": "COM6"}) == True
+        assert fandriver.update_hardware_parameter({"device_address": b"\x01"}) == False
+        assert fandriver.update_hardware_parameter({"device_address": "453", "cpu": "M3"}) == False
+        assert fandriver.update_hardware_parameter({"device_address": "45345", "k1": "M0"}) == False
 
     def test_close(self):
         assert fandriver.disconnect() == True
