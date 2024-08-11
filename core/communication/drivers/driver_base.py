@@ -78,7 +78,7 @@ class DriverBase(ABC):
         pass
 
     @abstractmethod
-    def get_database_table() -> dict[str, type]:
+    def get_database_table(self) -> dict[str, type]:
         # 获取要存储到数据库中的所有数据名及类型
         pass
 

@@ -19,7 +19,7 @@ class Framer:
 
     def str2byte(self, char: str, size=1) -> bytes:
         hex_str = bytes.fromhex(char)
-        if len(char) == size:
+        if len(hex_str) == size:
             # 将字节转换为十六进制字符串
             return hex_str
         else:
@@ -65,7 +65,14 @@ class Framer:
         try:
             if index in self.data:
                 raise Exception(f"第{index}位置已存在数据{self.data[index].name}")
-            self.data[index] = Field(index, name, type, size, formula)
+            temp_Field = Field(index, name, type, size, formula)
+            state, e = temp_Field.evaluate_formula()
+            if not state:
+                raise Exception(e)
+            state, e = temp_Field.evaluate_formula(False)
+            if not state:
+                raise Exception(e)
+            self.data[index] = temp_Field
             return True, None
         except Exception as e:
             print(e)
@@ -170,8 +177,8 @@ class Framer:
         checksum = 0
         # 对数据中的每个字节进行累加
         for data in msg:
-            if data == msg[1]:  # 如果校验和包括地址就去掉if
-                continue
+            # if data == msg[1]:  # 如果校验和包括地址就去掉if
+            #     continue
             checksum += data
         # 取累加结果的低8位
         checksum_low8 = checksum & 0xFF
@@ -231,6 +238,8 @@ class Field:
 
     def evaluate_formula(self, to_real=True) -> tuple[bool, None] | tuple[bool, Exception]:
         try:
+            if self.type == "bit16" or self.type == "bit8":
+                return True, None
             local_vars = {}
             if to_real:
                 local_vars['raw_data'] = self.raw_data
