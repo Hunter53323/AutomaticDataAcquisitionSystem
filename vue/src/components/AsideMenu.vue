@@ -24,12 +24,6 @@ import {
             </el-icon>
             <template #title>Database</template>
         </el-menu-item>
-        <el-menu-item index="/devices">
-            <el-icon>
-                <document />
-            </el-icon>
-            <template #title>Devices</template>
-        </el-menu-item>
         <el-menu-item index="/settings">
             <el-icon>
                 <setting />

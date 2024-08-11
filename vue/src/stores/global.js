@@ -37,31 +37,54 @@ export const useDashboardStore = defineStore('dashboard', {
     state: () => ({
         collectCount: 0,
         collectCountNow: 0,
-        isConnected: false,
-        isDeviceRunning: false,
+        isFanConnected: false,
+        isTestConnected: false,
+        isFanRunning: false,
+        isTestRunning: false,
+        isFanBreakDown: false,
+        isTestBreakDown: false,
+        isAutoCollecting: false,
         dataList: {},
-        dataShowSelected:{},
-        paraList: {},
-        paraShowSelected:{},
+        dataShowSelected: {},
+        paraList: [],
+        paraShowSelected: [],
+        
     }),
     actions: {
-        initDataList() {
+        initList() {
             fetch(useGlobalStore().url + "/control/data", {
                 method: 'GET'
             })
                 .then(response => response.json())
                 .then(data => {
                     // console.log(data)
-                    this.dataList = Object.assign({},data)
-                    this.dataShowSelected = Object.assign({},data)
+                    this.dataList = Object.assign({}, data)
+                    this.dataShowSelected = Object.assign({}, this.dataList)
                 })
             fetch(useGlobalStore().url + "/control/parameters", {
                 method: 'GET'
             })
                 .then(response => response.json())
                 .then(data => {
-                    this.paraList = Object.assign({},data)
-                    this.paraShowSelected = Object.assign({},data)
+                    this.paraList = [...data['FanDriver'],...data['TestDevice']]
+                    this.paraShowSelected = this.paraList.slice(0)
+                })
+        },
+        initDeviceState() {
+            fetch(useGlobalStore().url + '/control/state', {
+                method: 'GET',
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    this.isFanConnected = data.FanDriver.connected
+                    this.isFanRunning = data.FanDriver.running
+                    this.isFanBreakDown = data.FanDriver.breakdown
+                    this.isTestConnected = data.TestDevice.connected
+                    this.isTestRunning = data.TestDevice.running
+                    this.isTestBreakDown = data.TestDevice.breakdown
+                })
+                .catch(error => {
+
                 })
         }
     }

@@ -13,14 +13,14 @@ import { useGlobalStore, useDashboardStore } from '@/stores/global'
 import { ElMessage } from 'element-plus'
 import { select } from '@antv/g2'
 import { c } from 'vite/dist/node/types.d-aGj9QkWt'
-import { da } from 'element-plus/es/locale'
+import { da, pa } from 'element-plus/es/locale'
 
 const dataAll = ref({})
 const global = useGlobalStore()
 const dashboard = useDashboardStore()
 const socket = io(global.url)
 const timeData = ref([])
-const graphSelected = ref("实际转速")
+const graphSelected = ref(["实际转速", "目标转速"])
 
 const subObj = ((obj, arr) => {
   const res = {}
@@ -33,7 +33,6 @@ const subObj = ((obj, arr) => {
       }
     })
   } catch (error) {
-    console.log(error)
   }
   return res
 })
@@ -42,40 +41,37 @@ const dataShow = reactive({
   FanDriver: {},
   TestDevice: {}
 })
+const paraShow = ref({})
 
-watch(() => [dashboard.dataShowSelected, dataAll.value], ([newSelected, newData]) => {
-  dataShow.FanDriver = subObj(newData, newSelected['FanDriver'])
-  dataShow.TestDevice = subObj(newData, newSelected['TestDevice'])
-}, { deep: true })
+watch(() => [dashboard.dataShowSelected, dashboard.paraShowSelected, dataAll.value],
+  ([newDataSelected, newParaSelected, newData]) => {
+    dataShow.FanDriver = subObj(newData, newDataSelected['FanDriver'])
+    dataShow.TestDevice = subObj(newData, newDataSelected['TestDevice'])
+    paraShow.value = subObj(newData, newParaSelected)
+  }, { deep: true })
 
-socket.on('connection', data => {
-  if (data.status == true) {
-    dashboard.isConnected = true
-  } else {
-    dashboard.isConnected = false
-  }
-})
 
 socket.on('data_from_device', data => {
+  const timeRecv = Date.now()
   dataAll.value = data
-  timeData.value.push({
-    time: Date.now(),
-    value: data[graphSelected.value]
+  graphSelected.value.forEach(element => {
+    timeData.value.push({
+      time: timeRecv,
+      val: data[element],
+      name: element
+    })
   })
-  if(timeData.value.at(-1).time - timeData.value.at(0).time > 10000){
-    timeData.value = timeData.value.filter((val, index, arr) => index !== 0);
+  let timeMin = timeData.value.at(0).time
+  let timeMax = timeData.value.at(-1).time
+  if (timeMax - timeMin > 20000) {
+    timeData.value = timeData.value.filter((val, index, arr) => val.time > timeMax - 10000);
   }
-  // console.log(timeData.value)
 })
 
-onMounted(() => {
-  dashboard.initDataList()
-})
 
 </script>
 
 <template>
-  <!-- <ViewTitle viewTitle="DashBoard" /> -->
   <el-row :gutter="20">
     <el-col :span="12">
       <el-card shadow="hover">
@@ -102,13 +98,13 @@ onMounted(() => {
   <el-row :gutter="20">
     <el-col :span="24">
       <el-card shadow="hover">
-        <DataGraph :data="timeData" unit="rpm" :title="graphSelected"/>
+        <DataGraph :data="timeData" unit="rpm" :title="graphSelected" />
       </el-card>
     </el-col>
   </el-row>
 
   <el-row :gutter="20">
-    <el-col :span="12">
+    <el-col :span="8">
       <el-card shadow="hover">
         <template #header>
           <div class="card-header">
@@ -116,6 +112,8 @@ onMounted(() => {
             <ShowSelection :refList="dashboard.dataList['TestDevice']"
               :selectedList="dashboard.dataShowSelected['TestDevice']"
               @selected-change="(selectedList) => dashboard.dataShowSelected['TestDevice'] = selectedList" />
+
+
           </div>
         </template>
         <div class="statisticBox">
@@ -123,17 +121,32 @@ onMounted(() => {
         </div>
       </el-card>
     </el-col>
-    <el-col :span="12">
+    <el-col :span="8">
       <el-card shadow="hover">
         <template #header>
           <div class="card-header">
-            <span>测试设备数据</span>
-            <ShowSelection :refList="dashboard.dataList['FanDriver']" :selectedList="dashboard.dataShowSelected['FanDriver']"
+            <span>被测设备数据</span>
+            <ShowSelection :refList="dashboard.dataList['FanDriver']"
+              :selectedList="dashboard.dataShowSelected['FanDriver']"
               @selected-change="(selectedList) => dashboard.dataShowSelected['FanDriver'] = selectedList" />
           </div>
         </template>
         <div class="statisticBox">
-          <StatisticBox :contentObj="dataShow.FanDriver" :count="4" />
+          <StatisticBox :contentObj="dataShow.FanDriver" :count="3" />
+        </div>
+      </el-card>
+    </el-col>
+    <el-col :span="8">
+      <el-card shadow="hover">
+        <template #header>
+          <div class="card-header">
+            <span>参数</span>
+            <ShowSelection :refList="dashboard.paraList" :selectedList="dashboard.paraShowSelected"
+              @selected-change="(selectedList) => dashboard.paraShowSelected = selectedList" />
+          </div>
+        </template>
+        <div class="statisticBox">
+          <StatisticBox :contentObj="paraShow" :count="3" />
         </div>
       </el-card>
     </el-col>
@@ -165,9 +178,6 @@ onMounted(() => {
   padding: 15px 20px;
 }
 
-.card-header {
-  font-size: larger;
-}
 
 .el-row {
   margin: 0 0 10px 0;

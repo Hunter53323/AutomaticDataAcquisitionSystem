@@ -59,7 +59,7 @@ class Communication:
         flag = True
         for key, val in tmp_dict.items():
             flag = flag & key.write(val)
-        self.clear_curr_data()
+        # self.clear_curr_data()
         return flag
 
     def read(self) -> dict[str, any]:

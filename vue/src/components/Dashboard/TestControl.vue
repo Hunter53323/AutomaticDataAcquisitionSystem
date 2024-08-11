@@ -2,6 +2,7 @@
 import { useGlobalStore, useDashboardStore } from '@/stores/global'
 import DataShowSelection from '@/components/ShowSelection.vue'
 import { ElMessage } from 'element-plus'
+import { onMounted } from 'vue';
 
 const props = defineProps(['socket'])
 
@@ -10,21 +11,61 @@ const global = useGlobalStore()
 
 
 const handleConnect = () => {
-  if (dashboard.isConnected == true) {
-    props.socket.emit('disconnect_device')
+  var command = ""
+  if (dashboard.isTestConnected) {
+    if (dashboard.isFanRunning || dashboard.isTestRunning || dashboard.isAutoCollecting) {
+      ElMessage.error('请先停止风机、测试设备或自动采集');
+      return;
+    }
+    command = 'disconnect';
+  } else {
+    command = 'connect';
   }
-  else {
-    props.socket.emit('connect_device')
-  }
+  const formData = new FormData();
+  formData.append('command', command);
+  formData.append('device_name', 'TestDevice');
+  fetch(global.url + '/socketio_http/connect_device', {
+    method: 'POST',
+    body: formData,
+  })
+    .then(response => {
+      if (response.ok) {
+        return response.json();
+      } else {
+        ElMessage.error('测试设备连接失败');
+        throw new Error('Network response was not ok ' + response.status);
+      }
+    })
+    .then(() => {
+      if (command == 'connect') {
+        dashboard.isTestConnected = true;
+        // document.getElementById('status').innerText = "已连接";
+        // document.getElementById('status').style.color = "green";
+        // document.getElementById('connect_button').innerText = '断开连接';
+        // document.getElementById('start_device_button').disabled = false;
+        // document.getElementById('start_test_device_button').disabled = false;
+      }
+      if (command == 'disconnect') {
+        dashboard.isTestConnected = false;
+        // document.getElementById('status').innerText = "未连接";
+        // document.getElementById('status').style.color = "red";
+        // document.getElementById('connect_button').innerText = '连接设备';
+        // document.getElementById('start_device_button').disabled = true;
+        // document.getElementById('start_test_device_button').disabled = true;
+      }
+    })
+    .catch(error => {
+      console.error('Error connecting device:', error);
+    });
 }
 
 
 const handleStartDevice = () => {
   // TODO 时间数据清空需要等待后端接口返回 stable
-  var command = dashboard.isFanRunning ? 'stop' : 'start'
+  var command = dashboard.isTestRunning ? 'stop' : 'start'
   const formData = new FormData();
   formData.append('command', command);
-  fetch(global.url + '/control/fan', {
+  fetch(global.url + '/control/testdevice', {
     method: 'POST',
     body: formData,
   })
@@ -32,24 +73,26 @@ const handleStartDevice = () => {
     .then(data => {
       if ('status' in data) {
         if (data.status == true) {
-          dashboard.isFanRunning = !dashboard.isFanRunning
+          dashboard.isTestRunning = !dashboard.isTestRunning
         } else {
-          ElMessage.error('设备启动失败')
+          ElMessage.error('测试设备启动失败')
         }
       }
     })
 }
+
 
 </script>
 
 <template>
 
   <div class="controlBox">
-    <el-button type="primary" @click="handleConnect">
-      {{ dashboard.isConnected ? '断连' : '连接' }}
+    <el-button :type="dashboard.isTestConnected ? 'danger' : 'primary'" @click="handleConnect">
+      {{ dashboard.isTestConnected ? '断连' : '连接' }}
     </el-button>
-    <el-button type="primary" @click="handleStartDevice" :disabled="!dashboard.isConnected">
-      {{ dashboard.isFanRunning ? '停止' : '启动' }}
+    <el-button :type="dashboard.isTestRunning ? 'danger' : 'primary'" @click="handleStartDevice"
+      :disabled="!dashboard.isTestConnected">
+      {{ dashboard.isTestRunning ? '停止' : '启动' }}
     </el-button>
   </div>
 

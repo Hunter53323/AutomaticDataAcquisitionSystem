@@ -180,23 +180,24 @@ onMounted(() => {
 
 <template>
 
-  <AddDBButton @add-finished="dbDataUpdate()" />
-  <el-button style="margin: 0 10px 0 0;" type="primary" @click="handleDBDelete">删除</el-button>
-  <el-button style="margin: 0 10px 0 0;" type="primary" @click="handleDBClear">清空</el-button>
-  <el-button style="margin: 0 10px 0 0;" type="primary" @click="handleDBExport">导出</el-button>
-
+  <div class="operationButton">
+    <AddDBButton @add-finished="dbDataUpdate()" />
+    <el-button type="success" @click="handleDBExport">导出</el-button>
+    <el-button type="danger" @click="handleDBDelete">删除</el-button>
+    <el-button type="danger" @click="handleDBClear">清空</el-button>
+  </div>
   <el-table :data="dbDataObjList" @selection-change="handleSelectionChange">
     <el-table-column type="selection" width="55" />
     <el-table-column v-for="key in db.colunmsShowSelected" :prop="key" :label="key" show-overflow-tooltip
-      :width="key.length*16+20">
+      :width="key.length * 16 + 20">
       <template #header>
         <span>{{ key }}</span>
       </template>
     </el-table-column>
-    <el-table-column fixed="right" label="Operations" min-width="120">
+    <el-table-column fixed="right" label="操作" min-width="60">
       <template #default="scope">
-        <el-button link type="primary" size="small" @click="handleDBEdit()">编辑</el-button>
-        <el-button link type="primary" size="small" @click.prevent="handleDBDelete()">删除</el-button>
+        <el-button link type="danger" size="small" @click="handleDBEdit()">编辑</el-button>
+        <!-- <el-button link type="danger" size="small" @click.prevent="handleDBDelete()" >删除</el-button> -->
       </template>
     </el-table-column>
   </el-table>
@@ -207,5 +208,9 @@ onMounted(() => {
 .el-table {
   margin-top: 20px;
   width: 100%;
+}
+
+.operationButton .el-button {
+  margin: 0 10px 0 0;
 }
 </style>
