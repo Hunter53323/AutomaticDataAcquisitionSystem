@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+import json
 from typing import Tuple
 
 import serial
@@ -99,9 +100,9 @@ class FanDriver(DriverBase):
                 self.logger.error(f"Invalid cpu value{cpu}")
                 raise ValueError(f"Invalid cpu value{cpu}")
             self.cpu = cpu
-            return True,None
+            return True, None
         except Exception as e:
-            return False,e
+            return False, e
 
     def set_device_address(self, value: str):
         try:
@@ -113,7 +114,7 @@ class FanDriver(DriverBase):
         except Exception as e:
             return False, e
 
-    def set_port(self, value)-> tuple[bool, None] | tuple[bool, Exception]:
+    def set_port(self, value) -> tuple[bool, None] | tuple[bool, Exception]:
         try:
             if not isinstance(value, str):
                 self.logger.error(f"Invalid port value{value}")
@@ -289,6 +290,44 @@ class FanDriver(DriverBase):
             self.logger.error(f"error:{e}")
             return False
 
+    def load_config(self, F_config: dict) -> tuple[bool, None] | tuple[bool, Exception]:
+        # try:
+        for key, value in F_config.items():
+            if key == "query_f":
+                self.query_f.reset_all()
+                self.query_f.load_framer(json.loads(value))
+            elif key == "control_f":
+                self.control_f.reset_all()
+                self.control_f.load_framer(json.loads(value))
+            elif key == "ack_query_f":
+                self.ack_query_f.reset_all()
+                self.ack_query_f.load_framer(json.loads(value))
+            elif key == "ack_control_f":
+                self.ack_control_f.reset_all()
+                self.ack_control_f.load_framer(json.loads(value))
+        return True, None
+        # except Exception as e:
+        self.logger.error(f"风机帧配置导入error！{e}")
+        return False, e
+
+    def export_config(self):
+        return {"query_f": json.dumps(self.pre_dict(self.query_f.export_framer())),
+                "control_f": json.dumps(self.pre_dict(self.control_f.export_framer())),
+                "ack_query_f": json.dumps(self.pre_dict(self.ack_query_f.export_framer())),
+                "ack_control_f": json.dumps(self.pre_dict(self.ack_control_f.export_framer()))}
+
+    # 转换帧对象的变量中byte为str
+    def pre_dict(self, obj: dict):
+        dict_obj = {}
+        # 遍历对象的属性
+        for key, value in obj.items():
+            # 如果值是字节串，则转换为十六进制字符串
+            if isinstance(value, bytes):
+                dict_obj[key] = value.hex()
+            else:
+                dict_obj[key] = value
+        return dict_obj
+
     def write(self, para_dict: dict[str, any]) -> bool:
         if not self.check_writable():
             self.logger.error(f"串口不可写!")
@@ -401,14 +440,21 @@ class FanDriver(DriverBase):
         return {"device_address": self.device_address, "cpu": self.cpu, "port": self.port}
 
 
-
 if __name__ == "__main__":
     fan_driver = FanDriver("Fan", [], [], device_address="01", cpu="M0", port=serial_port)
     # fan_driver.update_hardware_parameter({"device_address": "034", "cpu": "M0", "port": "COM6"})
     # print(fan_driver.get_hardware_parameter())
+
     # fan_driver.connect()
     # fan_driver.read_all()
     # print(fan_driver.ack_query_f.get_data())
+    fan_driver.control_f.set_data(index=6, name="new", type="int16", size=2, formula="real_data=raw_data*100")
+    json_dict = fan_driver.export_config()
+    print(json_dict)
+    fan_driver2 = FanDriver("Fan2", [], [], device_address="01", cpu="M0", port=serial_port)
+    fan_driver2.load_config(json_dict)
+    print(fan_driver2.export_config())
+
     # para_dict = {
     #     "fan_command": "start",
     #     "set_speed": 0,
