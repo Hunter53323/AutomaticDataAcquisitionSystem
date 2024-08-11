@@ -2,7 +2,7 @@ from typing import Tuple, List
 
 import serial
 from serial.serialutil import SerialTimeoutException
-from driver_base import DriverBase
+from .driver_base import DriverBase
 import time
 import copy
 
