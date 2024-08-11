@@ -68,13 +68,18 @@ class DriverBase(ABC):
         pass
 
     @abstractmethod
-    def export_config(self) -> dict[str, any]:
+    def export_config(self) -> dict[str, str]:
         # 导出设备的所有配置为一个字典，value只能为int,float,str,bool
         pass
 
     @abstractmethod
-    def load_config(self, config: dict[str, any]) -> bool:
+    def load_config(self, config: dict[str, str]) -> bool:
         # 从一个字典中加载配置
+        pass
+
+    @abstractmethod
+    def get_database_table() -> dict[str, type]:
+        # 获取要存储到数据库中的所有数据名及类型
         pass
 
     def get_device_state(self) -> dict[str, any]:
