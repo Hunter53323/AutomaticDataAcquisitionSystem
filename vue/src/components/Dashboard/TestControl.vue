@@ -94,6 +94,10 @@ const handleStartDevice = () => {
       :disabled="!dashboard.isTestConnected">
       {{ dashboard.isTestRunning ? '停止' : '启动' }}
     </el-button>
+    <el-button :type="dashboard.isTestRunning ? 'danger' : 'primary'" @click="handleStartDevice"
+      :disabled="!dashboard.isTestConnected">
+      清障
+    </el-button>
   </div>
 
 

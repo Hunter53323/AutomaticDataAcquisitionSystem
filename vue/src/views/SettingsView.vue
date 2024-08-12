@@ -46,6 +46,6 @@ const activeNames = ref(['1'])
 
 <style>
 .collapse-title {
-  font-size: 16px;
+  font-size: 20px;
 }
 </style>

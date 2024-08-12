@@ -1,5 +1,6 @@
 # -*- coding:utf-8 -*-
 import logging
+import struct
 from enum import Enum
 from typing import Tuple
 
@@ -8,14 +9,12 @@ from sympy import symbols, Eq, solve, sympify
 
 class Framer:
     def __init__(self):
-        self.header = b'\xA5'
-        self.addr = b'\xFF'
-        self.cmd = b'\x00'
-        self.len = 0
+        self.tid = b'\x00\x00'
+        self.pid = b'\x00\x00'
+        self.length = 0
+        self.uid = b'\x01'
+        self.fc = b'\x03'
         self.data = {}  # self.data[index] = Field(index, name, type, size, formula),int:Field
-        self.check = 0
-        self.tail = b'\x5A'
-        self.logger = logging.getLogger(__name__)
 
     def str2byte(self, char: str, size=1) -> bytes:
         hex_str = bytes.fromhex(char)
@@ -31,30 +30,30 @@ class Framer:
         else:
             raise ValueError(f"输入长度不是{size}个字节")
 
-    def set_header(self, header: str) -> tuple[True, None] | tuple[False, Exception]:
+    def set_tid(self, tid: str) -> tuple[True, None] | tuple[False, Exception]:
         try:
-            self.header = self.str2byte(header)
+            self.tid = self.str2byte(tid, 2)
             return True, None
         except Exception as e:
             return False, e
 
-    def set_addr(self, addr: str) -> tuple[bool, None] | tuple[bool, Exception]:
+    def set_uid(self, uid: str) -> tuple[bool, None] | tuple[bool, Exception]:
         try:
-            self.addr = self.str2byte(addr)
+            self.uid = self.str2byte(uid)
             return True, None
         except Exception as e:
             return False, e
 
-    def set_cmd(self, cmd: str) -> tuple[bool, None] | tuple[bool, Exception]:
+    def set_fc(self, fc: str) -> tuple[bool, None] | tuple[bool, Exception]:
         try:
-            self.cmd = self.str2byte(cmd)
+            self.fc = self.str2byte(fc)
             return True, None
         except Exception as e:
             return False, e
 
-    def set_tail(self, tail: str) -> tuple[bool, None] | tuple[bool, Exception]:
+    def set_pid(self, pid: str) -> tuple[bool, None] | tuple[bool, Exception]:
         try:
-            self.tail = self.str2byte(tail)
+            self.pid = self.str2byte(pid, 2)
             return True, None
         except Exception as e:
             return False, e
@@ -79,24 +78,23 @@ class Framer:
             return False, e
 
     def cal_len(self) -> int:
-        num = 0
+        num = 1
         for key, value in self.data.items():
             num += value.size
-        self.len = num
+        self.length = num
         return num
 
     def reset_all(self) -> bool:
-        self.header = b'\xA5'
-        self.addr = b'\xFF'
-        self.cmd = b'\x00'
+        self.tid = b'\x00\x00'
+        self.pid = b'\x00\x00'
+        self.length = 0
+        self.uid = b'\x01'
+        self.fc = b'\x03'
         self.reset_data()
-        self.tail = b'\x5A'
         return True
 
     def reset_data(self) -> bool:
-        self.len = 0
-        self.data = {}
-        self.check = 0
+        self.data = {}  # self.data[index] = Field(index, name, type, size, formula),int:Field
         return True
 
     def export_data(self):
@@ -113,15 +111,16 @@ class Framer:
         return True
 
     def export_framer(self):
-        return {"header": self.header, "tail": self.tail, "cmd": self.cmd, "addr": self.addr,
+        self.cal_len()
+        return {"tid": self.tid, "pid": self.pid, "length": self.length, "uid": self.uid, "fc": self.fc,
                 "data": self.export_data()}
 
     def load_framer(self, framer: dict) -> tuple[bool, None] | tuple[bool, Exception]:
         try:
-            self.set_header(framer["header"])
-            self.set_tail(framer["tail"])
-            self.set_addr(framer["addr"])
-            self.set_cmd(framer["cmd"])
+            self.set_tid(framer["tid"])
+            self.set_pid(framer["pid"])
+            self.set_uid(framer["uid"])
+            self.set_fc(framer["fc"])
             self.load_data(framer["data"])
             return True, None
         except Exception as e:
@@ -137,10 +136,9 @@ class Framer:
     def encode_framer(self) -> bytes:  # human->computer
         all_msg = b''
         self.cal_len()
-        all_msg += self.header + self.addr + self.cmd + self.len.to_bytes()
+        all_msg += self.tid + self.pid + self.length.to_bytes(2) + self.uid + self.fc + len(self.data).to_bytes()
         for _, value in self.data.items():
             all_msg += value.encode_data()
-        all_msg += self.check_check(all_msg).to_bytes() + self.tail
         print(all_msg.hex())
         return all_msg
 
@@ -153,43 +151,29 @@ class Framer:
 
     def cofirm_framer(self, msg: bytes) -> tuple[bool, None] | tuple[bool, Exception]:
         try:
-            if msg[0].to_bytes() == self.header and msg[-1].to_bytes() == self.tail and msg[
-                1].to_bytes() == self.addr and \
-                    msg[2].to_bytes() == self.cmd:
-                print(msg[-2])
-                print(self.check_check(msg[0:-2]))
-                if msg[-2] == self.check_check(msg[0:-2]):
+            tid, pid, length, uid, fc, data_size = struct.unpack(">HHHBBB", msg[:9])
+            if pid.to_bytes(2) == self.pid and uid.to_bytes() == self.uid and fc.to_bytes() == self.fc:
+                if data_size == sum(value.size for _, value in self.data.items()):
                     # 先假设字典有序
-                    cur = 4
+                    cur = 9
                     for key, value in self.data.items():
                         value.decode_data(msg[cur:cur + value.size])
                         cur += value.size
+                    self.tid = tid  # 更新标识方便回复
                     return True, None
                 else:
-                    raise Exception("校验错误")
+                    raise Exception("数据个数错误")
             else:
-                raise Exception("报文头、尾、地址不匹配")
+                raise Exception("协议标识、设备地址、功能码不匹配")
         except Exception as e:
             return False, e
-
-    def check_check(self, msg: bytes) -> int:
-        # 初始化校验和为0
-        checksum = 0
-        # 对数据中的每个字节进行累加
-        for data in msg:
-            if data == msg[1]:  # 如果校验和包括地址就去掉if
-                continue
-            checksum += data
-        # 取累加结果的低8位
-        checksum_low8 = checksum & 0xFF
-        # print(checksum_low8.to_bytes())
-        return checksum_low8
 
 
 class Fieldtype(Enum):
     int16 = 1
     bit16 = 2
     bit8 = 3
+    float = 4
 
 
 class Field:
@@ -213,6 +197,9 @@ class Field:
         elif self.type == "bit16" or self.type == "bit8":
             self.real_data = int.from_bytes(data, byteorder="big", signed=False)
             self.raw_data = self.real_data
+        elif self.type == "float":
+            self.raw_data = struct.unpack(">f", data)[0]
+            self.evaluate_formula(to_real=True)
         else:
             pass
 
@@ -222,7 +209,7 @@ class Field:
 
     def set_realdata(self, real_data: int):
         self.real_data = real_data
-        if self.type == "int16":
+        if self.type == "int16" or self.type == "float":
             self.evaluate_formula(to_real=False)
         elif self.type == "bit16" or self.type == "bit8":
             self.raw_data = real_data
@@ -259,11 +246,11 @@ class Field:
 
 if __name__ == "__main__":
     ff = Framer()
-    ff.set_data(index=1, name="speed", type="int16", size=2, formula="real_data=raw_data")
-    ff.set_data(index=2, name="torp", type="int16", size=2, formula="real_data=raw_data")
-    ff.set_data(index=3, name="power", type="int16", size=2, formula="real_data=raw_data")
-    ff.set_data(index=4, name="breakdown", type="bit16", size=2, formula="")
-    ff.set_data(index=5, name="test", type="bit8", size=1, formula="")
+    ff.set_data(index=1, name="speed", type="float", size=4, formula="real_data=raw_data")
+    ff.set_data(index=2, name="torp", type="float", size=4, formula="real_data=raw_data")
+    ff.set_data(index=3, name="power", type="float", size=4, formula="real_data=raw_data")
+    ff.set_data(index=4, name="breakdown", type="float", size=4, formula="real_data=raw_data")
+    ff.set_data(index=5, name="test", type="float", size=4, formula="real_data=raw_data")
     one_f = ff.export_framer()
     print(one_f)
     author_f = Framer()
@@ -273,7 +260,6 @@ if __name__ == "__main__":
     #     v.set_realdata(100)
     # ff.encode_framer()
     # ff.cofirm_framer(b'\xA5\xFF\x00\x03\x00\x01\x00\x02\x03\x03\x01\x02\xb4\x5A')
-    print(ff.check_check(b'\x5a\xFF\x02\x0c\x00\x01\x00\x02\x00\x03\x00\x04\x00\x05\x00\x00'))
     # 一个查询回复报文5aFF020c00010002000300040005000076A5
     # data = ff.get_data()
     # print(data)

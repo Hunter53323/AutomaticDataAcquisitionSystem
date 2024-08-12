@@ -40,19 +40,9 @@ const handleConnect = () => {
     .then(() => {
       if (command == 'connect') {
         dashboard.isFanConnected = true;
-        // document.getElementById('status').innerText = "已连接";
-        // document.getElementById('status').style.color = "green";
-        // document.getElementById('connect_button').innerText = '断开连接';
-        // document.getElementById('start_device_button').disabled = false;
-        // document.getElementById('start_test_device_button').disabled = false;
       }
       if (command == 'disconnect') {
         dashboard.isFanConnected = false;
-        // document.getElementById('status').innerText = "未连接";
-        // document.getElementById('status').style.color = "red";
-        // document.getElementById('connect_button').innerText = '连接设备';
-        // document.getElementById('start_device_button').disabled = true;
-        // document.getElementById('start_test_device_button').disabled = true;
       }
     })
     .catch(error => {
@@ -96,13 +86,14 @@ const handleStartDevice = () => {
     </el-button>
     <el-button-group>
       <el-button type="primary" @click="handleStartDevice" :disabled="!dashboard.isFanConnected" class="selectWraper">
-        <el-select v-model="modeSelect" placeholder="选择" style="width: 80px" class="innerSelect">
+        <el-select v-model="modeSelect" placeholder="选择" style="width: 80px" class="innerSelect"
+          :disable="!dashboard.isFanConnected">
           <el-option label="P 模式" value="1" />
           <el-option label="N 模式" value="2" />
           <el-option label="N1 模式" value="3" />
         </el-select>
       </el-button>
-      <el-button type="primary" :disabled="!dashboard.isFanConnected" @click="handleConnect">
+      <el-button type="primary" :disabled="!dashboard.isFanConnected">
         设置
       </el-button>
     </el-button-group>
@@ -134,6 +125,8 @@ const handleStartDevice = () => {
 .selectWraper {
   padding: 0;
   margin: 0;
-  width: 180px;
+  width: 120px;
+  display: flex;
+  justify-content: space-between;
 }
 </style>
