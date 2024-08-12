@@ -66,11 +66,12 @@ def handle_socketio_events(socketio: SocketIO):
             data = communicator.read()
             para = communicator.get_curr_para()
             total = {**data, **para}
+            if "故障" in total.keys():
+                breakdown_list = breakdown_replace(total["故障"])
+                total["故障"] = breakdown_list
             for key in list(total.keys()).copy():
                 # if key in TABLE_TRANSLATE.keys():
                 total[cn_translate(key)] = total.pop(key)
-            breakdown_list = breakdown_replace(total["故障"])
-            total["故障"] = breakdown_list
             socketio.emit("data_from_device", total)
 
 

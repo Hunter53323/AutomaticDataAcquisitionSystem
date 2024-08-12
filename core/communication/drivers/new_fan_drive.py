@@ -4,12 +4,12 @@ from typing import Tuple
 
 import serial
 from serial.serialutil import SerialTimeoutException
-from driver_base import DriverBase
+from .driver_base import DriverBase
 from frame import serial_frame
 import time
 import copy
 
-serial_port = "COM11"  # 请替换为您的串行端口
+serial_port = "COM9"  # 请替换为您的串行端口
 serial_baudrate = 9600  # 根据实际情况设置波特率
 serial_parity = "N"  # None表示无校验
 serial_stopbits = 1  # 停止位
@@ -63,32 +63,32 @@ class FanDriver(DriverBase):
             bytesize=serial_bytesize, timeout=10
         )
 
-    def set_F_header(self, send_header: bytes, rev_header: bytes):
-        if not isinstance(send_header, bytes):
+    def set_F_header(self, send_header: str, rev_header: str):
+        if not isinstance(send_header, str):
             self.logger.error(f"Invalid send header value{send_header}")
             raise ValueError(f"Invalid send header value{send_header}")
         self.query_f.set_header(send_header)
         self.control_f.set_header(send_header)
-        if not isinstance(rev_header, bytes):
+        if not isinstance(rev_header, str):
             self.logger.error(f"Invalid rev header value{rev_header}")
             raise ValueError(f"Invalid rev header value{rev_header}")
         self.ack_query_f.set_header(rev_header)
         self.ack_control_f.set_header(rev_header)
 
-    def set_F_addr(self, addr: bytes):
-        if not isinstance(addr, bytes):
+    def set_F_addr(self, addr: str):
+        if not isinstance(addr, str):
             self.logger.error(f"Invalid addr value{addr}")
             raise ValueError(f"Invalid addr value{addr}")
         self.query_f.set_addr(addr)
         self.control_f.set_addr(addr)
 
-    def set_F_tailor(self, send_tailor: bytes, rev_tailor: bytes):
-        if not isinstance(send_tailor, bytes):
+    def set_F_tailor(self, send_tailor: str, rev_tailor: str):
+        if not isinstance(send_tailor, str):
             self.logger.error(f"Invalid send tail value{send_tailor}")
             raise ValueError(f"Invalid send tail value{send_tailor}")
         self.query_f.set_tail(send_tailor)
         self.control_f.set_tail(send_tailor)
-        if not isinstance(rev_tailor, bytes):
+        if not isinstance(rev_tailor, str):
             self.logger.error(f"Invalid rev tail value{rev_tailor}")
             raise ValueError(f"Invalid rev tail value{rev_tailor}")
         self.ack_query_f.set_tail(rev_tailor)
@@ -126,37 +126,66 @@ class FanDriver(DriverBase):
 
     def default_frame(self):
         # 初始化命令码
-        self.control_f.set_cmd(b'\x01')
-        self.ack_control_f.set_cmd(b'\x01')
-        self.query_f.set_cmd(b'\x02')
-        self.ack_query_f.set_cmd(b'\x02')
+        self.control_f.set_cmd("01")
+        self.ack_control_f.set_cmd("01")
+        self.query_f.set_cmd("02")
+        self.ack_query_f.set_cmd("02")
         # 默认接收帧头5A，默认发送帧头A5
-        self.ack_query_f.set_header(b'\x5A')
-        self.ack_control_f.set_header(b'\x5A')
+        self.ack_query_f.set_header("5A")
+        self.ack_control_f.set_header("5A")
         # 默认接收帧尾A5，默认发送帧头5A
-        self.ack_query_f.set_tail(b'\xA5')
-        self.ack_control_f.set_tail(b'\xA5')
+        self.ack_query_f.set_tail("A5")
+        self.ack_control_f.set_tail("A5")
         # 默认接收地址FF，默认发送地址01
-        self.query_f.set_addr(b'\x01')
-        self.control_f.set_addr(b'\x01')
+        self.query_f.set_addr("01")
+        self.control_f.set_addr("01")
         # 默认控制应答data
         self.ack_control_f.set_data(index=1, name="send_result", type="bit8", size=1, formula="")
         # 默认一期配置
-        self.ack_query_f.set_data(index=1, name="target_speed", type="int16", size=2, formula="real_data=raw_data")
-        self.ack_query_f.set_data(index=2, name="actual_speed", type="int16", size=2, formula="real_data=raw_data")
-        self.ack_query_f.set_data(index=3, name="dc_bus_voltage", type="int16", size=2, formula="real_data=raw_data")
-        self.ack_query_f.set_data(index=4, name="U_phase_current", type="int16", size=2, formula="real_data=raw_data")
-        self.ack_query_f.set_data(index=5, name="power", type="int16", size=2, formula="real_data=raw_data")
+        self.cpu_default_config()
+
+    def cpu_default_config(self):
+        FB, VB, IB, Cofe1, Cofe2, Cofe3, Cofe4, Cofe5 = self.get_cpu_paras()
+        self.ack_query_f.set_data(index=1, name="target_speed", type="int16", size=2,
+                                  formula=f"real_data=raw_data* {FB} * {Cofe1} / {Cofe2}")
+        self.ack_query_f.set_data(index=2, name="actual_speed", type="int16", size=2,
+                                  formula=f"real_data=raw_data* {FB} * {Cofe1} / {Cofe2}")
+        self.ack_query_f.set_data(index=3, name="dc_bus_voltage", type="int16", size=2,
+                                  formula=f"real_data=raw_data* {VB} / {Cofe2}")
+        self.ack_query_f.set_data(index=4, name="U_phase_current", type="int16", size=2,
+                                  formula=f"real_data=raw_data* {IB} / {Cofe2} / {Cofe5}")
+        self.ack_query_f.set_data(index=5, name="power", type="int16", size=2,
+                                  formula=f"real_data=raw_data* {IB} * {VB} * {Cofe3} / {Cofe4} / {Cofe2} / {Cofe5}")
         self.ack_query_f.set_data(index=6, name="breakdown", type="bit16", size=2, formula="")
 
         self.control_f.set_data(index=1, name="fan_command", type="bit8", size=1, formula="real_data=raw_data")
         self.control_f.set_data(index=2, name="set_speed", type="int16", size=1, formula="real_data=raw_data")
         self.control_f.set_data(index=3, name="speed_loop_compensates_bandwidth", type="int16", size=1,
-                                formula="real_data=raw_data")
+                                formula="real_data=raw_data*10")
         self.control_f.set_data(index=4, name="current_loop_compensates_bandwidth", type="int16", size=1,
                                 formula="real_data=raw_data")
         self.control_f.set_data(index=5, name="observer_compensates_bandwidth", type="int16", size=1,
-                                formula="real_data=raw_data")
+                                formula="real_data=raw_data*100")
+
+    def updata_F_data(self, f_name:str, index: int, name: str, type: str, size: int, formula: str):
+        if f_name == "query_f":
+            self.query_f.data[index] = serial_frame.Field(index, name, type, size, formula)
+        elif f_name == "control_f":
+            self.control_f.data[index] = serial_frame.Field(index, name, type, size, formula)
+        elif f_name == "ack_query_f":
+            self.ack_query_f.data[index] = serial_frame.Field(index, name, type, size, formula)
+        elif f_name == "ack_control_f":
+            self.ack_control_f.data[index] = serial_frame.Field(index, name, type, size, formula)
+
+    def delete_F_data(self,f_name:str,index:int):
+        if f_name == "query_f":
+            self.query_f.data.pop(index)
+        elif f_name == "control_f":
+            self.control_f.data.pop(index)
+        elif f_name == "ack_query_f":
+            self.ack_query_f.data.pop(index)
+        elif f_name == "ack_control_f":
+            self.ack_control_f.data.pop(index)
 
     def connect(self) -> bool:
         if self.cpu is None:
@@ -242,6 +271,7 @@ class FanDriver(DriverBase):
 
         # 数据检查完毕后开始读取数据
         self.curr_data = self.ack_query_f.get_data()
+
         # 故障处理
         if "breakdown" in self.curr_data:
             if self.curr_data["breakdown"] != 0:
@@ -291,23 +321,23 @@ class FanDriver(DriverBase):
             return False
 
     def load_config(self, F_config: dict) -> tuple[bool, None] | tuple[bool, Exception]:
-        # try:
-        for key, value in F_config.items():
-            if key == "query_f":
-                self.query_f.reset_all()
-                self.query_f.load_framer(json.loads(value))
-            elif key == "control_f":
-                self.control_f.reset_all()
-                self.control_f.load_framer(json.loads(value))
-            elif key == "ack_query_f":
-                self.ack_query_f.reset_all()
-                self.ack_query_f.load_framer(json.loads(value))
-            elif key == "ack_control_f":
-                self.ack_control_f.reset_all()
-                self.ack_control_f.load_framer(json.loads(value))
-        return True, None
-        # except Exception as e:
-        self.logger.error(f"风机帧配置导入error！{e}")
+        try:
+            for key, value in F_config.items():
+                if key == "query_f":
+                    self.query_f.reset_all()
+                    self.query_f.load_framer(json.loads(value))
+                elif key == "control_f":
+                    self.control_f.reset_all()
+                    self.control_f.load_framer(json.loads(value))
+                elif key == "ack_query_f":
+                    self.ack_query_f.reset_all()
+                    self.ack_query_f.load_framer(json.loads(value))
+                elif key == "ack_control_f":
+                    self.ack_control_f.reset_all()
+                    self.ack_control_f.load_framer(json.loads(value))
+            return True, None
+        except Exception as e:
+            self.logger.error(f"风机帧配置导入error！{e}")
         return False, e
 
     def export_config(self):
@@ -411,11 +441,20 @@ class FanDriver(DriverBase):
             self.curr_para[key] = para_dict[key]
         return True
 
-    def __get_cpu_paras(self) -> tuple[int, int, int, int, int, int, int, int]:
+    def get_cpu_paras(self) -> tuple[int, int, int, int, int, int, int, int]:
         if self.cpu == "M0":
             return 25, 380, 2, 60, 32768, 3, 2, 1
         elif self.cpu == "M4":
             return 1, 1, 1, 1, 1, 1, 1, 1000
+        return 1, 1, 1, 1, 1, 1, 1, 1
+
+    def get_database_table(self):
+        all_data={}
+        for _,value in self.ack_query_f.data.items():
+            all_data[value.name]=value.type
+        for _,value in self.control_f.data.items():
+            all_data[value.name]=value.type
+        return all_data
 
     def update_hardware_parameter(self, para_dict: dict[str, any]) -> bool:
         for key in para_dict.keys():
@@ -445,15 +484,15 @@ if __name__ == "__main__":
     # fan_driver.update_hardware_parameter({"device_address": "034", "cpu": "M0", "port": "COM6"})
     # print(fan_driver.get_hardware_parameter())
 
-    # fan_driver.connect()
-    # fan_driver.read_all()
-    # print(fan_driver.ack_query_f.get_data())
-    fan_driver.control_f.set_data(index=6, name="new", type="int16", size=2, formula="real_data=raw_data*100")
-    json_dict = fan_driver.export_config()
-    print(json_dict)
-    fan_driver2 = FanDriver("Fan2", [], [], device_address="01", cpu="M0", port=serial_port)
-    fan_driver2.load_config(json_dict)
-    print(fan_driver2.export_config())
+    fan_driver.connect()
+    fan_driver.read_all()
+    print(fan_driver.ack_query_f.get_data())
+    # fan_driver.control_f.set_data(index=6, name="new", type="int16", size=2, formula="real_data=raw_data*100")
+    # json_dict = fan_driver.export_config()
+    # print(json_dict)
+    # fan_driver2 = FanDriver("Fan2", [], [], device_address="01", cpu="M0", port=serial_port)
+    # fan_driver2.load_config(json_dict)
+    # print(fan_driver2.export_config())
 
     # para_dict = {
     #     "fan_command": "start",

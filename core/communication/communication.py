@@ -2,6 +2,7 @@ from .drivers.driver_base import DriverBase
 from .exception_handling import BreakdownHanding
 import logging
 from logging.handlers import RotatingFileHandler
+import re
 
 
 class Communication:
@@ -9,11 +10,13 @@ class Communication:
         self.drivers: list[DriverBase] = []
         self.__para_map: dict[str, DriverBase] = {}
         self.__data_map: dict[str, DriverBase] = {}
+        self.custom_calculate_map: dict[str, str] = {}
         self.__command_map: dict[str, DriverBase] = {}
         self.__is_read_all: list = []
         self.breakdown_handler = BreakdownHanding()
         self.logger = self.set_logger()
         self.conn_state: list = []
+        # TODO:这里考虑自定义的运算如何和参数表和数据表进行匹配，不然好像会出问题
 
     def set_logger(self) -> logging.Logger:
         # 创建一个日志记录器
@@ -33,7 +36,8 @@ class Communication:
         logger.addHandler(console)
         return logger
 
-    def __update_map(self, driver: DriverBase):
+    def update_map(self, driver: DriverBase):
+        # 更新设备匹配的所有数据参数表
         self.__para_map.update({key: driver for key in driver.curr_para.keys()})
         self.__data_map.update({key: driver for key in driver.curr_data.keys()})
         self.__command_map.update({driver.command: driver})
@@ -78,7 +82,7 @@ class Communication:
 
     def register_device(self, driver: DriverBase) -> bool:
         self.drivers.append(driver)
-        self.__update_map(driver)
+        self.update_map(driver)
         self.breakdown_handler.add_driver(driver)
 
     def find_driver(self, device_name: str) -> DriverBase:
@@ -232,8 +236,58 @@ class Communication:
             driver.clear_curr_data()
         return True
 
+    def get_cureent_data_table(self) -> dict[str, any]:
+        # 根据已有的数据构造数据表，进一步构造新的数据库表
+        # TODO:根据用户配置的自定义运算逻辑添加到数据库表中
+        table_columns = {"ID": "INT AUTO_INCREMENT PRIMARY KEY"}
+        for driver in self.drivers:
+            tmp_table = driver.get_database_table()
+            for key, value in tmp_table.items():
+                if key not in table_columns.keys():
+                    table_columns[key] = type2sqltype(value)
+                else:
+                    raise ValueError(f"数据表中存在重复的列名{key}")
+        table_columns.update(self.get_custom_column())
+        table_columns.update({"时间戳": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"})
+
+        return table_columns
+
+    ##################################用户自定义的运算逻辑##################################
+
+    def get_custom_column(self) -> dict[str, any]:
+        # 获取用户自定义的运算的列名,用于构造数据库表
+        return {key: "FLOAT" for key in self.custom_calculate_map.keys()}
+
+    def add_custom_column(self, user_input: list[str]) -> bool:
+        # 添加用户自定义的运算列名
+        # TODO:没有做输入合法性检查
+        for expression in user_input:
+            column_name, expr = expression.split("=", 1)
+            column_name = column_name.strip()
+            data_names = re.findall(r"[^\+\-\*/\(\) ]+", expr)
+            for data_name in data_names:
+                if data_name not in self.__para_map.keys() and data_name not in self.__data_map.keys():
+                    self.logger.error(f"自定义运算中的参数{data_name}不存在")
+                    return False
+
+            self.custom_calculate_map.update({column_name: expr.strip()})
+
+    def del_custom_column(self, column_name: str) -> bool:
+        if column_name in self.custom_calculate_map.keys():
+            self.custom_calculate_map.pop(column_name)
+            return True
+        return False
+
     def reset():
         pass
 
     def reload():
         pass
+
+
+def type2sqltype(data_type: str) -> str:
+    if data_type == "int16":
+        return "FLOAT"
+    if data_type == "bit16" or data_type == "bit8":
+        return "VARCHAR(255)"
+    return "VARCHAR(255)"

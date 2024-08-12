@@ -75,7 +75,6 @@ class DriverBase(ABC):
     @abstractmethod
     def load_config(self, config: dict[str, str]) -> bool:
         # 从一个字典中加载配置
-        # bug
         pass
 
     @abstractmethod
