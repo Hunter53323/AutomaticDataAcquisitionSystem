@@ -62,7 +62,7 @@ def upload_csv():
                             break
                     else:
                         auto_collector.logger.error(f"没有对应的控制参数：{CHkey}")
-                        # TODO value目前只能是整数
+                        # TODO 把上面的teanslate去掉，添加一个下载示例csv的接口
                 translated_row[CH2EN[CHkey]] = int(value)
             translated_csv_context.append(translated_row)
         auto_collector.init_para_pool_from_csv(translated_csv_context)
@@ -128,3 +128,17 @@ def get_current_progress():
     """
     success, fail, remaining, status = auto_collector.get_current_progress()
     return jsonify({"success": success, "fail": fail, "remaining": remaining, "complete": not status}), 200
+
+
+@autocollect.route("/steady_state_determination", methods=["GET", "POST"])
+def steady_state_determination():
+    if request.method == "GET":
+        # 获得当前的稳态判断逻辑
+        return jsonify({"value": auto_collector.get_steady_state_determination()}), 200
+    elif request.method == "POST":
+        # 设置当前的稳态判断逻辑
+        value = request.form.get("value")
+        status = auto_collector.set_steady_state_determination(value)
+        return jsonify({"status": status}), 200
+    else:
+        return jsonify({"status": False}), 400

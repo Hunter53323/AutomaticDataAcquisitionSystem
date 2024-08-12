@@ -4,6 +4,10 @@ from core.database.mysql_base import MySQLDatabase
 from collections import deque
 import threading
 from core.database import TABLE_COLUMNS, TABLE_TRANSLATE
+import re
+
+# TODO：强行杀掉有问题的自动采集线程
+DATA_TABLE_NAME = "风机数据"
 
 
 class AutoCollection:
@@ -16,6 +20,7 @@ class AutoCollection:
         self.__auto_running: bool = False
         self.__pause_flag: bool = False
         self.__stop_flag: bool = False
+        self.__custom_steady_state_determination: str = "目标转速 - 实际转速 < 1"
 
         self.__collect_count: list[int] = [0, 0]  # 第一位是成功数量，第二位是失败数量
 
@@ -29,11 +34,30 @@ class AutoCollection:
         """
         在一个新的线程中启动auto_collect
         """
+        if not self.precheck():
+            return False
         if self.__auto_running:
             self.logger.warning("正在自动采集，请勿重复启动")
             return False
         thread = threading.Thread(target=self.auto_collect)
         thread.start()
+        return True
+
+    def precheck(self) -> bool:
+        data_names = re.findall(r"[^\+\-\*/\(\) ]+", self.__custom_steady_state_determination)
+        for name in data_names:
+            if (
+                name not in self.communication.__para_map.keys()
+                and name not in self.communication.__data_map.keys()
+                and name not in self.communication.custom_calculate_map.keys()
+            ):
+                # 稳态配置中的数据项不存在于数据库中，重新配置
+                self.logger.error(f"稳态判断条件中的数据项{name}不存在")
+                return False
+        # 检查当前配置是否存在数据表，若没有的话则创建
+        table_column = self.communication.get_cureent_data_table()
+        if table_column not in self.db.table_columns_list():
+            self.db.change_current_table(DATA_TABLE_NAME, table_column)
         return True
 
     def pause_auto_collect(self) -> bool:
@@ -157,10 +181,9 @@ class AutoCollection:
             # 故障处理完毕，正常运行
             count += 1
             # TODO:这里需要确保数据是更新后的，因为之前的数据就是稳定的，如果读到的是历史数据，那么稳态判断就容易出问题，这里可以考虑是否清空一下历史数据，清空是可以的
-            if abs(curr_data["actual_speed"] - curr_data["target_speed"]) < 0.5 and curr_data["actual_speed"] != 0:
-                # if count == 30:  # TODO:测试阶段使用sleep，后续启用真实的数据采集
+            if self.steady_state_determination(curr_data, para_dict):
                 self.__stable_state = True
-                final_data = self.calculate_result(curr_data)
+                final_data = self.calculate_result(curr_data, para_dict)
                 self.logger.info(f"稳定后结果为{final_data}")
                 return final_data, True, 0, ""
             if time.time() - curr_time > 60:
@@ -169,16 +192,14 @@ class AutoCollection:
             time.sleep(0.05)
 
     def save_data(self, data_dict: dict[str, any], para_dict: dict[str, any], err: str = "") -> None:
+        self.db.change_current_table(DATA_TABLE_NAME)
         save_data_dict = {}
 
         for key in para_dict.keys():
-            if key in TABLE_TRANSLATE.keys():
-                if TABLE_TRANSLATE[key] in TABLE_COLUMNS.keys():
-                    save_data_dict[TABLE_TRANSLATE[key]] = para_dict[key]
-                else:
-                    # 数据库表中没有这一项数据
-                    pass
+            if key in self.db.table_columns.keys():
+                save_data_dict[key] = para_dict[key]
             else:
+                # 数据库表中没有这一项数据
                 self.logger.error(f"非法数据:{key}")
 
         save_data_dict["故障"] = err
@@ -186,19 +207,64 @@ class AutoCollection:
             return self.db.insert_data([save_data_dict])
 
         for key in data_dict.keys():
-            if key in TABLE_TRANSLATE.keys():
-                if TABLE_TRANSLATE[key] in TABLE_COLUMNS.keys():
-                    save_data_dict[TABLE_TRANSLATE[key]] = data_dict[key]
-                else:
-                    # 数据库表中没有这一项数据,不需要保存
-                    pass
+            if key in self.db.table_columns.keys():
+                save_data_dict[TABLE_TRANSLATE[key]] = data_dict[key]
             else:
+                # 数据库表中没有这一项数据,不需要保存
                 self.logger.error(f"非法数据:{key}")
         return self.db.insert_data([save_data_dict])
 
-    def calculate_result(self, data_dict: dict[str, any]) -> dict[str, any]:
-        # TODO: 后面需要加上真实的计算
+    def calculate_result(self, data_dict: dict[str, any], para_dict: dict[str, any]) -> dict[str, any]:
+        # TODO: 后面需要加上真实的计算,应该需要在communication里面去做，这个计算如何和数据库结合
+        custom_dict = {}
+        for col, expr in self.communication.custom_calculate_map.items():
+            for col_name in data_dict.keys():
+                expr = expr.replace(col_name, str(data_dict[col_name]))
+            for col_name in para_dict.keys():
+                expr = expr.replace(col_name, str(para_dict[col_name]))
+            custom_dict[col] = eval(expr)
+        data_dict.update(custom_dict)
         return data_dict
+
+    def steady_state_determination(self, data_dict: dict[str, any], para_dict: dict[str, any]) -> bool:
+
+        # TODO：大于、小于某个值、参数之间的差值、默认判断标准
+        # 三大类的字符串解析可以统一起来，后面也用类似的方式去做
+        # 需要对前端的配置做一个解码，可能需要一个解码函数
+        solve_str = self.__custom_steady_state_determination
+        data_names = re.findall(r"[^\+\-\*/\(\) ]+", solve_str)
+        for name in data_names:
+            if name in self.communication.__para_map.keys():
+                solve_str = solve_str.replace(name, str(para_dict[name]))
+            elif name in self.communication.__data_map.keys():
+                solve_str = solve_str.replace(name, str(data_dict[name]))
+            elif name in self.communication.custom_calculate_map.keys():
+                solve_str = solve_str.replace(name, str(self.communication.custom_calculate_map[name]))
+            else:
+                raise ValueError(f"稳态判断条件中的数据项{name}不存在")
+        return eval(solve_str)
+
+    def set_steady_state_determination(self, input_str: str) -> bool:
+        # 示例：目标转速 - 实际转速 < 1
+        # TODO
+        if not any(op in input_str for op in [">", "<", ">=", "<=", "==", "!="]):
+            self.logger.error("稳态判断条件不合法")
+            return False
+
+        data_names = re.findall(r"[^\+\-\*/\(\) ]+", input_str)
+        for name in data_names:
+            if (
+                name not in self.communication.__para_map.keys()
+                and name not in self.communication.__data_map.keys()
+                and name not in self.communication.custom_calculate_map.keys()
+            ):
+                # 稳态配置中的数据项不存在于数据库中，重新配置
+                return False
+
+        self.__custom_steady_state_determination = input_str
+
+    def get_steady_state_determination(self) -> str:
+        return self.__custom_steady_state_determination
 
     def init_para_pool(self, para_pool_dict: dict[str, list[any]]) -> tuple[bool, int]:
         if self.__auto_running:
@@ -248,7 +314,6 @@ class AutoCollection:
         para_pool = itertools.product(*self.__para_vals.values())
         self.__para_queue = deque(para_pool)
         self.__para_queue_inited = True
-
 
     def init_para_pool_from_csv(self, para_dict_list: list[dict]) -> bool:
         if self.__auto_running:

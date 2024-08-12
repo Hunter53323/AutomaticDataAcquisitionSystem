@@ -98,42 +98,127 @@ def set_device():
     返回的是{"status": True or False}
     GET接收返回的是当前的设备参数，数据格式同上，为全部参数
     """
+    # TODO:获取设备协议或者硬件配置
     if request.method == "GET":
-        return jsonify(communicator.get_hardware_parameter(device_name="FanDriver")), 200
-    else:
+        get_name = request.args.get("config_item", None)
+        if get_name == "normal":
+            return jsonify(communicator.get_hardware_parameter(device_name="FanDriver")[get_name]), 200
+        elif get_name == "config":
+            return communicator.find_driver("FanDriver").export_config(), 200
+    elif request.method == "POST":
+        # 修改端口，cpu等
         if communicator.is_connected("FanDriver"):
             return jsonify({"status": False, "error": "请先关闭所有设备连接"}), 400
         status = communicator.update_hardware_parameter(device_name="FanDriver", para_dict=request.json)
         return jsonify({"status": status}), 200
+    else:
+        # PUT，将设备协议的配置应用
+        driver_name = request.form.get("driver_name")
+        config = request.form.get("config")
+        driver = communicator.find_driver(driver_name)
+        driver.load_config(config)
+        return jsonify({"status": True}), 200
 
 
-@control.route("config", methods=["GET", "POST"])
-def config():
+@control.route("/deviceset", methods=["GET", "POST"])
+# 对风机、测试设备及其通信接口进行设置，修改端口、cpu、地址等参数,以及对协议进行设置或读取
+def set():
     """
-    配置的保存、加载等，读取当前具有的所有配置，保存当前配置，GET为读取配置，POST为保存配置
+    POST接收到的数据格式为：{"para_name1": value, "para_name2": value}
+    返回的是{"status": True or False}
+    GET接收返回的是当前的设备参数，数据格式同上，为全部参数
     """
+    # TODO:获取设备协议或者硬件配置
+    if request.method == "GET":
+        get_name = request.args.get("config_item", None)
+        driver_name = request.args.get("driver_name", None)
+        if get_name == "normal":
+            return jsonify(communicator.get_hardware_parameter(device_name=driver_name)[get_name]), 200
+        elif get_name == "config":
+            return communicator.find_driver(driver_name).export_config(), 200
+    elif request.method == "POST":
+        # 修改端口，cpu等
+        driver_name = request.form.get("driver_name", None)
+        if communicator.is_connected(driver_name):
+            return jsonify({"status": False, "error": "请先关闭所有设备连接"}), 400
+        status = communicator.update_hardware_parameter(device_name=driver_name, para_dict=request.json)
+        return jsonify({"status": status}), 200
+    else:
+        # PUT，将设备协议的配置应用
+        driver_name = request.form.get("driver_name")
+        config = request.form.get("config")
+        driver = communicator.find_driver(driver_name)
+        driver.load_config(config)
+        # 更新通讯模块的参数匹配
+        communicator.update_map()
+        return jsonify({"status": True}), 200
+
+
+@control.route("config/apply", methods=["GET", "POST"])
+def config_apply():
+    """
+    配置的应用，应用当前配置，GET为读取配置，POST为保存配置，PUT为加载配置
+    """
+    # 这里显示的是配置的细节
     if request.method == "GET":
         driver_name = request.args.get("driver_name", None)
         driver = communicator.find_driver("driver_name")
-        outputdb.change_current_table(driver_name, COLUMN)
-        driver_config = outputdb.select_data()
-        outputdb.change_default_table()
-        # 将当前具有的所有配置返回,也可以只显示配置名字
+        driver_config = driver.export_config()
+        # 将当前具有的所有配置返回,也可以只显示配置名字和ID
+        # 这里只显示配置名字和ID
         return jsonify({driver_config}), 200
-    else:
+    elif request.method == "POST":
+        driver_name = request.form.get("driver_name")
+        driver = communicator.find_driver("driver_name")
+        config = request.form.get("config")
+        # 这里具体如何实现需要根据驱动来实现
+        driver.load_config(config)
+
+
+@control.route("config/save", methods=["GET", "POST", "PUT", "DELETE"])
+def config_save():
+    """
+    配置的保存、加载等，读取当前具有的所有配置，保存当前配置，GET为读取配置，POST为保存配置，PUT为加载配置
+    """
+    # TODO:没有完全完成，需要测试
+    if request.method == "GET":
+        driver_name = request.args.get("driver_name", None)
+        driver = communicator.find_driver("driver_name")
+        outputdb.change_current_table(driver_name)
+        driver_config = outputdb.select_data()
+        # 将当前具有的所有配置返回,也可以只显示配置名字和ID
+        # 这里只显示配置名字和ID
+        return jsonify({driver_config}), 200
+    elif request.method == "POST":
+        # POST方法，保存当前设备配置
         driver_name = request.form.get("driver_name")
         config_name = request.form.get("config_name")
         driver = communicator.find_driver("driver_name")
         config_dict = driver.export_config()
-        config_dict.update({"config_name": config_name})
+        config_dict.update({"配置命名": config_name})
         # 将配置文件保存到数据库中
-        COLUMN = config_to_columns(config_dict)
-        outputdb.change_current_table(driver_name, COLUMN)
+        config_column = config_to_columns(config_dict)
+        outputdb.change_current_table(driver_name, config_column)
         outputdb.insert_data([config_dict])
-        outputdb.change_default_table()
 
-        driver_config = driver.save_config()
         # 将配置文件保存到数据库中
+        return jsonify({"status": True}), 200
+    elif request.method == "PUT":
+        driver_name = request.form.get("driver_name")
+        config_id = request.form.get("config_id")
+        outputdb.change_current_table(driver_name)
+        driver_config = outputdb.select_data(ids_input=[config_id])
+        if len(driver_config) != 1:
+            return jsonify({"err": "查询错误"}), 400
+        driver = communicator.find_driver("driver_name")
+        driver.load_config(driver_config[0])
+        return jsonify({"status": True}), 200
+    else:
+        # 删除配置
+        driver_name = request.form.get("driver_name")
+        config_id = request.form.get("config_id")
+        outputdb.change_current_table(driver_name)
+        outputdb.delete_data_by_ids(ids_input=[config_id])
         return jsonify({"status": True}), 200
 
 
@@ -178,6 +263,24 @@ def state():
     """
     state_dict = communicator.get_device_state()
     return jsonify(state_dict), 200
+
+
+@control.route("/custom_column", methods=["GET", "POST", "PUT", "DELETE"])
+def custom_column():
+    # TODO:用户自定义的参数计算
+    if request.method == "GET":
+        # 处理数据插入
+        return jsonify(communicator.custom_calculate_map), 200
+    elif request.method == "POST":
+        # 处理数据修改
+        datasstr: str = request.form.get("data")
+        communicator.add_custom_column([datasstr])
+    elif request.method == "PUT":
+        datasstr: str = request.form.get("data")
+        communicator.add_custom_column([datasstr])
+    else:
+        column_name = request.form.get("name")
+        communicator.del_custom_column(column_name)
 
 
 def config_to_columns(config: dict[str, any]) -> dict[str, str]:
