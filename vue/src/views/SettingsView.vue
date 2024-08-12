@@ -2,14 +2,14 @@
 import { ref, onMounted } from 'vue'
 import ProtocolsSetting from '@/components/settings/ProtocolsSetting.vue'
 import MonitorSetting from '@/components/settings/MonitorSetting.vue'
-import StaffSetting from '@/components/settings/StaffSetting.vue'
+import StaffSetting from '@/components/settings/UserSetting.vue'
 import DatabaseSetting from '@/components/settings/DatabaseSetting.vue'
 
 const activeNames = ref(['1'])
 </script>
 
 <template>
-  <el-collapse v-model="activeNames">
+  <el-collapse v-model="activeNames" accordion>
     <el-collapse-item name="1">
       <template #title>
         <div class="collapse-title">通讯协议</div>
@@ -46,6 +46,10 @@ const activeNames = ref(['1'])
 
 <style>
 .collapse-title {
-  font-size: 20px;
+  font-size: 18px;
+}
+
+.el-collapse-item__content {
+  padding: 0;
 }
 </style>

@@ -24,7 +24,7 @@ const emit = defineEmits(['pageChange', 'sizeChange'])
 
 </template>
 
-<style>
+<style scoped>
 .el-pagination {
   width: 100vb;
   text-align: center;

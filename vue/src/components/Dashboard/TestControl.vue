@@ -103,7 +103,7 @@ const handleStartDevice = () => {
 
 </template>
 
-<style>
+<style scoped>
 .controlBox .el-button {
   margin: 0 10px 0 0;
 }

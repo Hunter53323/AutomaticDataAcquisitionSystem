@@ -5,7 +5,7 @@ import DBTable from '@/components/database/DBTable.vue'
 </script>
 
 <template>
-  <ViewTitle viewTitle="Database" />
+  <!-- <ViewTitle viewTitle="Database" /> -->
   <DBTable />
 </template>
 

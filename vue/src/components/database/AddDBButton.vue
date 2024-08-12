@@ -91,7 +91,7 @@ const cancelForm = () => {
 </template>
 
 
-<style>
+<style scoped>
 .addDBForm {
   margin: auto;
 }
