@@ -89,3 +89,18 @@ export const useDashboardStore = defineStore('dashboard', {
         }
     }
 })
+export const useSettingsStore = defineStore('settings', {
+    state: () => ({
+        staffInfo: {},
+    }),
+    actions: {
+        initSettings() {
+            fetch(useGlobalStore().url + "/control/config", {
+                method: 'GET'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    this.staffInfo = data
+                })
+        }
+    }
