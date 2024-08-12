@@ -35,6 +35,9 @@ const activeNames = ref([])
 .el-collapse-item__content {
   padding: 0;
 }
+.el-collapse-item__header {
+  font-size: 16px;
+}
 
 .el-collapse-item__wrap{
   margin: 0;
