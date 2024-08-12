@@ -4,7 +4,7 @@ from typing import Tuple
 
 import serial
 from serial.serialutil import SerialTimeoutException
-from driver_base import DriverBase
+from .driver_base import DriverBase
 from frame import serial_frame
 import time
 import copy

@@ -1,7 +1,8 @@
+import json
 import time
 
 from pymodbus.framer import ModbusSocketFramer
-
+from frame import modbus_frame
 from .driver_base import DriverBase
 from pymodbus.client import ModbusTcpClient
 import struct
@@ -15,6 +16,17 @@ class TestDevice(DriverBase):
         self.__set_client(ip="127.0.0.1", port=5020)
         self.hardware_para = ["ip", "port"]
         self.command = "test_device_command"
+        self.rev_f = modbus_frame.Framer()
+        self.is_set_f = False
+
+    def default_frame(self):
+        self.is_set_f = True
+        self.rev_f.set_data(index=1, name="motor_input_power", type="float", size=4,
+                            formula=f"real_data=raw_data")
+        self.rev_f.set_data(index=2, name="torque", type="float", size=4,
+                            formula=f"real_data=raw_data")
+        self.rev_f.set_data(index=3, name="motor_output_power", type="float", size=4,
+                            formula=f"real_data=raw_data")
 
     def __set_client(self, ip: str, port: int):
         self.ip = ip
@@ -160,17 +172,13 @@ class TestDevice(DriverBase):
                 if count == 20:
                     self.logger.warn(f"警告更新报文时间设置过长！ 报文更新周期小于{timeout}s")
                 elif count == 0:
-                    self.logger.warn(f"警告更新报文时间设置过短！请增大！ 报文更新周期大于{timeout*10}s")
+                    self.logger.warn(f"警告更新报文时间设置过短！请增大！ 报文更新周期大于{timeout * 10}s")
                 break
         return msg
 
-    def read_all(self, num=3, read_count=3, encoding=4) -> bool:
-        # import random
-
-        # self.curr_data["motor_input_power"] = random.randint(0, 100)
-        # self.curr_data["torque"] = random.randint(0, 100)
-        # self.curr_data["motor_output_power"] = random.randint(0, 100)
-        # return True
+    def read_all(self, read_count=3) -> bool:
+        if not self.is_set_f:
+            return False
         for count in range(read_count):
             try:
                 if not self.conn_state:
@@ -180,18 +188,13 @@ class TestDevice(DriverBase):
                 if not result:
                     raise Exception(f"接收失败! result：{result.hex()}")
                 else:
-                    tid, pid, length, uid, fc, data_size = struct.unpack(">HHHBBB", result[:9])
-                    if data_size == num * encoding:
-                        float_values = [struct.unpack(">f", result[i : i + 4])[0] for i in range(9, 9 + num * encoding, encoding)]
-                        self.logger.debug(
-                            f"tid, pid, length, uid：{tid, pid, length, uid},Function Code:{fc},data_size:{data_size},数据：{float_values}"
-                        )
-                        self.curr_data["motor_input_power"] = float_values[0]
-                        self.curr_data["torque"] = float_values[1]
-                        self.curr_data["motor_output_power"] = float_values[2]
-                        return True
-                    else:
-                        raise Exception(f"数据接收数量错误！ 目标接收num*encoding：{num * encoding},实际收到：{data_size}")
+                    state, e = self.rev_f.cofirm_framer(result)
+                    if not state:
+                        self.logger.error(f"查询回复解析报错{e}")
+                        raise Exception(e)
+                    # 数据检查完毕后开始读取数据
+                    self.curr_data = self.rev_f.get_data()
+                    return True
             except Exception as e:
                 self.logger.error(f"error:{e},count：{count}")
         return False
@@ -247,19 +250,46 @@ class TestDevice(DriverBase):
     def get_hardware_parameter(self) -> dict[str, any]:
         return {"ip": self.ip, "port": self.port}
 
-    def export_config(self) -> dict[str, any]:
-        # 导出设备的所有配置为一个字典，value只能为int,float,str,bool
-        pass
+    def load_config(self, F_config: dict) -> tuple[bool, None] | tuple[bool, Exception]:
+        try:
+            for key, value in F_config.items():
+                if key == "rev_f":
+                    self.rev_f.reset_all()
+                    self.rev_f.load_framer(json.loads(value))
+            return True, None
+        except Exception as e:
+            self.logger.error(f"测试设备帧配置导入error！{e}")
+        return False, e
 
-    def load_config(self, config: dict[str, any]) -> bool:
-        # 从一个字典中加载配置
-        pass
+    def export_config(self):
+        return {"rev_f": json.dumps(self.pre_dict(self.rev_f.export_framer()))}
+
+    # 转换帧对象的变量中byte为str
+    def pre_dict(self, obj: dict):
+        dict_obj = {}
+        # 遍历对象的属性
+        for key, value in obj.items():
+            # 如果值是字节串，则转换为十六进制字符串
+            if isinstance(value, bytes):
+                dict_obj[key] = value.hex()
+            else:
+                dict_obj[key] = value
+        return dict_obj
+
+    def get_database_table(self):
+        all_data={}
+        for _,value in self.rev_f.data.items():
+            all_data[value.name]=value.type
+        return all_data
 
 
 if __name__ == "__main__":
     testdevice = TestDevice(
-        device_name="TestDevice", data_list=["motor_input_power", "torque", "motor_output_power"], para_list=["test_device_command", "load"]
+        device_name="TestDevice", data_list=[],
+        para_list=["test_device_command", "load"]
     )
+    testdevice.default_frame()
+    testdevice.connect()
     # testdevice.update_hardware_parameter(para_dict={"ip": "127.0.0.1", "port": 504})
     # print(testdevice.connect())
     # testdevice.update_hardware_parameter(para_dict={"ip": "120.76.28.211", "port": 80})
@@ -267,7 +297,8 @@ if __name__ == "__main__":
     # testdevice.write(parameters)
     # parameters = {"test_device_command": "write", "load": 200}
     while 1:
-        testdevice.read_all()
+        if testdevice.read_all():
+            print(testdevice.curr_data)
         # testdevice.write(parameters)
         time.sleep(0.1)
     # parameters = {"command": "stop_device"}
