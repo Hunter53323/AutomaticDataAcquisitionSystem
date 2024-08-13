@@ -6,7 +6,7 @@ import time
 
 
 class DriverBase(ABC):
-    def __init__(self, device_name: str, data_list: list[str], para_list: list[str]):
+    def __init__(self, device_name: str):
         self.device_name = device_name
         self.conn_state = False
         self.run_state = False
@@ -14,8 +14,10 @@ class DriverBase(ABC):
         self.__read_all_running: bool = False
         self.__iswriting = False
         self.__isreading = False
-        self.curr_data = {key: 0 for key in data_list}
-        self.curr_para = {key: 0 for key in para_list}
+        # self.curr_data = {key: 0 for key in data_list}
+        # self.curr_para = {key: 0 for key in para_list}
+        self.curr_data = {}
+        self.curr_para = {}
         self.command = None
         self.hardware_para = []
         self.logger = self.set_logger()

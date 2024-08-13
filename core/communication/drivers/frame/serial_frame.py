@@ -8,13 +8,13 @@ from sympy import symbols, Eq, solve, sympify
 
 class Framer:
     def __init__(self):
-        self.header = b'\xA5'
-        self.addr = b'\xFF'
-        self.cmd = b'\x00'
+        self.header = b"\xA5"
+        self.addr = b"\xFF"
+        self.cmd = b"\x00"
         self.len = 0
-        self.data = {}  # self.data[index] = Field(index, name, type, size, formula),int:Field
+        self.data: dict[int, Field] = {}  # self.data[index] = Field(index, name, type, size, formula),int:Field
         self.check = 0
-        self.tail = b'\x5A'
+        self.tail = b"\x5A"
         self.logger = logging.getLogger(__name__)
 
     def str2byte(self, char: str, size=1) -> bytes:
@@ -60,8 +60,7 @@ class Framer:
             return False, e
 
     def set_data(self, index: int, name: str, type: str, size: int, formula: str, **kwargs) -> tuple[bool, None] | \
-                                                                                               tuple[
-                                                                                                   bool, Exception]:
+                                                                                               tuple[bool, Exception]:
         try:
             if index in self.data:
                 raise Exception(f"第{index}位置已存在数据{self.data[index].name}")
@@ -86,11 +85,11 @@ class Framer:
         return num
 
     def reset_all(self) -> bool:
-        self.header = b'\xA5'
-        self.addr = b'\xFF'
-        self.cmd = b'\x00'
+        self.header = b"\xA5"
+        self.addr = b"\xFF"
+        self.cmd = b"\x00"
         self.reset_data()
-        self.tail = b'\x5A'
+        self.tail = b"\x5A"
         return True
 
     def reset_data(self) -> bool:
@@ -135,7 +134,7 @@ class Framer:
         return real_data
 
     def encode_framer(self) -> bytes:  # human->computer
-        all_msg = b''
+        all_msg = b""
         self.cal_len()
         all_msg += self.header + self.addr + self.cmd + self.len.to_bytes()
         for _, value in self.data.items():
@@ -153,16 +152,19 @@ class Framer:
 
     def cofirm_framer(self, msg: bytes) -> tuple[bool, None] | tuple[bool, Exception]:
         try:
-            if msg[0].to_bytes() == self.header and msg[-1].to_bytes() == self.tail and msg[
-                1].to_bytes() == self.addr and \
-                    msg[2].to_bytes() == self.cmd:
-                print(msg[-2])
-                print(self.check_check(msg[0:-2]))
+            if (
+                    msg[0].to_bytes() == self.header
+                    and msg[-1].to_bytes() == self.tail
+                    and msg[1].to_bytes() == self.addr
+                    and msg[2].to_bytes() == self.cmd
+            ):
+                # print(msg[-2])
+                # print(self.check_check(msg[0:-2]))
                 if msg[-2] == self.check_check(msg[0:-2]):
                     # 先假设字典有序
                     cur = 4
                     for key, value in self.data.items():
-                        value.decode_data(msg[cur:cur + value.size])
+                        value.decode_data(msg[cur: cur + value.size])
                         cur += value.size
                     return True, None
                 else:
@@ -177,8 +179,8 @@ class Framer:
         checksum = 0
         # 对数据中的每个字节进行累加
         for data in msg:
-            if data == msg[1]:  # 如果校验和包括地址就去掉if
-                continue
+            # if data == msg[1]:  # 如果校验和包括地址就去掉if
+            #     continue
             checksum += data
         # 取累加结果的低8位
         checksum_low8 = checksum & 0xFF
@@ -203,7 +205,7 @@ class Field:
         self.size = size
         self.formula = formula  # 格式为"real_data=(raw_data+2)/3"
         self.inv_formula = ""
-        self.raw_data = 0  # bytes([0]*self.size)
+        self.raw_data = 0
         self.real_data = 0
 
     def decode_data(self, data: bytes):
@@ -217,8 +219,8 @@ class Field:
             pass
 
     def encode_data(self) -> bytes:
-        print(self.name, self.raw_data)
-        return self.raw_data.to_bytes(self.size)
+        print(self.name, int(self.raw_data))
+        return int(self.raw_data).to_bytes(self.size)
 
     def set_realdata(self, real_data: int):
         self.real_data = real_data
@@ -230,9 +232,9 @@ class Field:
             pass
 
     def inverse_formula(self):
-        raw_data_sym = symbols('raw_data')
-        real_data_sym = symbols('real_data')
-        expr = sympify(self.formula.split('=')[1])
+        raw_data_sym = symbols("raw_data")
+        real_data_sym = symbols("real_data")
+        expr = sympify(self.formula.split("=")[1])
         raw_data_inverse_expr = solve(Eq(real_data_sym, expr), raw_data_sym)[0]
         return f"raw_data={raw_data_inverse_expr}"
 
@@ -242,15 +244,15 @@ class Field:
                 return True, None
             local_vars = {}
             if to_real:
-                local_vars['raw_data'] = self.raw_data
+                local_vars["raw_data"] = self.raw_data
                 exec(self.formula, {}, local_vars)
-                self.real_data = local_vars.get('real_data')
+                self.real_data = local_vars.get("real_data")
             else:
                 if self.inv_formula == "":
                     self.inv_formula = self.inverse_formula()
-                local_vars['real_data'] = self.real_data
+                local_vars["real_data"] = self.real_data
                 exec(self.inv_formula, {}, local_vars)
-                self.raw_data = local_vars.get('raw_data')
+                self.raw_data = local_vars.get("raw_data")
             return True, None
         except Exception as e:
             print(e)
@@ -273,7 +275,7 @@ if __name__ == "__main__":
     #     v.set_realdata(100)
     # ff.encode_framer()
     # ff.cofirm_framer(b'\xA5\xFF\x00\x03\x00\x01\x00\x02\x03\x03\x01\x02\xb4\x5A')
-    print(ff.check_check(b'\x5a\xFF\x02\x0c\x00\x01\x00\x02\x00\x03\x00\x04\x00\x05\x00\x00'))
+    print(ff.check_check(b"\x5a\xFF\x02\x0c\x00\x01\x00\x02\x00\x03\x00\x04\x00\x05\x00\x00"))
     # 一个查询回复报文5aFF020c00010002000300040005000076A5
     # data = ff.get_data()
     # print(data)

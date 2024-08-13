@@ -27,9 +27,6 @@ except IOError:
     print("字体 'SimHei' 无法加载，请确保字体文件存在。")
 
 
-# 定义公司名称
-COMPANY_NAME = "Haier"
-
 
 # 连接数据库
 def connect_database():
@@ -62,28 +59,6 @@ def connect_database():
         print("Error connecting to MySQL Platform:", e)
         sys.exit(0)
 
-
-# 从数据库获取数据
-def fetch_data(connection: mysql.connector.MySQLConnection, parameters):
-    try:
-        cursor = connection.cursor()
-        # 动态构建查询的列名部分，这里我们查询所有列，然后只返回参数指定的列
-        columns = ", ".join(parameters)
-
-        # 构建完整的SQL查询语句
-        sql = f"SELECT {columns} FROM '风机数据' "
-
-        cursor.execute(sql)
-        # 获取查询结果
-        result = cursor.fetchall()
-
-        # 从结果中提取指定参数的数据
-        extracted_data = [dict(zip(columns.split(", "), row)) for row in result]
-
-        return extracted_data
-    except mysql.connector.Error as e:
-        print("Error fetching data from MySQL Platform:", e)
-        return None
 
 
 def table_pdf(data):
@@ -157,8 +132,8 @@ def draw_line_chart(parameters, data):
     return img
 
 
-# PDF合并文件
-def merge_pdfs(paths, output):
+
+def merge_pdfs(paths: list[str], output_path: str):
     pdf_writer = PdfWriter()
 
     for path in paths:
@@ -166,23 +141,30 @@ def merge_pdfs(paths, output):
         for page in pdf_reader.pages:
             pdf_writer.add_page(page)
 
-    with open(output, "wb") as out:
+    with open(output_path, "wb") as out:
         pdf_writer.write(out)
+
+    print(f"PDF文件合并成功，保存在：{output_path}")    
 
     # 删除原始 PDF 文件
     for path in paths:
-        os.remove(path)
+        os.remove(path)            
 
 
-def generate_pdf(parameters: list[str], experimenter: str, data: dict[str, any], search_data: dict[str, any], direction_vertical=False):
+
+def generate_pdf(parameters: list, input_inform: dict, data: dict, report_path: str, direction_vertical: bool):
     """
     :param parameters: 要绘图的参数列表
-    :param experimenter: 实验员姓名
+    :param input_inform: 包含输入信息的字典，例如{'实验员姓名': '张三', '公司名称': 'XX公司'}
     :param data: 所有数据
-    :param search_data: 从数据库中获取的数据
+    :param report_path: 生成pdf保存的绝对路径
     :param direction_vertical: 是否纵向排布
     """
-    doc = SimpleDocTemplate("report.pdf", pagesize=letter)
+    # 从input_inform中获取公司名称和实验员姓名，如果不存在则使用默认值
+    company_name = input_inform.get('公司名称', '未知公司名称')
+    experimenter = input_inform.get('实验员姓名', '未知实验员')
+
+    doc = SimpleDocTemplate(os.path.join(report_path, "report.pdf"), pagesize=letter)
 
     # 首页内容样式
     first_page_style = ParagraphStyle("FirstPage", fontName="SimHei", fontSize=14, alignment=TA_CENTER, fontWeight="bold")
@@ -214,18 +196,18 @@ def generate_pdf(parameters: list[str], experimenter: str, data: dict[str, any],
     story = [
         Paragraph("电机测试报告", title_style),
         Spacer(1, 200),
-        Paragraph(f"公司名称: {COMPANY_NAME}", first_page_style),
+        Paragraph(f"公司名称: {company_name}", first_page_style),
         Spacer(1, 12),
         Paragraph(f"报告生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", first_page_style),
         Spacer(1, 12),
-        Paragraph(f"实验员: {experimenter}", first_page_style),
+        Paragraph(f"实验员姓名: {experimenter}", first_page_style),
         Spacer(1, 12),
         PageBreak(),
     ]
 
     # 添加图片到story中，确保它位于logo_frame中
     # TODO: 修改图片路径
-    logo_path = "./logo.png"  # 替换为您的图片路径
+    logo_path = 'images/logo.png'  # 替换为您的图片路径
     logo = Image(logo_path, width=inch * 2, height=inch * 2)  # 设置图片宽高
     story.insert(0, logo)  # 将图片插入到故事列表的开始位置
 
@@ -236,7 +218,7 @@ def generate_pdf(parameters: list[str], experimenter: str, data: dict[str, any],
         doc.build(story)
 
         # 第二页和第三页需要横向排布，创建一个新的PDF文档
-        landscape_doc = SimpleDocTemplate("report_landscape.pdf", pagesize=landscape(letter))
+        landscape_doc = SimpleDocTemplate(os.path.join(report_path, "report_landscape.pdf"), pagesize=landscape(letter))        
         landscape_story = []
 
         # 第二页展示所有数据，分页处理
@@ -250,29 +232,30 @@ def generate_pdf(parameters: list[str], experimenter: str, data: dict[str, any],
         # 构建第二页和第三页的PDF
         landscape_doc.build(landscape_story)
 
+
+
         # 第四页需要纵向排布，创建另一个新的PDF文档
-        portrait_doc = SimpleDocTemplate("report_portrait.pdf", pagesize=letter)
-        portrait_story = []
+        if parameters:
+            portrait_doc = SimpleDocTemplate(os.path.join(report_path, "report_portrait.pdf"), pagesize=letter)
+            portrait_story = []
 
-        # 第四页对选择的参数依次开始画图
-        for param in parameters:
-            chart = draw_line_chart(param, data)
-            portrait_story.append(chart)
-            portrait_story.append(Spacer(1, 12))  # 添加一些间距
+            # 第四页对选择的参数依次开始画图
+            for param in parameters:
+                chart = draw_line_chart(param, data)
+                portrait_story.append(chart)
+                portrait_story.append(Spacer(1, 12))  # 添加一些间距
 
-        # 构建第四页的PDF
-        portrait_doc.build(portrait_story)
+            # 构建第四页的PDF
+            portrait_doc.build(portrait_story)
 
-        paths_to_merge = ["report.pdf", "report_landscape.pdf", "report_portrait.pdf"]
-        output_file = "merged_report.pdf"
+            paths_to_merge = [os.path.join(report_path, "report.pdf"), os.path.join(report_path, "report_landscape.pdf"), os.path.join(report_path, "report_portrait.pdf")]
+        else:
+            paths_to_merge = [os.path.join(report_path, "report.pdf"), os.path.join(report_path, "report_landscape.pdf")]
+        output_file = os.path.join(report_path, "merged_report.pdf")
         merge_pdfs(paths_to_merge, output_file)
-        # TODO:pdf导出的路径自定义
-
         # 最后，将三个PDF合并为一个PDF（这一步需要额外的处理）
         print("PDF reports with tables and charts generated successfully.")
     else:
-        # 添加一个页面分隔符以开始第2页
-        story.append(PageBreak())
 
         # 第二页展示所有数据，分页处理
         tables = table_pdf(data)
@@ -283,21 +266,29 @@ def generate_pdf(parameters: list[str], experimenter: str, data: dict[str, any],
             story.append(PageBreak())
 
         # 第四页对选择的参数依次开始画图
-        for param in parameters:
-            chart = draw_line_chart(param, data)
-            story.append(chart)
-            story.append(Spacer(1, 12))  # 添加一些间距
+        if parameters:
+            for param in parameters:
+                chart = draw_line_chart(param, data)
+                story.append(chart)
+                story.append(Spacer(1, 12))  # 添加一些间距
 
         # 构建并保存文档
         doc.build(story)
-        print("PDF report with table generated successfully.")
+        print(f"PDF report generated successfully at: {os.path.join(report_path, 'report.pdf')}")
 
 
 def main():
-    experimenter = "Yuxiang Liu"
-    motor_name = "示例风机1"
-    motor_model = "型号X"
+    input_inform = "Yuxiang Liu"
+    parameters = []
     parameters = ["转速", "功率", "速度环补偿系数", "观测器补偿系数"]
+    input_inform ={
+        '实验员姓名': 'Yuxiang Liu',
+        '公司名称': 'Haier' ,
+        '风机名称': "示例风机1",
+        '风机型号': "型号X"
+        }
+    report_path = 'core/statement'    
+    
     data = [
         {
             "ID": 1,
@@ -541,22 +532,11 @@ def main():
         },
     ]
 
-    # 连接数据库
-    connection = connect_database()
 
-    # 确保至少输入了一个列名
-    if not parameters:
-        print("At least one column name is required.")
-        return
 
-    # 获取数据
-    search_data = fetch_data(connection, parameters)
-    if search_data is None:
-        print("No data found or error occurred.")
-        return
 
     # 生成PDF报告
-    generate_pdf(parameters, experimenter, data, search_data)
+    generate_pdf(parameters, input_inform, data,  report_path, direction_vertical=False)
 
     print("Report generated successfully.")
 
