@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { reactive, ref, onMounted } from 'vue'
-import { ElTable, ElMessage, ElMessageBox } from 'element-plus'
+import { reactive, ref, onMounted, h } from 'vue'
+import { ElTable, ElMessage, ElMessageBox, ElForm, ElFormItem, ElInput } from 'element-plus'
 import AddDBButton from '@/components/database/AddDBButton.vue'
 import DBPagination from '@/components/database/DBPagination.vue'
 import { useGlobalStore } from '@/stores/global'
@@ -30,6 +30,9 @@ const dbDataUpdate = () => {
       dbDataObjList.value = data.data
       db.totalCount = data.total_count
     })
+    .catch(response => {
+      ElMessage.error('无法获取数据，请检查数据库是否正常运行')
+    })
 }
 
 const handleDBDelete = () => {
@@ -41,6 +44,7 @@ const handleDBDelete = () => {
     '此行为将删除选中的数据！',
     'Warning',
     {
+      customClass: "db-operation-box",
       confirmButtonText: 'OK',
       cancelButtonText: 'Cancel',
       type: 'warning',
@@ -80,6 +84,7 @@ const handleDBClear = () => {
     '此行为将清除数据库中所有数据！',
     'Warning',
     {
+      customClass: "db-operation-box",
       confirmButtonText: 'OK',
       cancelButtonText: 'Cancel',
       type: 'warning',
@@ -117,15 +122,31 @@ const handleDBClear = () => {
 }
 
 const handleDBExport = () => {
-  ElMessageBox.prompt('请输入导出数据文件名', {
-    confirmButtonText: 'OK',
-    cancelButtonText: 'Cancel',
-    // inputPattern:
-    //   /[\w!#$%&'*+/=?^_`{|}~-]+(?:\.[\w!#$%&'*+/=?^_`{|}~-]+)*@(?:[\w](?:[\w-]*[\w])?\.)+[\w](?:[\w-]*[\w])?/,
-    inputErrorMessage: '非法文件名',
+  const filename = ref('')
+  const filepath = ref('')
+  const conditions = ref('')
+  ElMessageBox({
+    title: '数据导出',
+    message: h(ElForm,
+      { labelWidth: "auto", labelPosition: "left" },
+      () => [
+        h(ElFormItem, { label: "导出文件名", required: true }, () => {
+          return h(ElInput, { modelValue: filename.value, 'onUpdate:modelValue': val => filename.value = val }, null)
+        }),
+        h(ElFormItem, { label: "导出目录", required: true }, () => {
+          return h(ElInput, { modelValue: filepath.value, "onUpdate:modelValue": val => filepath.value = val }, null)
+        }),
+        h(ElFormItem, { label: "筛选条件" }, () => {
+          return h(ElInput, { modelValue: conditions.value, "onUpdate:modelValue": val => conditions.value = val }, null)
+        }),
+      ]),
+    customClass: "db-operation-box",
+    showCancelButton: true,
+    confirmButtonText: '确认',
+    cancelButtonText: '取消',
   })
-    .then(({ value }) => {
-      fetch(global.url + "/db/export?filename=" + value, {
+    .then(() => {
+      fetch(global.url + "/db/export?filename=" + filename + "?filepath=" + filepath, {
         method: 'GET',
       }).then(response => response.json())
         .then(data => {
@@ -146,6 +167,57 @@ const handleDBExport = () => {
       ElMessage({
         type: 'info',
         message: '数据导出取消',
+      })
+    })
+
+}
+
+const handleStatementExport = () => {
+  const filename = ref('')
+  const filepath = ref('')
+  const conditions = ref('')
+  ElMessageBox({
+    title: '报表导出',
+    message: h(ElForm,
+      { labelWidth: "auto", labelPosition: "left" },
+      () => [
+        h(ElFormItem, { label: "导出文件名", required: true }, () => {
+          return h(ElInput, { modelValue: filename.value, 'onUpdate:modelValue': val => filename.value = val }, null)
+        }),
+        h(ElFormItem, { label: "导出目录", required: true }, () => {
+          return h(ElInput, { modelValue: filepath.value, "onUpdate:modelValue": val => filepath.value = val }, null)
+        }),
+        h(ElFormItem, { label: "筛选条件" }, () => {
+          return h(ElInput, { modelValue: conditions.value, "onUpdate:modelValue": val => conditions.value = val }, null)
+        }),
+      ]),
+    customClass: "db-operation-box",
+    showCancelButton: true,
+    confirmButtonText: '确认',
+    cancelButtonText: '取消',
+  })
+    .then(() => {
+      fetch(global.url + "/db/statement?filename=" + filename + "?filepath=" + filepath, {
+        method: 'GET',
+      }).then(response => response.json())
+        .then(data => {
+          if (data.status == 'error') {
+            throw new Error(data.message)
+          }
+          alert(data.message)
+          ElMessage({
+            message: '报表导出成功',
+            type: 'success'
+          })
+        })
+        .catch(response => {
+          ElMessage.error('报表导出失败:' + response.message)
+        })
+    })
+    .catch(() => {
+      ElMessage({
+        type: 'info',
+        message: '报表导出取消',
       })
     })
 
@@ -183,6 +255,7 @@ onMounted(() => {
   <div class="operationButton">
     <AddDBButton @add-finished="dbDataUpdate()" />
     <el-button type="success" @click="handleDBExport">导出</el-button>
+    <el-button type="success" @click="handleStatementExport">报表</el-button>
     <el-button type="danger" @click="handleDBDelete">删除</el-button>
     <el-button type="danger" @click="handleDBClear">清空</el-button>
   </div>
@@ -204,7 +277,7 @@ onMounted(() => {
   <DBPagination @page-change="handlePageChange" @size-change="handlePageSizeChange" />
 </template>
 
-<style scoped>
+<style>
 .el-table {
   margin-top: 20px;
   width: 100%;
@@ -212,5 +285,14 @@ onMounted(() => {
 
 .operationButton .el-button {
   margin: 0 10px 0 0;
+}
+
+.db-operation-box .el-message-box__message {
+  margin-top: 10px;
+  width: 100%;
+}
+
+.db-operation-box .el-button {
+  margin: 0 0 0 10px;
 }
 </style>
