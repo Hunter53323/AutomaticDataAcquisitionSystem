@@ -27,7 +27,7 @@ const activeNames = ref([])
   </el-collapse>
 </template>
 
-<style>
+<style scoped>
 .selector {
   margin: 10px;
 }

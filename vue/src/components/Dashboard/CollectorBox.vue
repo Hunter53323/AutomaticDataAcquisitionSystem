@@ -181,7 +181,7 @@ const collectorClear = () => {
 
 </template>
 
-<style>
+<style scoped>
 .collectorCount {
   margin: 15px 0;
 }

@@ -204,7 +204,7 @@ onMounted(() => {
   <DBPagination @page-change="handlePageChange" @size-change="handlePageSizeChange" />
 </template>
 
-<style>
+<style scoped>
 .el-table {
   margin-top: 20px;
   width: 100%;
