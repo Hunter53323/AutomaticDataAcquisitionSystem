@@ -1,4 +1,4 @@
-from new_fan_drive import FanDriver
+from core.communication.drivers.fan_drive_module import FanDriver
 import pytest
 
 
@@ -12,7 +12,7 @@ class TestFanDriver:
     #     assert fandriver._FanDriver__serwrite(b"\xA5\x02\00\x5A") == (True, "")
 
     def read_all_cpu(self, cpu: str):
-        fandriver=FanDriver()
+        fandriver = FanDriver()
         fandriver.set_device_cpu(cpu)
         fandriver.connect()
         assert fandriver.read_all() == True

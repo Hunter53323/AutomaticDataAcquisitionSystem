@@ -2,7 +2,7 @@ import json
 import time
 
 from pymodbus.framer import ModbusSocketFramer
-from frame import modbus_frame
+from .frame import modbus_frame
 from .driver_base import DriverBase
 from pymodbus.client import ModbusTcpClient
 import struct
@@ -11,22 +11,19 @@ import ipaddress
 
 class TestDevice(DriverBase):
 
-    def __init__(self, device_name: str, data_list: list[str], para_list: list[str]):
-        super().__init__(device_name, data_list, para_list)
+    def __init__(self, device_name: str):
+        super().__init__(device_name)
         self.__set_client(ip="127.0.0.1", port=5020)
         self.hardware_para = ["ip", "port"]
-        self.command = "test_device_command"
+        self.command = "测试设备控制命令"
         self.rev_f = modbus_frame.Framer()
         self.is_set_f = False
 
     def default_frame(self):
         self.is_set_f = True
-        self.rev_f.set_data(index=1, name="motor_input_power", type="float", size=4,
-                            formula=f"real_data=raw_data")
-        self.rev_f.set_data(index=2, name="torque", type="float", size=4,
-                            formula=f"real_data=raw_data")
-        self.rev_f.set_data(index=3, name="motor_output_power", type="float", size=4,
-                            formula=f"real_data=raw_data")
+        self.rev_f.set_data(index=1, name="电机输入功率", type="float", size=4, formula=f"real_data=raw_data")
+        self.rev_f.set_data(index=2, name="扭矩", type="float", size=4, formula=f"real_data=raw_data")
+        self.rev_f.set_data(index=3, name="电机输出功率", type="float", size=4, formula=f"real_data=raw_data")
 
     def __set_client(self, ip: str, port: int):
         self.ip = ip
@@ -62,14 +59,14 @@ class TestDevice(DriverBase):
             command = "write"
         else:
             command = para_dict[self.command]
-        if "load" not in para_dict:
-            para_dict["load"] = 0
+        if "加载量" not in para_dict:
+            para_dict["加载量"] = 0
 
-        if command == "start_device":
+        if command == "start_device" or command == "启动":
             address = 0
             value = 1
             result = self.client.write_register(address, value, slave=1)
-        elif command == "stop_device":
+        elif command == "stop_device" or command == "停止":
             address = 0
             value = 0
             result = self.client.write_register(address, value, slave=1)
@@ -104,9 +101,9 @@ class TestDevice(DriverBase):
             return False
         else:
             # 确认写正确后，更改状态值
-            if command == "start_device":
+            if command == "start_device" or command == "启动":
                 self.run_state = True
-            elif command == "stop_device":
+            elif command == "stop_device" or command == "停止":
                 self.run_state = False
             for key in self.curr_para:
                 self.curr_para[key] = para_dict[key]
@@ -277,17 +274,14 @@ class TestDevice(DriverBase):
         return dict_obj
 
     def get_database_table(self):
-        all_data={}
-        for _,value in self.rev_f.data.items():
-            all_data[value.name]=value.type
+        all_data = {}
+        for _, value in self.rev_f.data.items():
+            all_data[value.name] = value.type
         return all_data
 
 
 if __name__ == "__main__":
-    testdevice = TestDevice(
-        device_name="TestDevice", data_list=[],
-        para_list=["test_device_command", "load"]
-    )
+    testdevice = TestDevice(device_name="TestDevice", data_list=[], para_list=["test_device_command", "load"])
     testdevice.default_frame()
     testdevice.connect()
     # testdevice.update_hardware_parameter(para_dict={"ip": "127.0.0.1", "port": 504})
