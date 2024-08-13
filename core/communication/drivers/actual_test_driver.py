@@ -28,6 +28,14 @@ class TestDevice(DriverBase):
         self.rev_f.set_data(index=3, name="motor_output_power", type="float", size=4,
                             formula=f"real_data=raw_data")
 
+    def updata_F_data(self, f_name:str, index: int, name: str, type: str, size: int, formula: str):
+        if f_name == "rev_f":
+            self.rev_f.data[index] = modbus_frame.Field(index, name, type, size, formula)
+
+    def delete_F_data(self,f_name:str,index:int):
+        if f_name == "rev_f":
+            self.rev_f.data.pop(index)
+
     def __set_client(self, ip: str, port: int):
         self.ip = ip
         self.port = port
