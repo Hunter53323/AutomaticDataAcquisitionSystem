@@ -45,6 +45,10 @@ class TestFanDriver:
         print(fan2.curr_para)
         # assert curr_para == fan2.curr_para
 
+    def test_change(self):
+        fan1 = FanDriver("Fan", device_address="01", cpu="M0", port="COM9")
+        fan1.update_device_cpu("M4")
+        print(fan1.export_config()["ack_query_f"])
 
     # def test_read_all_M0(self):
     #     self.read_all_cpu("M0")
