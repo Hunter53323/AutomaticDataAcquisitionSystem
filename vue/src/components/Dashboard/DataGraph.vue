@@ -1,17 +1,15 @@
 <script setup>
-import { onMounted, toRaw, watch, } from 'vue'
+import { onMounted, watch, } from 'vue'
 import { Chart } from '@antv/g2'
 
 const props = defineProps(['data', 'unit', 'title'])
 
 const chart = new Chart({
   autoFit: true,
-  height: 400
+  height: 300
 });
 
 watch(() => props.data, (val) => {
-
-
   chart
     .scale('x', {
       domain: [val[0].time, val[0].time + 20000],
@@ -40,7 +38,7 @@ onMounted(() => {
       nice: true,
     })
     .axis('y', {
-      title: props.title,
+      title: null,
       titleFontSize: 14,
       labelOpacity: 0.8,
       grid: true,
