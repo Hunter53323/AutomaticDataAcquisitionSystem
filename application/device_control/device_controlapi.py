@@ -17,15 +17,15 @@ def testdevice_control():
     if request.method == "POST":
         command = request.form.get("command")
         if command == "start":
-            status = test_device.write({"test_device_command": "start_device"})
+            status = test_device.write({"测试设备控制命令": "start_device"})
         elif command == "stop":
-            status = test_device.write({"test_device_command": "stop_device"})
+            status = test_device.write({"测试设备控制命令": "stop_device"})
         elif command == "P_mode":
-            status = test_device.write({"test_device_command": "P_mode"})
+            status = test_device.write({"测试设备控制命令": "P_mode"})
         elif command == "N_mode":
-            status = test_device.write({"test_device_command": "N_mode"})
+            status = test_device.write({"测试设备控制命令": "N_mode"})
         elif command == "N1_mode":
-            status = test_device.write({"test_device_command": "N1_mode"})
+            status = test_device.write({"测试设备控制命令": "N1_mode"})
         else:
             status = False
 

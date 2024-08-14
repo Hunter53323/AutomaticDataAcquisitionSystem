@@ -294,7 +294,7 @@ class TestDevice(DriverBase):
 
 
 if __name__ == "__main__":
-    testdevice = TestDevice(device_name="TestDevice", data_list=[], para_list=["test_device_command", "load"])
+    testdevice = TestDevice(device_name="TestDevice")
     testdevice.default_frame()
     testdevice.connect()
     # testdevice.update_hardware_parameter(para_dict={"ip": "127.0.0.1", "port": 504})

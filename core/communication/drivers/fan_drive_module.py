@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
 import json
-from typing import Tuple
+from typing import Tuple, Any
 
 import serial
 from serial.serialutil import SerialTimeoutException
@@ -155,6 +155,7 @@ class FanDriver(DriverBase):
             f_name="ack_query_f",
         )
         self.set_data(index=6, name="故障", type="bit16", size=2, formula="", f_name="ack_query_f")
+
         self.curr_data = {"目标转速": 0, "实际转速": 0, "直流母线电压": 0, "U相电流有效值": 0, "功率": 0, "故障": 0}
 
         self.set_data(index=1, name="控制命令", type="bit8", size=1, formula="real_data=raw_data", f_name="control_f")
@@ -162,62 +163,69 @@ class FanDriver(DriverBase):
         self.set_data(index=3, name="速度环补偿系数", type="int16", size=2, formula="real_data=raw_data*10", f_name="control_f")
         self.set_data(index=4, name="电流环带宽", type="int16", size=2, formula="real_data=raw_data", f_name="control_f")
         self.set_data(index=5, name="观测器补偿系数", type="int16", size=2, formula="real_data=raw_data*100", f_name="control_f")
+
         self.curr_para = {"控制命令": 0, "设定转速": 0, "速度环补偿系数": 0, "电流环带宽": 0, "观测器补偿系数": 0}
+
         self.set_default()
 
-    def set_data(self, index: int, name: str, type: str, size: int, formula: str, f_name: str) -> bool:
+    def set_data(self, index: int, name: str, type: str, size: int, formula: str, f_name: str) -> tuple[bool, None] | \
+                                                                                                  tuple[bool, Any]:
         if f_name == "ack_query_f":
             state, e = self.ack_query_f.set_data(index=index, name=name, type=type, size=size, formula=formula)
             if state:
-                self.curr_para[name] = 0
-                return True
+                self.curr_data[name] = 0
+                return True, None
             else:
-                return False
+                return False, e
         elif f_name == "control_f":
             state, e = self.control_f.set_data(index=index, name=name, type=type, size=size, formula=formula)
             if state:
                 self.curr_para[name] = 0
-                return True
+                return True, None
             else:
-                return False
+                return False, e
         elif f_name == "query_f":
             state, e = self.query_f.set_data(index=index, name=name, type=type, size=size, formula=formula)
             if state:
-                return True
+                return True, None
             else:
-                return False
+                return False, e
         elif f_name == "ack_control_f":
             state, e = self.ack_control_f.set_data(index=index, name=name, type=type, size=size, formula=formula)
             if state:
-                return True
+                return True, None
             else:
-                return False
+                return False, e
 
     def updata_F_data(self, f_name: str, index: int, name: str, type: str, size: int, formula: str) -> tuple[bool, None] | tuple[bool, Exception]:
         try:
-            state, e = self.delete_F_data(f_name=f_name, index=index)
-            if not state:
-                raise e
-            state, e = self.set_data(index=index, name=name, type=type, size=size, formula=formula, f_name=f_name)
-            if not state:
-                raise e
+            state1, e1 = self.delete_F_data(f_name=f_name, index=index)
+            # print(e)
+            state2, e2 = self.set_data(index=index, name=name, type=type, size=size, formula=formula, f_name=f_name)
+            # print(e)
+            if not (state1 and state2):
+                raise Exception(f"删除帧：{e1},增加帧：{e2}")
             return True, None
         except Exception as e:
             self.logger.error(e)
             return False, e
 
-    def delete_F_data(self, f_name: str, index: int):
+    def delete_F_data(self, f_name: str, index: int)-> tuple[bool, None] | tuple[bool, Exception]:
         try:
             if f_name == "query_f":
                 self.query_f.data.pop(index)
             elif f_name == "control_f":
+                # print(self.curr_para)
                 self.curr_para.pop(self.control_f.data[index].name)
+                # print(self.curr_para)
                 self.control_f.data.pop(index)
             elif f_name == "ack_query_f":
                 self.curr_data.pop(self.ack_query_f.data[index].name)
-                self.curr_data.pop(index)
+                self.ack_query_f.data.pop(index)
             elif f_name == "ack_control_f":
                 self.ack_control_f.data.pop(index)
+            else:
+                raise Exception(f"未定义帧{f_name}")
             return True, None
         except Exception as e:
             return False, e
@@ -360,16 +368,20 @@ class FanDriver(DriverBase):
                 elif key == "control_f":
                     self.control_f.reset_all()
                     self.control_f.load_framer(json.loads(value))
+                    for _,value in self.control_f.data.items():
+                        self.curr_para[value.name]=0
                 elif key == "ack_query_f":
                     self.ack_query_f.reset_all()
                     self.ack_query_f.load_framer(json.loads(value))
+                    for _,value in self.ack_query_f.data.items():
+                        self.curr_data[value.name]=0
                 elif key == "ack_control_f":
                     self.ack_control_f.reset_all()
                     self.ack_control_f.load_framer(json.loads(value))
             return True, None
         except Exception as e:
             self.logger.error(f"风机帧配置导入error！{e}")
-        return False, e
+            return False, e
 
     def export_config(self):
         return {
@@ -516,8 +528,19 @@ if __name__ == "__main__":
     fan_driver = FanDriver("Fan", device_address="01", cpu="M0", port=serial_port)
     # fan_driver.update_hardware_parameter({"device_address": "034", "cpu": "M0", "port": "COM6"})
     # print(fan_driver.get_hardware_parameter())
-
-    fan_driver.connect()
+    fan_driver.updata_F_data(f_name="ack_query_f", index=1, name="修改1", type="bit8", size=1, formula="")
+    print(fan_driver.curr_data)
+    fan_driver.updata_F_data(f_name="control_f", index=2, name="修改2", type="bit16", size=2,
+                                  formula="")
+    print(fan_driver.curr_para)
+    fan_driver.updata_F_data(f_name="control_f", index=2, name="修改3", type="int16", size=2, formula="")
+    fan_driver.updata_F_data(f_name="control_f", index=2, name="修改2", type="float", size=2,
+                                  formula="real_data=raw_data")
+    print(fan_driver.curr_para)
+    fan_driver.updata_F_data(f_name="control_f", index=2, name="修改4", type="int16", size=2,
+                                  formula="real_data=raw_data*2")
+    print(fan_driver.curr_para)
+    # fan_driver.connect()
     # fan_driver.read_all()
     # print(fan_driver.ack_query_f.get_data())
     # fan_driver.control_f.set_data(index=6, name="new", type="int16", size=2, formula="real_data=raw_data*100")
@@ -527,12 +550,12 @@ if __name__ == "__main__":
     # fan_driver2.load_config(json_dict)
     # print(fan_driver2.export_config())
 
-    para_dict = {
-        "控制命令": "start",
-        "给定转速": 1,
-        "速度环补偿带宽": 2,
-        "电流环带宽": 3,
-        "观测器补偿带宽": 4,
-    }
-    fan_driver.set_default()
-    fan_driver.write(para_dict)
+    # para_dict = {
+    #     "控制命令": "start",
+    #     "给定转速": 1,
+    #     "速度环补偿带宽": 2,
+    #     "电流环带宽": 3,
+    #     "观测器补偿带宽": 4,
+    # }
+    # fan_driver.set_default()
+    # fan_driver.write(para_dict)
