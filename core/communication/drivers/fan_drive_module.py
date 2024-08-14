@@ -54,8 +54,7 @@ class FanDriver(DriverBase):
         self.command = "控制命令"
 
         self.ser: serial.Serial = serial.Serial(
-            baudrate=serial_baudrate, parity=serial_parity, stopbits=serial_stopbits, bytesize=serial_bytesize,
-            timeout=10
+            baudrate=serial_baudrate, parity=serial_parity, stopbits=serial_stopbits, bytesize=serial_bytesize, timeout=10
         )
 
     def set_F_header(self, send_header: str, rev_header: str):
@@ -141,19 +140,26 @@ class FanDriver(DriverBase):
 
     def cpu_default_config(self):
         FB, VB, IB, Cofe1, Cofe2, Cofe3, Cofe4, Cofe5 = self.get_cpu_paras()
-        self.set_data(index=1, name="目标转速", type="int16", size=2,
-                      formula=f"real_data=raw_data* {FB} * {Cofe1} / {Cofe2}", f_name=self.ack_query_f)
-        self.set_data(index=2, name="实际转速", type="int16", size=2,
-                      formula=f"real_data=raw_data* {FB} * {Cofe1} / {Cofe2}", f_name=self.ack_query_f)
-        self.set_data(index=3, name="直流母线电压", type="int16", size=2,
-                      formula=f"real_data=raw_data* {VB} / {Cofe2}", f_name=self.ack_query_f)
-        self.set_data(index=4, name="U相电流有效值", type="int16", size=2,
-                      formula=f"real_data=raw_data* {IB} / {Cofe2} / {Cofe5}", f_name=self.ack_query_f)
         self.set_data(
-            index=5, name="功率", type="int16", size=2,
-            formula=f"real_data=raw_data* {IB} * {VB} * {Cofe3} / {Cofe4} / {Cofe2} / {Cofe5}", f_name=self.ack_query_f
+            index=1, name="目标转速", type="int16", size=2, formula=f"real_data=raw_data* {FB} * {Cofe1} / {Cofe2}", f_name=self.ack_query_f
+        )
+        self.set_data(
+            index=2, name="实际转速", type="int16", size=2, formula=f"real_data=raw_data* {FB} * {Cofe1} / {Cofe2}", f_name=self.ack_query_f
+        )
+        self.set_data(index=3, name="直流母线电压", type="int16", size=2, formula=f"real_data=raw_data* {VB} / {Cofe2}", f_name=self.ack_query_f)
+        self.set_data(
+            index=4, name="U相电流有效值", type="int16", size=2, formula=f"real_data=raw_data* {IB} / {Cofe2} / {Cofe5}", f_name=self.ack_query_f
+        )
+        self.set_data(
+            index=5,
+            name="功率",
+            type="int16",
+            size=2,
+            formula=f"real_data=raw_data* {IB} * {VB} * {Cofe3} / {Cofe4} / {Cofe2} / {Cofe5}",
+            f_name=self.ack_query_f,
         )
         self.set_data(index=6, name="故障", type="bit16", size=2, formula="", f_name=self.ack_query_f)
+        self.curr_data = {"目标转速": 0, "实际转速": 0, "直流母线电压": 0, "U相电流有效值": 0, "功率": 0, "故障": 0}
 
         self.set_data(index=1, name="控制命令", type="bit8", size=1, formula="real_data=raw_data",
                       f_name=self.control_f)
@@ -165,6 +171,8 @@ class FanDriver(DriverBase):
                       f_name=self.control_f)
         self.set_data(index=5, name="观测器补偿带宽", type="int16", size=2, formula="real_data=raw_data*100",
                       f_name=self.control_f)
+        self.curr_para = {"控制命令": 0, "给定转速": 0, "速度环补偿带宽": 0, "电流环带宽": 0, "观测器补偿带宽": 0}
+        self.set_default()
 
     def set_data(self, index: int, name: str, type: str, size: int, formula: str, f_name) -> bool:
         if f_name == "ack_query_f":
@@ -194,10 +202,7 @@ class FanDriver(DriverBase):
             else:
                 return False
 
-    def updata_F_data(self, f_name: str, index: int, name: str, type: str, size: int, formula: str) -> tuple[
-                                                                                                           bool, None] | \
-                                                                                                       tuple[
-                                                                                                           bool, Exception]:
+    def updata_F_data(self, f_name: str, index: int, name: str, type: str, size: int, formula: str) -> tuple[bool, None] | tuple[bool, Exception]:
         try:
             state, e = self.delete_F_data(f_name=f_name, index=index)
             if not state:
@@ -344,11 +349,7 @@ class FanDriver(DriverBase):
                 self.logger.info(f"故障为普通故障! ")
                 # 过流处理逻辑
             para_dict = {
-                "fan_command": "clear_breakdown",
-                "set_speed": 0,
-                "speed_loop_compensates_bandwidth": 0,
-                "current_loop_compensates_bandwidth": 0,
-                "observer_compensates_bandwidth": 0,
+                "控制命令": "清障",
             }
             if self.write(para_dict):
                 self.logger.info(f"故障清除成功!")

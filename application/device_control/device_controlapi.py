@@ -65,21 +65,13 @@ def fan_control():
         if command == "start":
             status = fan.write(
                 {
-                    "fan_command": "start",
-                    "set_speed": 100,
-                    "speed_loop_compensates_bandwidth": 0,
-                    "current_loop_compensates_bandwidth": 0,
-                    "observer_compensates_bandwidth": 0,
+                    "控制命令": "启动",
                 }
             )
         elif command == "stop":
             status = fan.write(
                 {
-                    "fan_command": "stop",
-                    "set_speed": 0,
-                    "speed_loop_compensates_bandwidth": 0,
-                    "current_loop_compensates_bandwidth": 0,
-                    "observer_compensates_bandwidth": 0,
+                    "控制命令": "停止"
                 }
             )
         elif command == "clear_breakdown":

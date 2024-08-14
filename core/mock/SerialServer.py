@@ -27,8 +27,10 @@ def handle_command(data: bytes, fan: Fan, testbreakdown: bool = False):
                 control = data[4]
                 if control == 1:
                     state = True
+                    speed = 50
                 elif control == 2:
                     state = False
+                    speed = 0
                 elif control == 4:
                     state = fan.state
                 elif control == 0:
@@ -86,7 +88,8 @@ def handle_command(data: bytes, fan: Fan, testbreakdown: bool = False):
             byte6 = b"\xA5"
             response = byte0 + byte1 + byte2 + byte3 + byte5 + byte6
         return response
-    except:
+    except Exception as e:
+        print(e)
         byte2 = b"\x00"
         byte3 = b"\x00"
         byte5 = b"\x00"
@@ -138,7 +141,7 @@ if __name__ == "__main__":
                 # 处理命令
                 # 在处理之前应该检查报文是否为有效报文！
                 response = handle_command(data, fan, False)
-                print(time.time())
+                # print(time.time())
                 print("发送回复:", response.hex())
                 ser.write(response)
 
