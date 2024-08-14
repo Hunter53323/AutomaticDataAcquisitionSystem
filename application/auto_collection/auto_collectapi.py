@@ -42,9 +42,6 @@ def upload_csv():
         reader = csv.DictReader(file)
         # csv_context 是一个字典列表，其中每个字典表示 CSV 文件中的一行
         csv_context = list(reader)
-        # 将 csv_context 转换为所需的格式
-        CH2EN = {}
-        translated_csv_context = []
 
         for row in csv_context:
             if "ID" in row:
@@ -53,20 +50,11 @@ def upload_csv():
                 del row["\ufeffID"]
             else:
                 return jsonify({"message": "文件编码错误,请使用utf-8格式的csv文件"}), 400
-            translated_row = {}
-            for CHkey, value in row.items():
-                if CHkey not in CH2EN:
-                    for en, ch in TABLE_TRANSLATE.items():
-                        if ch == CHkey:
-                            CH2EN[ch] = en
-                            break
-                    else:
-                        auto_collector.logger.error(f"没有对应的控制参数：{CHkey}")
-                        # TODO 把上面的teanslate去掉，添加一个下载示例csv的接口
-                translated_row[CH2EN[CHkey]] = int(value)
-            translated_csv_context.append(translated_row)
-        auto_collector.init_para_pool_from_csv(translated_csv_context)
-        return jsonify({"message": "文件上传成功", "line_count": line_count}), 200
+
+        if auto_collector.init_para_pool_from_csv(csv_context):
+            return jsonify({"message": "文件上传成功", "line_count": line_count}), 200
+        else:
+            return jsonify({"message": "文件上传失败"}), 400
 
     return jsonify({"message": "Unknown error"}), 500
     pass
@@ -96,8 +84,7 @@ def auto_collect_control():
     command = request.form.get("command")
     if command == "start":
         # 启动数据采集，（所有前期基本参数已经设置好）
-        auto_collector.start_auto_collect()
-        return jsonify({"status": "start"}), 200
+        return jsonify({"status": auto_collector.start_auto_collect()}), 200
     elif command == "pause":
         # 暂停数采
         auto_collector.pause_auto_collect()

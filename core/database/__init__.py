@@ -42,5 +42,5 @@ TABLE_TRANSLATE = {
 }
 
 outputdb = MySQLDatabase("localhost", "liuqi", "liuqi9713", "world")
-outputdb.change_current_table(TABLE_NAME, TABLE_COLUMNS)
+# outputdb.change_current_table(TABLE_NAME, TABLE_COLUMNS)
 # 表名和列名是从哪里得到的？

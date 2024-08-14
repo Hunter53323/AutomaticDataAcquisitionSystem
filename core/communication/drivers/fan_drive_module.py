@@ -140,15 +140,11 @@ class FanDriver(DriverBase):
 
     def cpu_default_config(self):
         FB, VB, IB, Cofe1, Cofe2, Cofe3, Cofe4, Cofe5 = self.get_cpu_paras()
+        self.set_data(index=1, name="目标转速", type="int16", size=2, formula=f"real_data=raw_data* {FB} * {Cofe1} / {Cofe2}", f_name="ack_query_f")
+        self.set_data(index=2, name="实际转速", type="int16", size=2, formula=f"real_data=raw_data* {FB} * {Cofe1} / {Cofe2}", f_name="ack_query_f")
+        self.set_data(index=3, name="直流母线电压", type="int16", size=2, formula=f"real_data=raw_data* {VB} / {Cofe2}", f_name="ack_query_f")
         self.set_data(
-            index=1, name="目标转速", type="int16", size=2, formula=f"real_data=raw_data* {FB} * {Cofe1} / {Cofe2}", f_name=self.ack_query_f
-        )
-        self.set_data(
-            index=2, name="实际转速", type="int16", size=2, formula=f"real_data=raw_data* {FB} * {Cofe1} / {Cofe2}", f_name=self.ack_query_f
-        )
-        self.set_data(index=3, name="直流母线电压", type="int16", size=2, formula=f"real_data=raw_data* {VB} / {Cofe2}", f_name=self.ack_query_f)
-        self.set_data(
-            index=4, name="U相电流有效值", type="int16", size=2, formula=f"real_data=raw_data* {IB} / {Cofe2} / {Cofe5}", f_name=self.ack_query_f
+            index=4, name="U相电流有效值", type="int16", size=2, formula=f"real_data=raw_data* {IB} / {Cofe2} / {Cofe5}", f_name="ack_query_f"
         )
         self.set_data(
             index=5,
@@ -156,25 +152,20 @@ class FanDriver(DriverBase):
             type="int16",
             size=2,
             formula=f"real_data=raw_data* {IB} * {VB} * {Cofe3} / {Cofe4} / {Cofe2} / {Cofe5}",
-            f_name=self.ack_query_f,
+            f_name="ack_query_f",
         )
-        self.set_data(index=6, name="故障", type="bit16", size=2, formula="", f_name=self.ack_query_f)
+        self.set_data(index=6, name="故障", type="bit16", size=2, formula="", f_name="ack_query_f")
         self.curr_data = {"目标转速": 0, "实际转速": 0, "直流母线电压": 0, "U相电流有效值": 0, "功率": 0, "故障": 0}
 
-        self.set_data(index=1, name="控制命令", type="bit8", size=1, formula="real_data=raw_data",
-                      f_name=self.control_f)
-        self.set_data(index=2, name="给定转速", type="int16", size=2, formula="real_data=raw_data",
-                      f_name=self.control_f)
-        self.set_data(index=3, name="速度环补偿带宽", type="int16", size=2, formula="real_data=raw_data*10",
-                      f_name=self.control_f)
-        self.set_data(index=4, name="电流环带宽", type="int16", size=2, formula="real_data=raw_data",
-                      f_name=self.control_f)
-        self.set_data(index=5, name="观测器补偿带宽", type="int16", size=2, formula="real_data=raw_data*100",
-                      f_name=self.control_f)
-        self.curr_para = {"控制命令": 0, "给定转速": 0, "速度环补偿带宽": 0, "电流环带宽": 0, "观测器补偿带宽": 0}
+        self.set_data(index=1, name="控制命令", type="bit8", size=1, formula="real_data=raw_data", f_name="control_f")
+        self.set_data(index=2, name="设定转速", type="int16", size=2, formula="real_data=raw_data", f_name="control_f")
+        self.set_data(index=3, name="速度环补偿系数", type="int16", size=2, formula="real_data=raw_data*10", f_name="control_f")
+        self.set_data(index=4, name="电流环带宽", type="int16", size=2, formula="real_data=raw_data", f_name="control_f")
+        self.set_data(index=5, name="观测器补偿系数", type="int16", size=2, formula="real_data=raw_data*100", f_name="control_f")
+        self.curr_para = {"控制命令": 0, "设定转速": 0, "速度环补偿系数": 0, "电流环带宽": 0, "观测器补偿系数": 0}
         self.set_default()
 
-    def set_data(self, index: int, name: str, type: str, size: int, formula: str, f_name) -> bool:
+    def set_data(self, index: int, name: str, type: str, size: int, formula: str, f_name: str) -> bool:
         if f_name == "ack_query_f":
             state, e = self.ack_query_f.set_data(index=index, name=name, type=type, size=size, formula=formula)
             if state:
@@ -289,7 +280,7 @@ class FanDriver(DriverBase):
         查询指令
         """
         query_byte = self.query_f.encode_framer()
-        self.logger.debug(f"查询指令:{query_byte.hex()}")
+        # self.logger.info(f"查询指令:{query_byte.hex()}")
         # 写以及写出错的处理
         write_status, err = self.__serwrite(query_byte)
         if not write_status:
@@ -303,7 +294,7 @@ class FanDriver(DriverBase):
             if read_count == 3:
                 return False
             return self.read_all(read_count=read_count + 1)
-        self.logger.debug(f"查询回复:{response.hex()}")
+        # self.logger.info(f"查询回复:{response.hex()}")
 
         # 检测收到的数据是否是预期的数据，否则报错
         state, e = self.ack_query_f.cofirm_framer(response)

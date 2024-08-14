@@ -3,6 +3,7 @@ from .exception_handling import BreakdownHanding
 import logging
 from logging.handlers import RotatingFileHandler
 import re
+import copy
 
 
 class Communication:
@@ -189,7 +190,11 @@ class Communication:
         return False
 
     def get_para_map(self) -> dict[str, DriverBase]:
-        return self.__para_map
+        # 获得参数表的时候不能有控制命令
+        tmp_dict = self.__para_map.copy()
+        tmp_dict.pop("控制命令", 0)
+        tmp_dict.pop("测试设备控制命令", 0)
+        return tmp_dict
 
     def get_data_map(self) -> dict[str, DriverBase]:
         return self.__data_map
@@ -286,7 +291,7 @@ class Communication:
 
 
 def type2sqltype(data_type: str) -> str:
-    if data_type == "int16":
+    if data_type == "int16" or data_type == "float" or data_type == "FLOAT":
         return "FLOAT"
     if data_type == "bit16" or data_type == "bit8":
         return "VARCHAR(255)"

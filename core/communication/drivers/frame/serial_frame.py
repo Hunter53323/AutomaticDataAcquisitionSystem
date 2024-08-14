@@ -59,8 +59,7 @@ class Framer:
         except Exception as e:
             return False, e
 
-    def set_data(self, index: int, name: str, type: str, size: int, formula: str, **kwargs) -> tuple[bool, None] | \
-                                                                                               tuple[bool, Exception]:
+    def set_data(self, index: int, name: str, type: str, size: int, formula: str, **kwargs) -> tuple[bool, None] | tuple[bool, Exception]:
         try:
             if index in self.data:
                 raise Exception(f"第{index}位置已存在数据{self.data[index].name}")
@@ -112,8 +111,7 @@ class Framer:
         return True
 
     def export_framer(self):
-        return {"header": self.header, "tail": self.tail, "cmd": self.cmd, "addr": self.addr,
-                "data": self.export_data()}
+        return {"header": self.header, "tail": self.tail, "cmd": self.cmd, "addr": self.addr, "data": self.export_data()}
 
     def load_framer(self, framer: dict) -> tuple[bool, None] | tuple[bool, Exception]:
         try:
@@ -140,7 +138,7 @@ class Framer:
         for _, value in self.data.items():
             all_msg += value.encode_data()
         all_msg += self.check_check(all_msg).to_bytes() + self.tail
-        print(all_msg.hex())
+        # print(all_msg.hex())
         return all_msg
 
     def gen_data(self, name: str, data: int):
@@ -153,10 +151,10 @@ class Framer:
     def cofirm_framer(self, msg: bytes) -> tuple[bool, None] | tuple[bool, Exception]:
         try:
             if (
-                    msg[0].to_bytes() == self.header
-                    and msg[-1].to_bytes() == self.tail
-                    and msg[1].to_bytes() == self.addr
-                    and msg[2].to_bytes() == self.cmd
+                msg[0].to_bytes() == self.header
+                and msg[-1].to_bytes() == self.tail
+                and msg[1].to_bytes() == self.addr
+                and msg[2].to_bytes() == self.cmd
             ):
                 # print(msg[-2])
                 # print(self.check_check(msg[0:-2]))
@@ -164,7 +162,7 @@ class Framer:
                     # 先假设字典有序
                     cur = 4
                     for key, value in self.data.items():
-                        value.decode_data(msg[cur: cur + value.size])
+                        value.decode_data(msg[cur : cur + value.size])
                         cur += value.size
                     return True, None
                 else:
@@ -203,6 +201,11 @@ class Field:
         self.index = index
         self.name = name
         self.size = size
+        if formula == "":
+            if self.type == "int16":
+                formula = "real_data=raw_data"
+            else:
+                formula = ""
         self.formula = formula  # 格式为"real_data=(raw_data+2)/3"
         self.inv_formula = ""
         self.raw_data = 0
@@ -219,7 +222,7 @@ class Field:
             pass
 
     def encode_data(self) -> bytes:
-        print(self.name, int(self.raw_data))
+        # print(self.name, int(self.raw_data))
         return int(self.raw_data).to_bytes(self.size)
 
     def set_realdata(self, real_data: int):
@@ -252,10 +255,10 @@ class Field:
                     self.inv_formula = self.inverse_formula()
                 local_vars["real_data"] = self.real_data
                 exec(self.inv_formula, {}, local_vars)
-                self.raw_data = local_vars.get("raw_data")
+                self.raw_data = int(local_vars.get("raw_data"))
             return True, None
         except Exception as e:
-            print(e)
+            print("运算异常", e)
             return False, e
 
 

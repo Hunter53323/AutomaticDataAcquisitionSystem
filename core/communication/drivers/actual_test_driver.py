@@ -3,6 +3,7 @@ import time
 
 from pymodbus.framer import ModbusSocketFramer
 from .frame import modbus_frame
+from .frame.modbus_frame import Field
 from .driver_base import DriverBase
 from pymodbus.client import ModbusTcpClient
 import struct
@@ -18,18 +19,21 @@ class TestDevice(DriverBase):
         self.command = "测试设备控制命令"
         self.rev_f = modbus_frame.Framer()
         self.is_set_f = False
+        self.default_frame()
 
     def default_frame(self):
         self.is_set_f = True
-        self.rev_f.set_data(index=1, name="电机输入功率", type="float", size=4, formula=f"real_data=raw_data")
+        self.rev_f.set_data(index=1, name="输入功率", type="float", size=4, formula=f"real_data=raw_data")
         self.rev_f.set_data(index=2, name="扭矩", type="float", size=4, formula=f"real_data=raw_data")
-        self.rev_f.set_data(index=3, name="电机输出功率", type="float", size=4, formula=f"real_data=raw_data")
+        self.rev_f.set_data(index=3, name="输出功率", type="float", size=4, formula=f"real_data=raw_data")
+        self.curr_data = {"输入功率": 0, "扭矩": 0, "输出功率": 0}
+        self.curr_para = {"负载量": 0, "测试设备控制命令": "write"}
 
-    def updata_F_data(self, f_name:str, index: int, name: str, type: str, size: int, formula: str):
+    def updata_F_data(self, f_name: str, index: int, name: str, type: str, size: int, formula: str):
         if f_name == "rev_f":
             self.rev_f.data[index] = modbus_frame.Field(index, name, type, size, formula)
 
-    def delete_F_data(self,f_name:str,index:int):
+    def delete_F_data(self, f_name: str, index: int):
         if f_name == "rev_f":
             self.rev_f.data.pop(index)
 
@@ -49,7 +53,7 @@ class TestDevice(DriverBase):
 
     def write_execute(self, para_dict: dict[str, any], write_count: int = 1) -> bool:
         """
-        para_dict示例{"test_device_command":"command", "load":float}
+        para_dict示例{"测试设备控制命令":"command", "负载量":float}
         command:"start_device","stop_device","P_mode","N_mode","N1_mode","write"
         """
         # address = 0  # 读取寄存器的起始地址
@@ -285,6 +289,7 @@ class TestDevice(DriverBase):
         all_data = {}
         for _, value in self.rev_f.data.items():
             all_data[value.name] = value.type
+        all_data["负载量"] = "float"
         return all_data
 
 

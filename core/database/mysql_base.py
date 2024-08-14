@@ -15,8 +15,8 @@ class MySQLDatabase:
         self.__user_name: str = user_name
         self.__user_password: str = user_password
         self.__db_name: str = db_name
-        self.table_name:str = None
-        self.table_columns:dict[str, str] = {}
+        self.table_name: str = None
+        self.table_columns: dict[str, str] = {}
         self.columns: dict = {}
 
         self.table_name_list: list = []
@@ -51,6 +51,8 @@ class MySQLDatabase:
             self.table_name = table_name
             self.table_columns = self.table_columns_list[table_name_index]
             self.columns = self.columns_list[table_name_index]
+            self.logger.info(f"已切换到表 '{table_name}'")
+            self.logger.info(f"表结构：{self.table_columns}")
         return True
 
     def set_logger(self) -> logging.Logger:
@@ -94,15 +96,17 @@ class MySQLDatabase:
         column_definitions = ",\n                ".join([f"{name} {data_type}" for name, data_type in self.table_columns.items()])
         # 确保列定义后没有多余的逗号
         create_table_sql = f"""
-        CREATE TABLE IF NOT EXISTS `{self.table_name}` (
+        CREATE TABLE `{self.table_name}` (
             {column_definitions}
         ) character set = utf8;
         """
         try:
             cursor = self.connection.cursor()
+            cursor.execute(f"DROP TABLE IF EXISTS {self.table_name}")
             cursor.execute(create_table_sql)
             self.connection.commit()
             self.logger.info(f"数据库表 '{self.table_name}' 创建成功。")
+            self.logger.info(f"表结构：{self.table_columns}")
             return True
         except mysql.connector.Error as e:  # 确保使用正确的异常类型‘
             self.logger.error(f"创建表失败: {e}")

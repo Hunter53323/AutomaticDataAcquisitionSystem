@@ -69,9 +69,9 @@ def handle_socketio_events(socketio: SocketIO):
             if "故障" in total.keys():
                 breakdown_list = breakdown_replace(total["故障"])
                 total["故障"] = breakdown_list
-            for key in list(total.keys()).copy():
-                # if key in TABLE_TRANSLATE.keys():
-                total[cn_translate(key)] = total.pop(key)
+            # for key in list(total.keys()).copy():
+            #     # if key in TABLE_TRANSLATE.keys():
+            #     total[cn_translate(key)] = total.pop(key)
             socketio.emit("data_from_device", total)
 
 
