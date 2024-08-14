@@ -203,4 +203,9 @@ const onSubmit = () => {
   font-weight: normal;
   font-size: 16px;
 }
+
+.protocol-desc .el-descriptions__label {
+  background: #f0f9eb !important;
+}
+
 </style>

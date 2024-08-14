@@ -233,9 +233,13 @@ const handlePageSizeChange = () => {
 }
 
 const handleDBEdit = () => {
+  const data = dbDataObjList.value.filter((element) => {
+    return element.ID == multipleSelection.value[0]
+  })[0]
   fetch(global.url + "/db/data", {
     method: 'PUT',
-    body: JSON.stringify({ ids_input: [] }),
+    body: JSON.stringify({
+      ids_input: [], update_data:data}),
     headers: {
       'Content-Type': 'application/json'
     }
@@ -269,7 +273,7 @@ onMounted(() => {
     </el-table-column>
     <el-table-column fixed="right" label="操作" min-width="60">
       <template #default="scope">
-        <el-button link type="danger" size="small" @click="handleDBEdit()">编辑</el-button>
+        <el-button link type="danger" size="small" @click="handleDBEdit">编辑</el-button>
         <!-- <el-button link type="danger" size="small" @click.prevent="handleDBDelete()" >删除</el-button> -->
       </template>
     </el-table-column>
