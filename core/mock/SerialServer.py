@@ -19,6 +19,8 @@ def handle_command(data: bytes, fan: Fan, testbreakdown: bool = False):
             byte2 = b"\x01"
             byte3 = b"\x01"
             data_checksum = calculate_checksum(data[0:13])
+            print(data_checksum)
+            print(data[13].to_bytes())
             if data_checksum == data[13].to_bytes():
                 # 执行电机控制
                 speed = int.from_bytes(data[5:7])

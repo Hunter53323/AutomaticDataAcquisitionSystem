@@ -101,6 +101,8 @@ onMounted(() => {
 }
 
 .user-change-form .el-message-box__message {
+  
+  margin-top: 10px;
   width: 100%;
 }
 

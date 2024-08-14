@@ -59,7 +59,8 @@ class Framer:
         except Exception as e:
             return False, e
 
-    def set_data(self, index: int, name: str, type: str, size: int, formula: str, **kwargs) -> tuple[bool, None] | tuple[bool, Exception]:
+    def set_data(self, index: int, name: str, type: str, size: int, formula: str, **kwargs) -> tuple[bool, None] | \
+                                                                                               tuple[bool, Exception]:
         try:
             if index in self.data:
                 raise Exception(f"第{index}位置已存在数据{self.data[index].name}")
@@ -111,7 +112,8 @@ class Framer:
         return True
 
     def export_framer(self):
-        return {"header": self.header, "tail": self.tail, "cmd": self.cmd, "addr": self.addr, "data": self.export_data()}
+        return {"header": self.header, "tail": self.tail, "cmd": self.cmd, "addr": self.addr,
+                "data": self.export_data()}
 
     def load_framer(self, framer: dict) -> tuple[bool, None] | tuple[bool, Exception]:
         try:
@@ -151,10 +153,10 @@ class Framer:
     def cofirm_framer(self, msg: bytes) -> tuple[bool, None] | tuple[bool, Exception]:
         try:
             if (
-                msg[0].to_bytes() == self.header
-                and msg[-1].to_bytes() == self.tail
-                and msg[1].to_bytes() == self.addr
-                and msg[2].to_bytes() == self.cmd
+                    msg[0].to_bytes() == self.header
+                    and msg[-1].to_bytes() == self.tail
+                    and msg[1].to_bytes() == self.addr
+                    and msg[2].to_bytes() == self.cmd
             ):
                 # print(msg[-2])
                 # print(self.check_check(msg[0:-2]))
@@ -162,7 +164,7 @@ class Framer:
                     # 先假设字典有序
                     cur = 4
                     for key, value in self.data.items():
-                        value.decode_data(msg[cur : cur + value.size])
+                        value.decode_data(msg[cur: cur + value.size])
                         cur += value.size
                     return True, None
                 else:
@@ -177,8 +179,8 @@ class Framer:
         checksum = 0
         # 对数据中的每个字节进行累加
         for data in msg:
-            if data == msg[1]:  # 如果校验和包括地址就去掉if
-                continue
+            # if data == msg[1]:  # 如果校验和包括地址就去掉if
+            #     continue
             checksum += data
         # 取累加结果的低8位
         checksum_low8 = checksum & 0xFF
@@ -203,7 +205,7 @@ class Field:
         self.size = size
         self.formula = formula  # 格式为"real_data=(raw_data+2)/3"
         self.inv_formula = ""
-        self.raw_data = 0  # bytes([0]*self.size)
+        self.raw_data = 0
         self.real_data = 0
 
     def decode_data(self, data: bytes):
@@ -217,8 +219,8 @@ class Field:
             pass
 
     def encode_data(self) -> bytes:
-        print(self.name, self.raw_data)
-        return self.raw_data.to_bytes(self.size)
+        print(self.name, int(self.raw_data))
+        return int(self.raw_data).to_bytes(self.size)
 
     def set_realdata(self, real_data: int):
         self.real_data = real_data
