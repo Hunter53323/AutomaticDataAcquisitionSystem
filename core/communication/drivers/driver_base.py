@@ -86,7 +86,7 @@ class DriverBase(ABC):
 
     def get_device_state(self) -> dict[str, any]:
         # 当前是否连接，设备当前是否启动，设备当前是否故障
-        return {"connected": self.conn_state, "running": self.run_state, "breakdown": self.breakdown}
+        return {"连接状态": self.conn_state, "运行状态": self.run_state, "故障": self.breakdown}
 
     def is_connected(self) -> bool:
         return self.conn_state

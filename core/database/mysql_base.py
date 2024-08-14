@@ -26,7 +26,7 @@ class MySQLDatabase:
 
         self.create_connection()
 
-    def change_current_table(self, table_name: str, table_columns: dict[str, str] = {}) -> True:
+    def change_current_table(self, table_name: str, table_columns: dict[str, str] = {}) -> None:
         """
         切换当前数据库表，如果表不存在则创建。
         :param table_name: 要切换到的表名。
@@ -45,7 +45,13 @@ class MySQLDatabase:
             self.table_name = table_name
             self.table_columns = table_columns
             self.columns = {col_name: dtype for col_name, dtype in table_columns.items() if col_name != "ID"}
-            self.create_table()
+            if not self.check_exists(table_name, table_columns):
+                self.logger.error(f"表 '{table_name}' 不存在，创建表。")
+                # 如果表不存在，则创建新表
+                self.create_table()
+            else:
+                self.logger.info(f"已切换到表 '{table_name}'")
+                self.logger.info(f"表结构：{self.table_columns}")
         else:
             table_name_index = self.table_name_list.index(table_name)
             self.table_name = table_name
@@ -54,6 +60,35 @@ class MySQLDatabase:
             self.logger.info(f"已切换到表 '{table_name}'")
             self.logger.info(f"表结构：{self.table_columns}")
         return True
+
+    def check_exists(self, table_name: str, table_columns: dict[str, str]) -> bool:
+        if not self.check_connection():
+            return False
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute(f"SHOW TABLES LIKE '{table_name}'")
+            if not cursor.fetchone():
+                self.logger.info(f"表 {table_name}' 不存在，将创建新表。")
+                return False
+            cursor.execute(f"SHOW COLUMNS FROM `{table_name}`")
+            columns = cursor.fetchall()
+            if len(columns) != len(table_columns):
+                self.logger.error(f"表 '{table_name}' 的列数与提供的列定义不匹配。")
+                return False
+            else:
+                for column in columns:
+                    name, data_type, is_nullable, extra, _, _ = column
+                    if name == "ID":
+                        continue
+                    if name not in table_columns.keys() or table_columns[name].lower() != data_type:
+                        self.logger.error(f"表 '{table_name}' 的列 '{column[0]}' 与提供的列定义不匹配。")
+                        return False
+            return True
+        except Error as e:
+            self.logger.error(f"检查表是否存在时发生错误: {e}")
+            return False
+        finally:
+            cursor.close()
 
     def set_logger(self) -> logging.Logger:
         # 创建一个日志记录器
@@ -160,11 +195,11 @@ class MySQLDatabase:
             # 如果指定了列名，则加入列名列表，否则查询所有列
             if columns:
                 # 确保ID列总是被查询，除非用户明确指定不查询ID
-                selected_columns = columns if "ID" in columns else columns + ["ID"]
+                selected_columns = ["ID"] + columns if "ID" in columns else columns
                 query += ", ".join(selected_columns)
             else:
                 # 查询所有定义的列以及ID列
-                all_columns = list(self.columns.keys()) + ["ID"]
+                all_columns = ["ID"] + list(self.columns.keys())
                 query += ", ".join(all_columns)
 
             # 添加FROM子句

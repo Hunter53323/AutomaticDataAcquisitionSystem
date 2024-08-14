@@ -71,8 +71,8 @@ class TestDevice(DriverBase):
             command = "write"
         else:
             command = para_dict[self.command]
-        if "加载量" not in para_dict:
-            para_dict["加载量"] = 0
+        if "负载量" not in para_dict:
+            para_dict["负载量"] = 0
 
         if command == "start_device" or command == "启动":
             address = 0
@@ -211,13 +211,13 @@ class TestDevice(DriverBase):
     def handle_breakdown(self, breakdown: int) -> bool:
         try:
             if breakdown != 0:
-                parameters = {"test_device_command": "P_mode"}
+                parameters = {"测试设备控制命令": "P_mode"}
                 if not testdevice.write(parameters):
                     raise Exception(f"{parameters}")
-                parameters = {"test_device_command": "write", "load": float(0) / 10}  # 假设空载为0
+                parameters = {"测试设备控制命令": "write", "load": float(0) / 10}  # 假设空载为0
                 if not testdevice.write(parameters):
                     raise Exception(f"{parameters}")
-                parameters = {"test_device_command": "start_device"}
+                parameters = {"测试设备控制命令": "启动"}
                 if not testdevice.write(parameters):
                     raise Exception(f"{parameters}")
             else:
@@ -226,11 +226,11 @@ class TestDevice(DriverBase):
         except Exception as e:
             self.logger.error(f"故障处理模块报错！ error:{e}")
             self.logger.error(f"再次尝试空载！")
-            parameters = {"test_device_command": "P_mode"}
+            parameters = {"测试设备控制命令": "P_mode"}
             testdevice.write(parameters)
-            parameters = {"test_device_command": "write", "load": float(0) / 10}  # 假设空载为0
+            parameters = {"测试设备控制命令": "write", "load": float(0) / 10}  # 假设空载为0
             testdevice.write(parameters)
-            parameters = {"test_device_command": "start_device"}
+            parameters = {"测试设备控制命令": "启动"}
             testdevice.write(parameters)
         finally:
             return False
@@ -243,16 +243,17 @@ class TestDevice(DriverBase):
                 try:
                     ipaddress.ip_address(value)
                     selfip = value
+                    self.logger.info(f"ip地址更新为{value}")
                 except ValueError:
                     return False
             elif key == "port":
                 if type(value) == int:
                     selfport = value
+                    self.logger.info(f"端口号更新为{value}")
                 else:
-                    # raise TypeError("port must be an integer.")
                     return False
             else:
-                raise KeyError(f"{key} is not a valid parameter.")
+                self.logger.error(f"{key} 不是一个有效参数.")
         self.__set_client(selfip, selfport)
         return True
 
@@ -265,6 +266,7 @@ class TestDevice(DriverBase):
                 if key == "rev_f":
                     self.rev_f.reset_all()
                     self.rev_f.load_framer(json.loads(value))
+            self.logger.info(f"测试设备帧配置导入成功！")
             return True, None
         except Exception as e:
             self.logger.error(f"测试设备帧配置导入error！{e}")

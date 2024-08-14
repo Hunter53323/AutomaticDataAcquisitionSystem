@@ -113,6 +113,7 @@ class AutoCollection:
                 # 故障预警
                 self.communication.breakdown_handler.breakdown_warning(code)
                 self.wait_until_no_breakdown()
+            time.sleep(2)
             # 顺利采集完成一条数据
         self.__auto_running: bool = False
         self.clear_para()
@@ -254,8 +255,8 @@ class AutoCollection:
         data_names = re.findall(r"[^\+\-\*/\(\) =><!~\d\.]+", input_str)
         for name in data_names:
             if (
-                name not in self.communication.__para_map.keys()
-                and name not in self.communication.__data_map.keys()
+                name not in self.communication.get_para_map().keys()
+                and name not in self.communication.get_data_map().keys()
                 and name not in self.communication.custom_calculate_map.keys()
             ):
                 # 稳态配置中的数据项不存在于数据库中，重新配置
@@ -263,6 +264,7 @@ class AutoCollection:
                 return False
 
         self.__custom_steady_state_determination = input_str
+        return True
 
     def get_steady_state_determination(self) -> str:
         return self.__custom_steady_state_determination

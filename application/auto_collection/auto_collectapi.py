@@ -63,9 +63,14 @@ def upload_csv():
 @autocollect.route("/uploadparameter", methods=["POST"])
 def upload_parameter():
     """
-    上传设备用于数采的控制参数，返回上传的参数列表
+    上传设备用于数采的控制参数，返回上传的参数列表，控制参数的配置项最好可以从para_list中获取，因为可能自定义
+    示例请求：curl -X POST http://127.0.0.1:5000/collect/uploadparameter \
+    -H "Content-Type: application/json" \
+    -d '{"parameters": {"负载量": [1, 2, 3, 4], "设定转速": [1, 2, 3, 4], "速度环补偿系数": [1, 2, 3, 4], "电流环带宽": [1, 2, 3, 4], "观测器补偿系数": [1, 2, 3, 4]}}'
     """
-    para_dict = request.json
+    para_dict = request.get_json().get("parameters")
+    if not isinstance(para_dict, dict):
+        return jsonify({"message": "参数格式错误"}), 400
     state, count = auto_collector.init_para_pool(para_dict)
     if state:
         return jsonify({"message": "参数上传成功", "line_count": count}), 200
@@ -123,6 +128,9 @@ def steady_state_determination():
         # 获得当前的稳态判断逻辑
         return jsonify({"value": auto_collector.get_steady_state_determination()}), 200
     elif request.method == "POST":
+        """
+        示例请求：curl -X POST http://127.0.0.1:5000/collect/steady_state_determination -d "value=输入功率-输出功率>1"
+        """
         # 设置当前的稳态判断逻辑
         value = request.form.get("value")
         status = auto_collector.set_steady_state_determination(value)

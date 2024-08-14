@@ -22,8 +22,8 @@ class FanDriver(DriverBase):
         # 协议要求，未赋值的参数为0
         for key in self.curr_para:
             self.curr_para[key] = 0
-        self.cpu = None
-        self.port = None
+        self.cpu = "M0"
+        self.port = serial_port
         self.device_address = None
         self.is_set_data = False
         # 帧声明,及默认初始化
@@ -32,97 +32,39 @@ class FanDriver(DriverBase):
         self.ack_query_f = serial_frame.Framer()
         self.ack_control_f = serial_frame.Framer()
         self.default_frame()
-        # 解析传参
-        for key, value in kwargs.items():
-            if key == "cpu":
-                if value != "M0" and value != "M4":
-                    self.logger.error("Invalid cpu value")
-                    raise ValueError("Invalid cpu value")
-                self.cpu = value
-            if key == "port":
-                if not isinstance(value, str):
-                    self.logger.error("Invalid port value")
-                    raise ValueError("Invalid port value")
-                self.port = value
-            if key == "device_address":
-                if not isinstance(value, str):
-                    self.logger.error("Invalid device_address value")
-                    raise ValueError("Invalid device_address value")
-                self.device_address = value
 
-        self.hardware_para = ["device_address", "cpu"]
+        self.hardware_para = ["port", "cpu"]
         self.command = "控制命令"
 
         self.ser: serial.Serial = serial.Serial(
-            baudrate=serial_baudrate, parity=serial_parity, stopbits=serial_stopbits, bytesize=serial_bytesize,
-            timeout=10
+            baudrate=serial_baudrate, parity=serial_parity, stopbits=serial_stopbits, bytesize=serial_bytesize, timeout=10
         )
 
     def set_F_header(self, send_header: str, rev_header: str):
-        if not isinstance(send_header, str):
-            self.logger.error(f"Invalid send header value{send_header}")
-            raise ValueError(f"Invalid send header value{send_header}")
         self.query_f.set_header(send_header)
         self.control_f.set_header(send_header)
-        if not isinstance(rev_header, str):
-            self.logger.error(f"Invalid rev header value{rev_header}")
-            raise ValueError(f"Invalid rev header value{rev_header}")
         self.ack_query_f.set_header(rev_header)
         self.ack_control_f.set_header(rev_header)
 
     def set_F_addr(self, addr: str):
-        if not isinstance(addr, str):
-            self.logger.error(f"Invalid addr value{addr}")
-            raise ValueError(f"Invalid addr value{addr}")
         self.query_f.set_addr(addr)
         self.control_f.set_addr(addr)
 
     def set_F_tailor(self, send_tailor: str, rev_tailor: str):
-        if not isinstance(send_tailor, str):
-            self.logger.error(f"Invalid send tail value{send_tailor}")
-            raise ValueError(f"Invalid send tail value{send_tailor}")
         self.query_f.set_tail(send_tailor)
         self.control_f.set_tail(send_tailor)
-        if not isinstance(rev_tailor, str):
-            self.logger.error(f"Invalid rev tail value{rev_tailor}")
-            raise ValueError(f"Invalid rev tail value{rev_tailor}")
         self.ack_query_f.set_tail(rev_tailor)
         self.ack_control_f.set_tail(rev_tailor)
 
-    def set_device_cpu(self, cpu: str) -> tuple[bool, None] | tuple[bool, Exception]:
-        try:
-            if not isinstance(cpu, str):
-                self.logger.error(f"Invalid cpu value{cpu}")
-                raise ValueError(f"Invalid cpu value{cpu}")
-            self.cpu = cpu
-            return True, None
-        except Exception as e:
-            return False, e
+    def set_device_cpu(self, cpu: str) -> None:
+        # TODO: 当前的cpu配置仅支持默认配置的切换，在非默认配置的时候不做支持
+        self.cpu = cpu
+        self.logger.info(f"设置CPU为{cpu}")
+        self.cpu_default_config()
 
-    def update_device_cpu(self, cpu: str):
-        state1, e1 = self.set_device_cpu(cpu)
-        if state1:
-            self.cpu_default_config()
-
-    def set_device_address(self, value: str):
-        try:
-            if not isinstance(value, str):
-                self.logger.error(f"Invalid device_address value{value}")
-                raise ValueError(f"Invalid device_address value{value}")
-            self.device_address = value
-            return True, None
-        except Exception as e:
-            return False, e
-
-    def set_port(self, value) -> tuple[bool, None] | tuple[bool, Exception]:
-        try:
-            if not isinstance(value, str):
-                self.logger.error(f"Invalid port value{value}")
-                raise ValueError(f"Invalid port value{value}")
-            self.port = value
-            return True, None
-        except Exception as e:
-            return False, e
+    def set_port(self, value: str) -> None:
+        self.port = value
+        self.logger.info(f"设置串口为{value}")
 
     def default_frame(self):
         # 初始化命令码
@@ -146,15 +88,15 @@ class FanDriver(DriverBase):
 
     def cpu_default_config(self):
         FB, VB, IB, Cofe1, Cofe2, Cofe3, Cofe4, Cofe5 = self.get_cpu_paras()
-        self.updata_F_data(index=1, name="目标转速", type="int16", size=2,
-                           formula=f"real_data=raw_data* {FB} * {Cofe1} / {Cofe2}", f_name="ack_query_f")
-        self.updata_F_data(index=2, name="实际转速", type="int16", size=2,
-                           formula=f"real_data=raw_data* {FB} * {Cofe1} / {Cofe2}", f_name="ack_query_f")
-        self.updata_F_data(index=3, name="直流母线电压", type="int16", size=2,
-                           formula=f"real_data=raw_data* {VB} / {Cofe2}", f_name="ack_query_f")
         self.updata_F_data(
-            index=4, name="U相电流有效值", type="int16", size=2,
-            formula=f"real_data=raw_data* {IB} / {Cofe2} / {Cofe5}", f_name="ack_query_f"
+            index=1, name="目标转速", type="int16", size=2, formula=f"real_data=raw_data* {FB} * {Cofe1} / {Cofe2}", f_name="ack_query_f"
+        )
+        self.updata_F_data(
+            index=2, name="实际转速", type="int16", size=2, formula=f"real_data=raw_data* {FB} * {Cofe1} / {Cofe2}", f_name="ack_query_f"
+        )
+        self.updata_F_data(index=3, name="直流母线电压", type="int16", size=2, formula=f"real_data=raw_data* {VB} / {Cofe2}", f_name="ack_query_f")
+        self.updata_F_data(
+            index=4, name="U相电流有效值", type="int16", size=2, formula=f"real_data=raw_data* {IB} / {Cofe2} / {Cofe5}", f_name="ack_query_f"
         )
         self.updata_F_data(
             index=5,
@@ -168,23 +110,17 @@ class FanDriver(DriverBase):
 
         self.curr_data = {"目标转速": 0, "实际转速": 0, "直流母线电压": 0, "U相电流有效值": 0, "功率": 0, "故障": 0}
 
-        self.updata_F_data(index=1, name="控制命令", type="bit8", size=1, formula="real_data=raw_data",
-                           f_name="control_f")
-        self.updata_F_data(index=2, name="设定转速", type="int16", size=2, formula="real_data=raw_data",
-                           f_name="control_f")
-        self.updata_F_data(index=3, name="速度环补偿系数", type="int16", size=2, formula="real_data=raw_data*10",
-                           f_name="control_f")
-        self.updata_F_data(index=4, name="电流环带宽", type="int16", size=2, formula="real_data=raw_data",
-                           f_name="control_f")
-        self.updata_F_data(index=5, name="观测器补偿系数", type="int16", size=2, formula="real_data=raw_data*100",
-                           f_name="control_f")
+        self.updata_F_data(index=1, name="控制命令", type="bit8", size=1, formula="real_data=raw_data", f_name="control_f")
+        self.updata_F_data(index=2, name="设定转速", type="int16", size=2, formula="real_data=raw_data", f_name="control_f")
+        self.updata_F_data(index=3, name="速度环补偿系数", type="int16", size=2, formula="real_data=raw_data*10", f_name="control_f")
+        self.updata_F_data(index=4, name="电流环带宽", type="int16", size=2, formula="real_data=raw_data", f_name="control_f")
+        self.updata_F_data(index=5, name="观测器补偿系数", type="int16", size=2, formula="real_data=raw_data*100", f_name="control_f")
 
         self.curr_para = {"控制命令": 0, "设定转速": 0, "速度环补偿系数": 0, "电流环带宽": 0, "观测器补偿系数": 0}
 
         self.set_default()
 
-    def set_data(self, index: int, name: str, type: str, size: int, formula: str, f_name: str) -> tuple[bool, None] | \
-                                                                                                  tuple[bool, Any]:
+    def set_data(self, index: int, name: str, type: str, size: int, formula: str, f_name: str) -> tuple[bool, None] | tuple[bool, Any]:
         if f_name == "ack_query_f":
             state, e = self.ack_query_f.set_data(index=index, name=name, type=type, size=size, formula=formula)
             if state:
@@ -212,10 +148,7 @@ class FanDriver(DriverBase):
             else:
                 return False, e
 
-    def updata_F_data(self, f_name: str, index: int, name: str, type: str, size: int, formula: str) -> tuple[
-                                                                                                           bool, None] | \
-                                                                                                       tuple[
-                                                                                                           bool, Exception]:
+    def updata_F_data(self, f_name: str, index: int, name: str, type: str, size: int, formula: str) -> tuple[bool, None] | tuple[bool, Exception]:
         try:
             state1, e1 = self.delete_F_data(f_name=f_name, index=index)
             # print(e)
@@ -369,6 +302,7 @@ class FanDriver(DriverBase):
                 "控制命令": "清障",
             }
             if self.write(para_dict):
+                self.breakdown = False
                 self.logger.info(f"故障清除成功!")
             else:
                 raise Exception(f"故障清除失败！")
@@ -396,6 +330,7 @@ class FanDriver(DriverBase):
                 elif key == "ack_control_f":
                     self.ack_control_f.reset_all()
                     self.ack_control_f.load_framer(json.loads(value))
+            self.logger.info("风机帧配置导入成功！")
             return True, None
         except Exception as e:
             self.logger.error(f"风机帧配置导入error！{e}")
@@ -520,26 +455,17 @@ class FanDriver(DriverBase):
         return 1, 1, 1, 1, 1, 1, 1, 1
 
     def update_hardware_parameter(self, para_dict: dict[str, any]) -> bool:
-        for key in para_dict.keys():
-            if key not in ["device_address", "cpu", "port"]:
-                # raise ValueError("Unknown parameter")
-                return False
         for key, value in para_dict.items():
-            if key == "device_address":
-                if not self.set_device_address(value)[0]:
-                    return False
-            elif key == "cpu":
-                if not self.set_device_cpu(value)[0]:
-                    return False
+            if key == "cpu":
+                self.set_device_cpu(value)
             elif key == "port":
-                if not self.set_port(value)[0]:
-                    return False
+                self.set_port(value)
             else:
-                return False
+                self.logger.error(f"未定义的参数{key}")
         return True
 
     def get_hardware_parameter(self) -> dict[str, any]:
-        return {"device_address": self.device_address, "cpu": self.cpu, "port": self.port}
+        return {"cpu": self.cpu, "port": self.port}
 
 
 if __name__ == "__main__":
@@ -548,15 +474,12 @@ if __name__ == "__main__":
     # print(fan_driver.get_hardware_parameter())
     fan_driver.updata_F_data(f_name="ack_query_f", index=1, name="修改1", type="bit8", size=1, formula="")
     print(fan_driver.curr_data)
-    fan_driver.updata_F_data(f_name="control_f", index=2, name="修改2", type="bit16", size=2,
-                             formula="")
+    fan_driver.updata_F_data(f_name="control_f", index=2, name="修改2", type="bit16", size=2, formula="")
     print(fan_driver.curr_para)
     fan_driver.updata_F_data(f_name="control_f", index=2, name="修改3", type="int16", size=2, formula="")
-    fan_driver.updata_F_data(f_name="control_f", index=2, name="修改2", type="float", size=2,
-                             formula="real_data=raw_data")
+    fan_driver.updata_F_data(f_name="control_f", index=2, name="修改2", type="float", size=2, formula="real_data=raw_data")
     print(fan_driver.curr_para)
-    fan_driver.updata_F_data(f_name="control_f", index=2, name="修改4", type="int16", size=2,
-                             formula="real_data=raw_data*2")
+    fan_driver.updata_F_data(f_name="control_f", index=2, name="修改4", type="int16", size=2, formula="real_data=raw_data*2")
     print(fan_driver.curr_para)
     # fan_driver.connect()
     # fan_driver.read_all()

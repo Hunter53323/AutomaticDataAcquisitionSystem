@@ -5,7 +5,6 @@ import random
 from flask import request, jsonify
 from core.communication import communicator
 import threading
-from application.utils import cn_translate, TABLE_TRANSLATE
 from . import socketio_http
 from core.communication.exception_handling import BREAKDOWNMAP
 

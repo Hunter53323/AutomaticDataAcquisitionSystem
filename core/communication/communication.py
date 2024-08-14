@@ -37,11 +37,22 @@ class Communication:
         logger.addHandler(console)
         return logger
 
-    def update_map(self, driver: DriverBase):
+    def update_map(self) -> tuple[bool, str]:
         # 更新设备匹配的所有数据参数表
-        self.__para_map.update({key: driver for key in driver.curr_para.keys()})
-        self.__data_map.update({key: driver for key in driver.curr_data.keys()})
-        self.__command_map.update({driver.command: driver})
+        self.__para_map = {}
+        self.__data_map = {}
+        self.__command_map = {}
+        for driver in self.drivers:
+            for key in driver.curr_para.keys():
+                if key in self.__para_map.keys():
+                    return False, f"参数{key}重复,请检查设备{driver.device_name}的参数表"
+                self.__para_map[key] = driver
+            for key in driver.curr_data.keys():
+                if key in self.__data_map.keys():
+                    return False, f"数据{key}重复,请检查设备{driver.device_name}的数据表"
+                self.__data_map[key] = driver
+            self.__command_map[driver.command] = driver
+        return True, ""
 
     def write(self, para_dict: dict[str, any]) -> bool:
         para_command_map = {**self.__para_map, **self.__command_map}
@@ -83,7 +94,7 @@ class Communication:
 
     def register_device(self, driver: DriverBase) -> bool:
         self.drivers.append(driver)
-        self.update_map(driver)
+        self.update_map()
         self.breakdown_handler.add_driver(driver)
 
     def find_driver(self, device_name: str) -> DriverBase:
@@ -192,17 +203,21 @@ class Communication:
     def get_para_map(self) -> dict[str, DriverBase]:
         # 获得参数表的时候不能有控制命令
         tmp_dict = self.__para_map.copy()
-        tmp_dict.pop("控制命令", 0)
-        tmp_dict.pop("测试设备控制命令", 0)
+        for key in self.__command_map.keys():
+            tmp_dict.pop(key, 0)
         return tmp_dict
 
     def get_data_map(self) -> dict[str, DriverBase]:
         return self.__data_map
 
-    def get_device_and_para(self) -> dict[str, list]:
+    def get_device_and_para(self) -> dict[str, list[str]]:
         device_para = {}
         for driver in self.drivers:
-            device_para[driver.device_name] = list(driver.curr_para.keys())
+            tmp_list = list(driver.curr_para.keys())
+            for key, value in self.__command_map.items():
+                if value.device_name == driver.device_name:
+                    tmp_list.remove(key)
+            device_para[driver.device_name] = tmp_list
         return device_para
 
     def get_device_and_data(self) -> dict[str, list]:
@@ -274,8 +289,9 @@ class Communication:
                 if data_name not in self.__para_map.keys() and data_name not in self.__data_map.keys():
                     self.logger.error(f"自定义运算中的参数{data_name}不存在")
                     return False
-
+            self.logger.info(f"添加自定义列:{column_name}, 表达式:{expr}")
             self.custom_calculate_map.update({column_name: expr.strip()})
+        return True
 
     def del_custom_column(self, column_name: str) -> bool:
         if column_name in self.custom_calculate_map.keys():
