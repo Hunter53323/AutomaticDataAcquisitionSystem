@@ -2,6 +2,7 @@ from . import control
 from core.communication import communicator
 from flask import request, jsonify
 from core.database import outputdb
+import json
 
 
 @control.route("/testdevice", methods=["GET", "POST"])
@@ -152,6 +153,8 @@ def config_save():
         """
         # POST方法，保存当前设备配置
         config_name = request.args.get("config_name", None)
+        for key, value in config_dict.items():
+            config_dict[key] = json.dumps(config_dict[key])
         config_dict.update({"配置命名": config_name})
         outputdb.change_current_table(driver_name, config_column)
         driver_config = outputdb.select_data(columns=["ID", "配置命名"])
@@ -179,7 +182,7 @@ def config_save():
             if key == "ID" or key == "配置命名":
                 count += 1
                 continue
-            load_config_dict[key] = driver_config[0][count]
+            load_config_dict[key] = json.loads(driver_config[0][count])
         driver.load_config(load_config_dict)
         return jsonify({"status": True}), 200
     else:
@@ -191,6 +194,7 @@ def config_save():
         if not outputdb.change_current_table(driver_name):
             outputdb.change_current_table(driver_name, config_column)
         if outputdb.delete_data_by_ids(ids_input=[int(config_id)]):
+            outputdb.rearrange_ids()
             return jsonify({"status": True}), 200
         else:
             return jsonify({"status": False}), 400

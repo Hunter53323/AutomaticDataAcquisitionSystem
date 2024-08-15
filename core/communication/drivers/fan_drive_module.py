@@ -316,20 +316,20 @@ class FanDriver(DriverBase):
             for key, value in F_config.items():
                 if key == "query_f":
                     self.query_f.reset_all()
-                    self.query_f.load_framer(json.loads(value))
+                    self.query_f.load_framer(value)
                 elif key == "control_f":
                     self.control_f.reset_all()
-                    self.control_f.load_framer(json.loads(value))
+                    self.control_f.load_framer(value)
                     for _, value in self.control_f.data.items():
                         self.curr_para[value.name] = 0
                 elif key == "ack_query_f":
                     self.ack_query_f.reset_all()
-                    self.ack_query_f.load_framer(json.loads(value))
+                    self.ack_query_f.load_framer(value)
                     for _, value in self.ack_query_f.data.items():
                         self.curr_data[value.name] = 0
                 elif key == "ack_control_f":
                     self.ack_control_f.reset_all()
-                    self.ack_control_f.load_framer(json.loads(value))
+                    self.ack_control_f.load_framer(value)
             self.logger.info("风机帧配置导入成功！")
             return True, None
         except Exception as e:
@@ -338,10 +338,10 @@ class FanDriver(DriverBase):
 
     def export_config(self):
         return {
-            "query_f": json.dumps(self.pre_dict(self.query_f.export_framer())),
-            "control_f": json.dumps(self.pre_dict(self.control_f.export_framer())),
-            "ack_query_f": json.dumps(self.pre_dict(self.ack_query_f.export_framer())),
-            "ack_control_f": json.dumps(self.pre_dict(self.ack_control_f.export_framer())),
+            "query_f": self.pre_dict(self.query_f.export_framer()),
+            "control_f": self.pre_dict(self.control_f.export_framer()),
+            "ack_query_f": self.pre_dict(self.ack_query_f.export_framer()),
+            "ack_control_f": self.pre_dict(self.ack_control_f.export_framer()),
         }
 
     def get_database_table(self) -> dict[str, str]:
@@ -363,16 +363,6 @@ class FanDriver(DriverBase):
             else:
                 dict_obj[key] = value
         return dict_obj
-
-    def write(self, para_dict: dict[str, any]) -> bool:
-        if not self.check_writable():
-            self.logger.error(f"串口不可写!")
-            return False
-        self.__iswriting = True
-        status = self.write_execute(para_dict)
-        self.__iswriting = False
-        return status
-
     def set_default(self):
         self.logger.debug("使用默认帧格式")
         self.is_set_data = True

@@ -19,15 +19,15 @@ def handle_command(data: bytes, fan: Fan, testbreakdown: bool = False):
             byte2 = b"\x01"
             byte3 = b"\x01"
             data_checksum = calculate_checksum(data[0:13])
-            print(data_checksum)
-            print(data[13].to_bytes())
+            # print(data_checksum)
+            # print(data[13].to_bytes())
             if data_checksum == data[13].to_bytes():
                 # 执行电机控制
-                speed = int.from_bytes(data[5:7]) * 25 * 60 / 32768
+                speed = int.from_bytes(data[5:7])
                 control = data[4]
                 if control == 1:
                     state = True
-                    speed = 2.98
+                    speed = 65
                 elif control == 2:
                     state = False
                     speed = 0
@@ -41,6 +41,7 @@ def handle_command(data: bytes, fan: Fan, testbreakdown: bool = False):
 
                 byte4 = b"\x01"
             else:
+                print("checksum error")
                 byte4 = b"\x02"
             byte5 = calculate_checksum(byte0, byte1, byte2, byte3, byte4)
             if byte5 != b"\x5C" and byte5 != b"\x5D":

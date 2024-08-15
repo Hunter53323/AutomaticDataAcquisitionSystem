@@ -42,15 +42,6 @@ class TestDevice(DriverBase):
         self.port = port
         self.client = ModbusTcpClient(host=ip, port=port)
 
-    def write(self, para_dict: dict[str, any]) -> bool:
-        if not self.check_writable():
-            self.logger.error(f"TCP被占用!")
-            return False
-        self.__iswriting = True
-        status = self.write_execute(para_dict)
-        self.__iswriting = False
-        return status
-
     def write_execute(self, para_dict: dict[str, any], write_count: int = 1) -> bool:
         """
         para_dict示例{"测试设备控制命令":"command", "负载量":float}

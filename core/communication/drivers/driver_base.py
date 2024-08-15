@@ -42,16 +42,16 @@ class DriverBase(ABC):
         return logger
 
     @abstractmethod
-    def write(self, para_dict: dict[str, any]) -> bool:
-        pass
-
-    @abstractmethod
     def connect(self) -> bool:
         return True
 
     @abstractmethod
     def disconnect(self) -> bool:
         return True
+
+    @abstractmethod
+    def write_execute(self) -> bool:
+        pass
 
     @abstractmethod
     def read_all(self) -> bool:
@@ -138,6 +138,15 @@ class DriverBase(ABC):
             self.read_all()
             self.__isreading = False
             time.sleep(0.05)
+
+    def write(self, para_dict: dict[str, any]) -> bool:
+        if not self.check_writable():
+            self.logger.error(f"串口不可写!")
+            return False
+        self.__iswriting = True
+        status = self.write_execute(para_dict)
+        self.__iswriting = False
+        return status
 
     def check_thread_alive(self) -> bool:
         if not self.__read_Thread.is_alive():

@@ -148,19 +148,22 @@ def merge_pdfs(paths: list[str], output_path: str):
         os.remove(path)
 
 
-def generate_pdf(parameters: list, input_inform: dict, data: list[dict[str, str]], report_path: str, direction_vertical: bool = False):
+def generate_pdf(parameters: list, input_inform: dict, data: list[dict[str, str]], direction_vertical: bool = False) -> str:
     """
     :param parameters: 要绘图的参数列表
     :param input_inform: 包含输入信息的字典，例如{'实验员姓名': '张三', '公司名称': 'XX公司'}
     :param data: 所有数据
-    :param report_path: 生成pdf保存的绝对路径
     :param direction_vertical: 是否纵向排布
     """
     # 从input_inform中获取公司名称和实验员姓名，如果不存在则使用默认值
     company_name = input_inform.get("公司名称", "未知公司名称")
     experimenter = input_inform.get("实验员姓名", "未知实验员")
 
-    doc = SimpleDocTemplate(os.path.join(report_path, "report.pdf"), pagesize=letter)
+    export_folder = os.path.join(os.getcwd(), "export")
+    if not os.path.exists(export_folder):
+        os.makedirs(export_folder)
+
+    doc = SimpleDocTemplate(os.path.join(export_folder, "report.pdf"), pagesize=letter)
 
     # 首页内容样式
     first_page_style = ParagraphStyle("FirstPage", fontName="SimHei", fontSize=14, alignment=TA_CENTER, fontWeight="bold")
@@ -202,7 +205,6 @@ def generate_pdf(parameters: list, input_inform: dict, data: list[dict[str, str]
     ]
 
     # 添加图片到story中，确保它位于logo_frame中
-    # TODO: 修改图片路径
     logo_path = "images/logo.png"  # 替换为您的图片路径
     logo = Image(logo_path, width=inch * 2, height=inch * 2)  # 设置图片宽高
     story.insert(0, logo)  # 将图片插入到故事列表的开始位置
@@ -214,7 +216,7 @@ def generate_pdf(parameters: list, input_inform: dict, data: list[dict[str, str]
         doc.build(story)
 
         # 第二页和第三页需要横向排布，创建一个新的PDF文档
-        landscape_doc = SimpleDocTemplate(os.path.join(report_path, "report_landscape.pdf"), pagesize=landscape(letter))
+        landscape_doc = SimpleDocTemplate(os.path.join(export_folder, "report_landscape.pdf"), pagesize=landscape(letter))
         landscape_story = []
 
         # 第二页展示所有数据，分页处理
@@ -230,7 +232,7 @@ def generate_pdf(parameters: list, input_inform: dict, data: list[dict[str, str]
 
         # 第四页需要纵向排布，创建另一个新的PDF文档
         if parameters:
-            portrait_doc = SimpleDocTemplate(os.path.join(report_path, "report_portrait.pdf"), pagesize=letter)
+            portrait_doc = SimpleDocTemplate(os.path.join(export_folder, "report_portrait.pdf"), pagesize=letter)
             portrait_story = []
 
             # 第四页对选择的参数依次开始画图
@@ -243,16 +245,16 @@ def generate_pdf(parameters: list, input_inform: dict, data: list[dict[str, str]
             portrait_doc.build(portrait_story)
 
             paths_to_merge = [
-                os.path.join(report_path, "report.pdf"),
-                os.path.join(report_path, "report_landscape.pdf"),
-                os.path.join(report_path, "report_portrait.pdf"),
+                os.path.join(export_folder, "report.pdf"),
+                os.path.join(export_folder, "report_landscape.pdf"),
+                os.path.join(export_folder, "report_portrait.pdf"),
             ]
         else:
-            paths_to_merge = [os.path.join(report_path, "report.pdf"), os.path.join(report_path, "report_landscape.pdf")]
-        output_file = os.path.join(report_path, "merged_report.pdf")
+            paths_to_merge = [os.path.join(export_folder, "report.pdf"), os.path.join(export_folder, "report_landscape.pdf")]
+        output_file = os.path.join(export_folder, "merged_report.pdf")
         merge_pdfs(paths_to_merge, output_file)
         # 最后，将三个PDF合并为一个PDF（这一步需要额外的处理）
-        print("PDF reports with tables and charts generated successfully.")
+        return output_file
     else:
 
         # 第二页展示所有数据，分页处理
@@ -272,7 +274,7 @@ def generate_pdf(parameters: list, input_inform: dict, data: list[dict[str, str]
 
         # 构建并保存文档
         doc.build(story)
-        print(f"PDF report generated successfully at: {os.path.join(report_path, 'report.pdf')}")
+        return os.path.join(export_folder, "report.pdf")
 
 
 def main():
@@ -280,7 +282,6 @@ def main():
     parameters = []
     parameters = ["转速", "功率", "速度环补偿系数", "观测器补偿系数"]
     input_inform = {"实验员姓名": "Yuxiang Liu", "公司名称": "Haier", "风机名称": "示例风机1", "风机型号": "型号X"}
-    report_path = "core/statement"
 
     data = [
         {
@@ -526,7 +527,7 @@ def main():
     ]
 
     # 生成PDF报告
-    generate_pdf(parameters, input_inform, data, report_path, direction_vertical=False)
+    generate_pdf(parameters, input_inform, data, direction_vertical=False)
 
     print("Report generated successfully.")
 
