@@ -375,29 +375,36 @@ class FanDriver(DriverBase):
         if not self.is_set_data:
             self.logger.error("控制帧还未定义不可写")
             return False
-        # 有无控制命令
-        if self.command in para_dict:
-            command = para_dict[self.command]
-        else:
-            command = "write"
-        # 参数不全的情况下，需要将以往的参数补充上
-        if write_count == 1:
-            para_dict.update({key: self.curr_para[key] for key in self.curr_para if key not in para_dict})
+        # 有无控制命令，若没有控制命令而且电机关着，那么默认为启动
+        if self.command not in para_dict:
+            if self.run_state == False:
+                para_dict[self.command] = "启动"
+            else:
+                para_dict[self.command] = "write"
 
-        if command == "start" or command == "启动":
-            command = 1
-        elif command == "stop" or command == "停止":
-            command = 2
-        elif command == "clear_breakdown" or command == "清障":
-            command = 4
+        if para_dict[self.command] == "start" or para_dict[self.command] == "启动":
+            command_value = 1
+            # 启动时的参数必须全
+            for key in self.curr_para.keys():
+                if key not in para_dict:
+                    self.logger.error(f"参数不全！{key}")
+                    return False
+        elif para_dict[self.command] == "stop" or para_dict[self.command] == "停止":
+            command_value = 2
+        elif para_dict[self.command] == "clear_breakdown" or para_dict[self.command] == "清障":
+            command_value = 4
         else:
-            command = 0
+            command_value = 0
+            # 写的参数也必须全
+            for key in self.curr_para.keys():
+                if key not in para_dict:
+                    self.logger.error(f"参数不全！{key}")
+                    return False
 
-        para_dict[self.command] = command
         for key, value in para_dict.items():
             # print(key,value)
             if key == "控制命令":
-                self.control_f.gen_data(key, command)
+                self.control_f.gen_data(key, command_value)
             else:
                 self.control_f.gen_data(key, value)
 
@@ -426,16 +433,23 @@ class FanDriver(DriverBase):
                 return False
             return self.write_execute(para_dict, write_count=write_count + 1)
 
-            # 确认读写操作正确后，修改参数表
-        if command == 1:
+        # 确认读写操作正确后，修改参数表
+        if command_value == 1:
             self.run_state = True
-        elif command == 2:
+            for key in self.curr_para:
+                self.curr_para[key] = para_dict[key]
+        elif command_value == 2:
             self.run_state = False
-        elif command == 4:
+            for key in self.curr_para:
+                self.curr_para[key] = 0
+        elif command_value == 4:
             self.breakdown = False
+            for key in self.curr_para:
+                self.curr_para[key] = 0
+        else:
+            for key in self.curr_para:
+                self.curr_para[key] = para_dict[key]
 
-        for key in self.curr_para:
-            self.curr_para[key] = para_dict[key]
         return True
 
     def get_cpu_paras(self) -> tuple[int, int, int, int, int, int, int, int]:

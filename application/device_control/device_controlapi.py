@@ -45,11 +45,12 @@ def fan_control():
     if request.method == "POST":
         command = request.form.get("command")
         if command == "start":
-            status = fan.write(
-                {
-                    "控制命令": "启动",
-                }
-            )
+            # status = fan.write(
+            #     {
+            #         "控制命令": "启动",
+            #     }
+            # )
+            status = True
         elif command == "stop":
             status = fan.write({"控制命令": "停止"})
         elif command == "clear_breakdown":

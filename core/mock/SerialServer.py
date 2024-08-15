@@ -27,7 +27,6 @@ def handle_command(data: bytes, fan: Fan, testbreakdown: bool = False):
                 control = data[4]
                 if control == 1:
                     state = True
-                    speed = 65
                 elif control == 2:
                     state = False
                     speed = 0
