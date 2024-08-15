@@ -84,6 +84,11 @@ class DriverBase(ABC):
         # 获取要存储到数据库中的所有数据名及类型
         pass
 
+    @abstractmethod
+    def close_device(self) -> bool:
+        # 关闭设备
+        pass
+
     def get_device_state(self) -> dict[str, any]:
         # 当前是否连接，设备当前是否启动，设备当前是否故障
         return {"连接状态": self.conn_state, "运行状态": self.run_state, "故障": self.breakdown}

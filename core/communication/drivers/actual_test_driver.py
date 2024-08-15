@@ -285,6 +285,9 @@ class TestDevice(DriverBase):
         all_data["负载量"] = "float"
         return all_data
 
+    def close_device(self):
+        return self.write({"测试设备控制命令": "stop_device"})
+
 
 if __name__ == "__main__":
     testdevice = TestDevice(device_name="TestDevice")

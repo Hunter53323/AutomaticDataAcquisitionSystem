@@ -363,6 +363,7 @@ class FanDriver(DriverBase):
             else:
                 dict_obj[key] = value
         return dict_obj
+
     def set_default(self):
         self.logger.debug("使用默认帧格式")
         self.is_set_data = True
@@ -456,6 +457,9 @@ class FanDriver(DriverBase):
 
     def get_hardware_parameter(self) -> dict[str, any]:
         return {"cpu": self.cpu, "port": self.port}
+
+    def close_device(self):
+        return self.write({"控制命令": "停止"})
 
 
 if __name__ == "__main__":
