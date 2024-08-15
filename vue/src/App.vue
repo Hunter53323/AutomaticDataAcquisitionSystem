@@ -109,4 +109,13 @@ onMounted(() => {
 .user-change-form .el-button {
   margin: 0 0 0 10px;
 }
+
+.db-operation-box .el-message-box__message {
+  margin-top: 10px;
+  width: 95%;
+}
+
+.db-operation-box .el-button {
+  margin: 0 0 0 10px;
+}
 </style>

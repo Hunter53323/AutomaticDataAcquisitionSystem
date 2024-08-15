@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { k } from 'vite/dist/node/types.d-aGj9QkWt';
 import { computed } from 'vue'
 
 const props = defineProps(['contentObj', 'count'])
@@ -7,17 +8,17 @@ const rowCount = computed(() => Math.ceil(contentLength.value / props.count))
 const cowSpan = computed(() => 24 / props.count)
 
 const getUnit = (key) => {
-  if ('转速' in key) {
+  if (key.includes('转速')) {
     return 'rpm'
-  } else if ('电流' in key) {
+  } else if (key.includes('电流')) {
     return 'A'
-  } else if ('电压' in key) {
+  } else if (key.includes('电压')) {
     return 'V'
-  } else if ('功率' in key) {
+  } else if (key.includes('功率')) {
     return 'W'
-  } else if ('温度' in key) {
+  } else if (key.includes('温度')) {
     return '°C'
-  } else if ('湿度' in key) {
+  } else if (key.includes('湿度')) {
     return '%'
   } else {
     return ''
@@ -30,9 +31,12 @@ const getUnit = (key) => {
   <el-row v-for="row in rowCount">
     <el-col v-for="(value, key, index) in props.contentObj" :span="cowSpan">
       <el-statistic v-if="index < row * props.count && index >= row * props.count - props.count" :title="key"
-        :value="value" group-separator=" " :precision="2">
+        :value="null" group-separator=" ">
         <template #suffix>
           {{ getUnit(key) }}
+        </template>
+        <template #prefix>
+          <span>{{ value }}</span>
         </template>
       </el-statistic>
     </el-col>
@@ -50,8 +54,11 @@ const getUnit = (key) => {
 }
 
 
+.el-statistic :deep .el-statistic__head {
+  font-size: 14px!important;
+}
 
-.el-statistic {
-  --el-statistic-title-font-size: --el-font-size-small;
+.el-statistic :deep() .el-statistic__content {
+  font-size: 16px!important;
 }
 </style>
