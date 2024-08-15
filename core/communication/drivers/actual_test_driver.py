@@ -19,6 +19,7 @@ class TestDevice(DriverBase):
         self.command = "测试设备控制命令"
         self.rev_f = modbus_frame.Framer()
         self.is_set_f = False
+        self.axis = 2
         self.default_frame()
 
     def default_frame(self):
@@ -27,7 +28,7 @@ class TestDevice(DriverBase):
         self.rev_f.set_data(index=2, name="扭矩", type="float", size=4, formula=f"real_data=raw_data")
         self.rev_f.set_data(index=3, name="输出功率", type="float", size=4, formula=f"real_data=raw_data")
         self.curr_data = {"输入功率": 0, "扭矩": 0, "输出功率": 0}
-        self.curr_para = {"负载量": 0, "测试设备控制命令": "write"}
+        self.curr_para = {"测功机控制值": 0, "测试设备控制命令": "write"}
 
     def updata_F_data(self, f_name: str, index: int, name: str, type: str, size: int, formula: str):
         if f_name == "rev_f":
@@ -36,6 +37,9 @@ class TestDevice(DriverBase):
     def delete_F_data(self, f_name: str, index: int):
         if f_name == "rev_f":
             self.rev_f.data.pop(index)
+
+    def set_axis(self, axis: int):
+        self.axis = axis
 
     def __set_client(self, ip: str, port: int):
         self.ip = ip
@@ -62,32 +66,32 @@ class TestDevice(DriverBase):
             command = "write"
         else:
             command = para_dict[self.command]
-        if "负载量" not in para_dict:
-            para_dict["负载量"] = 0
+        if "测功机控制值" not in para_dict:
+            para_dict["测功机控制值"] = 0
 
-        if command == "start_device" or command == "启动":
-            address = 0
+        if command == "启动":
+            address = 0 + (self.axis - 1) * 3
             value = 1
             result = self.client.write_register(address, value, slave=1)
-        elif command == "stop_device" or command == "停止":
-            address = 0
+        elif command == "停止":
+            address = 0 + (self.axis - 1) * 3
             value = 0
             result = self.client.write_register(address, value, slave=1)
-        elif command == "P_mode":
-            address = 1
+        elif command == "切换P模式":
+            address = 1 + (self.axis - 1) * 3
             value = 1
             result = self.client.write_register(address, value, slave=1)
-        elif command == "N_mode":
-            address = 1
+        elif command == "切换M模式":
+            address = 1 + (self.axis - 1) * 3
             value = 2
             result = self.client.write_register(address, value, slave=1)
-        elif command == "N1_mode":
-            address = 1
+        elif command == "切换N1模式":
+            address = 1 + (self.axis - 1) * 3
             value = 4
             result = self.client.write_register(address, value, slave=1)
         elif command == "write":
-            address = 2
-            data_value = float(para_dict["load"])
+            address = 2 + (self.axis - 1) * 3
+            data_value = float(para_dict["测功机控制值"])
             # 将浮点数打包为四个字节
             packed_value = struct.pack(">f", data_value)
             # 将四个字节解包为两个16位的整数
@@ -104,9 +108,9 @@ class TestDevice(DriverBase):
             return False
         else:
             # 确认写正确后，更改状态值
-            if command == "start_device" or command == "启动":
+            if command == "启动":
                 self.run_state = True
-            elif command == "stop_device" or command == "停止":
+            elif command == "停止":
                 self.run_state = False
             for key in self.curr_para:
                 self.curr_para[key] = para_dict[key]
