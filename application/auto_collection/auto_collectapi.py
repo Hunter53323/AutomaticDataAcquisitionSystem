@@ -42,9 +42,6 @@ def upload_csv():
         reader = csv.DictReader(file)
         # csv_context 是一个字典列表，其中每个字典表示 CSV 文件中的一行
         csv_context = list(reader)
-        # 将 csv_context 转换为所需的格式
-        CH2EN = {}
-        translated_csv_context = []
 
         for row in csv_context:
             if "ID" in row:
@@ -53,20 +50,11 @@ def upload_csv():
                 del row["\ufeffID"]
             else:
                 return jsonify({"message": "文件编码错误,请使用utf-8格式的csv文件"}), 400
-            translated_row = {}
-            for CHkey, value in row.items():
-                if CHkey not in CH2EN:
-                    for en, ch in TABLE_TRANSLATE.items():
-                        if ch == CHkey:
-                            CH2EN[ch] = en
-                            break
-                    else:
-                        auto_collector.logger.error(f"没有对应的控制参数：{CHkey}")
-                        # TODO 把上面的teanslate去掉，添加一个下载示例csv的接口
-                translated_row[CH2EN[CHkey]] = int(value)
-            translated_csv_context.append(translated_row)
-        auto_collector.init_para_pool_from_csv(translated_csv_context)
-        return jsonify({"message": "文件上传成功", "line_count": line_count}), 200
+
+        if auto_collector.init_para_pool_from_csv(csv_context):
+            return jsonify({"message": "文件上传成功", "line_count": line_count}), 200
+        else:
+            return jsonify({"message": "文件上传失败"}), 400
 
     return jsonify({"message": "Unknown error"}), 500
     pass
@@ -75,9 +63,14 @@ def upload_csv():
 @autocollect.route("/uploadparameter", methods=["POST"])
 def upload_parameter():
     """
-    上传设备用于数采的控制参数，返回上传的参数列表
+    上传设备用于数采的控制参数，返回上传的参数列表，控制参数的配置项最好可以从para_list中获取，因为可能自定义
+    示例请求：curl -X POST http://127.0.0.1:5000/collect/uploadparameter \
+    -H "Content-Type: application/json" \
+    -d '{"parameters": {"负载量": [1, 2, 3, 4], "设定转速": [1, 2, 3, 4], "速度环补偿系数": [1, 2, 3, 4], "电流环带宽": [1, 2, 3, 4], "观测器补偿系数": [1, 2, 3, 4]}}'
     """
-    para_dict = request.json
+    para_dict = request.get_json().get("parameters")
+    if not isinstance(para_dict, dict):
+        return jsonify({"message": "参数格式错误"}), 400
     state, count = auto_collector.init_para_pool(para_dict)
     if state:
         return jsonify({"message": "参数上传成功", "line_count": count}), 200
@@ -96,8 +89,7 @@ def auto_collect_control():
     command = request.form.get("command")
     if command == "start":
         # 启动数据采集，（所有前期基本参数已经设置好）
-        auto_collector.start_auto_collect()
-        return jsonify({"status": "start"}), 200
+        return jsonify({"status": auto_collector.start_auto_collect()}), 200
     elif command == "pause":
         # 暂停数采
         auto_collector.pause_auto_collect()
@@ -136,6 +128,9 @@ def steady_state_determination():
         # 获得当前的稳态判断逻辑
         return jsonify({"value": auto_collector.get_steady_state_determination()}), 200
     elif request.method == "POST":
+        """
+        示例请求：curl -X POST http://127.0.0.1:5000/collect/steady_state_determination -d "value=输入功率-输出功率>1"
+        """
         # 设置当前的稳态判断逻辑
         value = request.form.get("value")
         status = auto_collector.set_steady_state_determination(value)

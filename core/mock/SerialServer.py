@@ -23,11 +23,11 @@ def handle_command(data: bytes, fan: Fan, testbreakdown: bool = False):
             print(data[13].to_bytes())
             if data_checksum == data[13].to_bytes():
                 # 执行电机控制
-                speed = int.from_bytes(data[5:7])
+                speed = int.from_bytes(data[5:7]) * 25 * 60 / 32768
                 control = data[4]
                 if control == 1:
                     state = True
-                    speed = 50
+                    speed = 2.98
                 elif control == 2:
                     state = False
                     speed = 0

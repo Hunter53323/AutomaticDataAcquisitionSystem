@@ -3,6 +3,7 @@ import time
 
 from pymodbus.framer import ModbusSocketFramer
 from .frame import modbus_frame
+from .frame.modbus_frame import Field
 from .driver_base import DriverBase
 from pymodbus.client import ModbusTcpClient
 import struct
@@ -18,18 +19,21 @@ class TestDevice(DriverBase):
         self.command = "测试设备控制命令"
         self.rev_f = modbus_frame.Framer()
         self.is_set_f = False
+        self.default_frame()
 
     def default_frame(self):
         self.is_set_f = True
-        self.rev_f.set_data(index=1, name="电机输入功率", type="float", size=4, formula=f"real_data=raw_data")
+        self.rev_f.set_data(index=1, name="输入功率", type="float", size=4, formula=f"real_data=raw_data")
         self.rev_f.set_data(index=2, name="扭矩", type="float", size=4, formula=f"real_data=raw_data")
-        self.rev_f.set_data(index=3, name="电机输出功率", type="float", size=4, formula=f"real_data=raw_data")
+        self.rev_f.set_data(index=3, name="输出功率", type="float", size=4, formula=f"real_data=raw_data")
+        self.curr_data = {"输入功率": 0, "扭矩": 0, "输出功率": 0}
+        self.curr_para = {"负载量": 0, "测试设备控制命令": "write"}
 
-    def updata_F_data(self, f_name:str, index: int, name: str, type: str, size: int, formula: str):
+    def updata_F_data(self, f_name: str, index: int, name: str, type: str, size: int, formula: str):
         if f_name == "rev_f":
             self.rev_f.data[index] = modbus_frame.Field(index, name, type, size, formula)
 
-    def delete_F_data(self,f_name:str,index:int):
+    def delete_F_data(self, f_name: str, index: int):
         if f_name == "rev_f":
             self.rev_f.data.pop(index)
 
@@ -49,7 +53,7 @@ class TestDevice(DriverBase):
 
     def write_execute(self, para_dict: dict[str, any], write_count: int = 1) -> bool:
         """
-        para_dict示例{"test_device_command":"command", "load":float}
+        para_dict示例{"测试设备控制命令":"command", "负载量":float}
         command:"start_device","stop_device","P_mode","N_mode","N1_mode","write"
         """
         # address = 0  # 读取寄存器的起始地址
@@ -67,8 +71,8 @@ class TestDevice(DriverBase):
             command = "write"
         else:
             command = para_dict[self.command]
-        if "加载量" not in para_dict:
-            para_dict["加载量"] = 0
+        if "负载量" not in para_dict:
+            para_dict["负载量"] = 0
 
         if command == "start_device" or command == "启动":
             address = 0
@@ -207,13 +211,13 @@ class TestDevice(DriverBase):
     def handle_breakdown(self, breakdown: int) -> bool:
         try:
             if breakdown != 0:
-                parameters = {"test_device_command": "P_mode"}
+                parameters = {"测试设备控制命令": "P_mode"}
                 if not testdevice.write(parameters):
                     raise Exception(f"{parameters}")
-                parameters = {"test_device_command": "write", "load": float(0) / 10}  # 假设空载为0
+                parameters = {"测试设备控制命令": "write", "load": float(0) / 10}  # 假设空载为0
                 if not testdevice.write(parameters):
                     raise Exception(f"{parameters}")
-                parameters = {"test_device_command": "start_device"}
+                parameters = {"测试设备控制命令": "启动"}
                 if not testdevice.write(parameters):
                     raise Exception(f"{parameters}")
             else:
@@ -222,11 +226,11 @@ class TestDevice(DriverBase):
         except Exception as e:
             self.logger.error(f"故障处理模块报错！ error:{e}")
             self.logger.error(f"再次尝试空载！")
-            parameters = {"test_device_command": "P_mode"}
+            parameters = {"测试设备控制命令": "P_mode"}
             testdevice.write(parameters)
-            parameters = {"test_device_command": "write", "load": float(0) / 10}  # 假设空载为0
+            parameters = {"测试设备控制命令": "write", "load": float(0) / 10}  # 假设空载为0
             testdevice.write(parameters)
-            parameters = {"test_device_command": "start_device"}
+            parameters = {"测试设备控制命令": "启动"}
             testdevice.write(parameters)
         finally:
             return False
@@ -239,16 +243,17 @@ class TestDevice(DriverBase):
                 try:
                     ipaddress.ip_address(value)
                     selfip = value
+                    self.logger.info(f"ip地址更新为{value}")
                 except ValueError:
                     return False
             elif key == "port":
                 if type(value) == int:
                     selfport = value
+                    self.logger.info(f"端口号更新为{value}")
                 else:
-                    # raise TypeError("port must be an integer.")
                     return False
             else:
-                raise KeyError(f"{key} is not a valid parameter.")
+                self.logger.error(f"{key} 不是一个有效参数.")
         self.__set_client(selfip, selfport)
         return True
 
@@ -261,6 +266,7 @@ class TestDevice(DriverBase):
                 if key == "rev_f":
                     self.rev_f.reset_all()
                     self.rev_f.load_framer(json.loads(value))
+            self.logger.info(f"测试设备帧配置导入成功！")
             return True, None
         except Exception as e:
             self.logger.error(f"测试设备帧配置导入error！{e}")
@@ -285,11 +291,12 @@ class TestDevice(DriverBase):
         all_data = {}
         for _, value in self.rev_f.data.items():
             all_data[value.name] = value.type
+        all_data["负载量"] = "float"
         return all_data
 
 
 if __name__ == "__main__":
-    testdevice = TestDevice(device_name="TestDevice", data_list=[], para_list=["test_device_command", "load"])
+    testdevice = TestDevice(device_name="TestDevice")
     testdevice.default_frame()
     testdevice.connect()
     # testdevice.update_hardware_parameter(para_dict={"ip": "127.0.0.1", "port": 504})
