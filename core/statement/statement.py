@@ -27,7 +27,6 @@ except IOError:
     print("字体 'SimHei' 无法加载，请确保字体文件存在。")
 
 
-
 # 连接数据库
 def connect_database():
     db_config = {
@@ -58,7 +57,6 @@ def connect_database():
     except mysql.connector.Error as e:
         print("Error connecting to MySQL Platform:", e)
         sys.exit(0)
-
 
 
 def table_pdf(data):
@@ -132,7 +130,6 @@ def draw_line_chart(parameters, data):
     return img
 
 
-
 def merge_pdfs(paths: list[str], output_path: str):
     pdf_writer = PdfWriter()
 
@@ -144,15 +141,14 @@ def merge_pdfs(paths: list[str], output_path: str):
     with open(output_path, "wb") as out:
         pdf_writer.write(out)
 
-    print(f"PDF文件合并成功，保存在：{output_path}")    
+    print(f"PDF文件合并成功，保存在：{output_path}")
 
     # 删除原始 PDF 文件
     for path in paths:
-        os.remove(path)            
+        os.remove(path)
 
 
-
-def generate_pdf(parameters: list, input_inform: dict, data: dict, report_path: str, direction_vertical: bool):
+def generate_pdf(parameters: list, input_inform: dict, data: list[dict[str, str]], report_path: str, direction_vertical: bool = False):
     """
     :param parameters: 要绘图的参数列表
     :param input_inform: 包含输入信息的字典，例如{'实验员姓名': '张三', '公司名称': 'XX公司'}
@@ -161,8 +157,8 @@ def generate_pdf(parameters: list, input_inform: dict, data: dict, report_path: 
     :param direction_vertical: 是否纵向排布
     """
     # 从input_inform中获取公司名称和实验员姓名，如果不存在则使用默认值
-    company_name = input_inform.get('公司名称', '未知公司名称')
-    experimenter = input_inform.get('实验员姓名', '未知实验员')
+    company_name = input_inform.get("公司名称", "未知公司名称")
+    experimenter = input_inform.get("实验员姓名", "未知实验员")
 
     doc = SimpleDocTemplate(os.path.join(report_path, "report.pdf"), pagesize=letter)
 
@@ -207,7 +203,7 @@ def generate_pdf(parameters: list, input_inform: dict, data: dict, report_path: 
 
     # 添加图片到story中，确保它位于logo_frame中
     # TODO: 修改图片路径
-    logo_path = 'images/logo.png'  # 替换为您的图片路径
+    logo_path = "images/logo.png"  # 替换为您的图片路径
     logo = Image(logo_path, width=inch * 2, height=inch * 2)  # 设置图片宽高
     story.insert(0, logo)  # 将图片插入到故事列表的开始位置
 
@@ -218,7 +214,7 @@ def generate_pdf(parameters: list, input_inform: dict, data: dict, report_path: 
         doc.build(story)
 
         # 第二页和第三页需要横向排布，创建一个新的PDF文档
-        landscape_doc = SimpleDocTemplate(os.path.join(report_path, "report_landscape.pdf"), pagesize=landscape(letter))        
+        landscape_doc = SimpleDocTemplate(os.path.join(report_path, "report_landscape.pdf"), pagesize=landscape(letter))
         landscape_story = []
 
         # 第二页展示所有数据，分页处理
@@ -231,8 +227,6 @@ def generate_pdf(parameters: list, input_inform: dict, data: dict, report_path: 
 
         # 构建第二页和第三页的PDF
         landscape_doc.build(landscape_story)
-
-
 
         # 第四页需要纵向排布，创建另一个新的PDF文档
         if parameters:
@@ -248,7 +242,11 @@ def generate_pdf(parameters: list, input_inform: dict, data: dict, report_path: 
             # 构建第四页的PDF
             portrait_doc.build(portrait_story)
 
-            paths_to_merge = [os.path.join(report_path, "report.pdf"), os.path.join(report_path, "report_landscape.pdf"), os.path.join(report_path, "report_portrait.pdf")]
+            paths_to_merge = [
+                os.path.join(report_path, "report.pdf"),
+                os.path.join(report_path, "report_landscape.pdf"),
+                os.path.join(report_path, "report_portrait.pdf"),
+            ]
         else:
             paths_to_merge = [os.path.join(report_path, "report.pdf"), os.path.join(report_path, "report_landscape.pdf")]
         output_file = os.path.join(report_path, "merged_report.pdf")
@@ -281,14 +279,9 @@ def main():
     input_inform = "Yuxiang Liu"
     parameters = []
     parameters = ["转速", "功率", "速度环补偿系数", "观测器补偿系数"]
-    input_inform ={
-        '实验员姓名': 'Yuxiang Liu',
-        '公司名称': 'Haier' ,
-        '风机名称': "示例风机1",
-        '风机型号': "型号X"
-        }
-    report_path = 'core/statement'    
-    
+    input_inform = {"实验员姓名": "Yuxiang Liu", "公司名称": "Haier", "风机名称": "示例风机1", "风机型号": "型号X"}
+    report_path = "core/statement"
+
     data = [
         {
             "ID": 1,
@@ -532,11 +525,8 @@ def main():
         },
     ]
 
-
-
-
     # 生成PDF报告
-    generate_pdf(parameters, input_inform, data,  report_path, direction_vertical=False)
+    generate_pdf(parameters, input_inform, data, report_path, direction_vertical=False)
 
     print("Report generated successfully.")
 

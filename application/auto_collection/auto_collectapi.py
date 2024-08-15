@@ -4,7 +4,7 @@ from flask import request, jsonify
 import csv
 from werkzeug.datastructures import FileStorage
 from core.auto_collection import auto_collector
-from core.database import TABLE_TRANSLATE
+from core.warningmessage import emailsender
 
 column_mapping = {
     "转速": "set_speed",
@@ -137,3 +137,22 @@ def steady_state_determination():
         return jsonify({"status": status}), 200
     else:
         return jsonify({"status": False}), 400
+
+
+@autocollect.route("/emailset", methods=["GET", "POST"])
+def email_set():
+    """
+    设置邮件发送的相关参数
+    示例请求：curl -X POST http://127.0.0.1:5000/collect/emailset -d "sender_mail=12345&sender_passwd=12345"
+    """
+    if request.method == "GET":
+        return jsonify({"sender_mail": emailsender.sender_mail, "receiver": emailsender.receiver}), 200
+    else:
+        sender_mail = request.form.get("sender_mail")
+        sender_passwd = request.form.get("sender_passwd")
+        receiver = request.form.get("receiver")
+        if sender_mail and sender_passwd:
+            emailsender.set_sender_mail(sender_mail, sender_passwd)
+        if receiver:
+            emailsender.set_receiver(receiver)
+        return jsonify({"status": True}), 200

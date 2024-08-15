@@ -4,7 +4,7 @@ var isConnected = false;
 
 socket.on('data_from_device', function(data) {
     document.getElementById('currentrotationalspeed').innerText = data.实际转速.toFixed(2);
-    document.getElementById('setrotationalspeed').innerText = data.设定转速.toFixed(2);
+    // document.getElementById('setrotationalspeed').innerText = data.设定转速.toFixed(2);
     document.getElementById('targetrotationalspeed').innerText = data.目标转速.toFixed(2);
     // document.getElementById('dcbusvoltage').innerText = data.dc_bus_voltage.toFixed(2);
     // document.getElementById('uphasecurrent').innerText = data.U_phase_current.toFixed(2);

@@ -26,7 +26,7 @@ class MySQLDatabase:
 
         self.create_connection()
 
-    def change_current_table(self, table_name: str, table_columns: dict[str, str] = {}) -> None:
+    def change_current_table(self, table_name: str, table_columns: dict[str, str] = {}) -> bool:
         """
         切换当前数据库表，如果表不存在则创建。
         :param table_name: 要切换到的表名。
@@ -60,6 +60,47 @@ class MySQLDatabase:
             self.logger.info(f"已切换到表 '{table_name}'")
             self.logger.info(f"表结构：{self.table_columns}")
         return True
+
+    def change_history_table(self, table_name: str) -> bool:
+        # 首先检查表是否存在
+        if not self.check_connection():
+            return False
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute(f"SHOW TABLES LIKE '{table_name}'")
+            if not cursor.fetchone():
+                self.logger.error(f"表 '{table_name}' 不存在，无法切换。")
+                return False
+            self.table_name = table_name
+            self.table_columns = self.get_columns_from_table(table_name)
+            self.columns = {col_name: dtype for col_name, dtype in self.table_columns.items() if col_name != "ID"}
+            self.logger.info(f"已切换到历史表 '{table_name}'")
+            return True
+        except Error as e:
+            self.logger.error(f"切换历史表时发生错误: {e}")
+            return False
+        finally:
+            cursor.close()
+
+    def get_columns_from_table(self, table_name: str) -> dict:
+        """
+        获取指定表的列名和数据类型。
+        :param table_name: 要查询的表名。
+        :return: 包含列名和数据类型的字典。
+        """
+        if not self.check_connection():
+            return {}
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute(f"SHOW COLUMNS FROM `{table_name}`")
+            columns = cursor.fetchall()
+            column_dict = {name: data_type for name, data_type, _, _, _, _ in columns}
+            return column_dict
+        except Error as e:
+            self.logger.error(f"获取表 '{table_name}' 的列时发生错误: {e}")
+            return {}
+        finally:
+            cursor.close()
 
     def check_exists(self, table_name: str, table_columns: dict[str, str]) -> bool:
         if not self.check_connection():

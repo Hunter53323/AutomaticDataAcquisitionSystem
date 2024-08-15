@@ -1,5 +1,6 @@
 from .drivers.fan_drive_module import FanDriver
 from .drivers.actual_test_driver import TestDevice
+from core.warningmessage import emailsender
 
 BREAKDOWNMAP = {
     0: "采样偏置故障",
@@ -52,6 +53,7 @@ class BreakdownHanding:
         return 0, ""
 
     def handle_breakdown(self) -> bool:
+        breakdown_description = ["无故障", "过流故障", "普通故障"]
         if self.breakdown_type == 0:
             # 无故障
             return True
@@ -60,12 +62,16 @@ class BreakdownHanding:
             status = self.test_device.handle_breakdown(1)
             if not status:
                 # 测试设备空载失败,可加日志
+                emailsender.send_email("数采系统故障通知", "发生过流故障，自动处理失败，请立即查看")
                 return False
         # 风机驱动清障
         status = self.fan_driver.handle_breakdown(self.breakdown_type)
         if not status:
             # 风机空载失败,可加日志
+            emailsender.send_email("数采系统故障通知", f"发生{breakdown_description[self.breakdown_type]}，风机空载失败，请立即查看")
             return False
+
+        emailsender.send_email("数采系统故障通知", f"发生{breakdown_description[self.breakdown_type]}，自动清障成功")
         self.breakdown_type = 0
         return True
 
@@ -76,7 +82,3 @@ class BreakdownHanding:
         """
         breakdown_type, error = self.judge_breakdown(breakdown)
         return self.handle_breakdown(), breakdown_type, error
-
-    def breakdown_warning(self):
-        # 故障预警，发送提示信息
-        pass

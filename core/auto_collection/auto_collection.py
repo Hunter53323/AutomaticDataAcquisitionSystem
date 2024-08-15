@@ -55,7 +55,9 @@ class AutoCollection:
                 return False
         # 检查当前配置是否存在数据表，若没有的话则创建
         table_column = self.communication.get_cureent_data_table()
-        if table_column not in self.db.table_columns_list:
+        if self.db.check_exists(DATA_TABLE_NAME, table_column):
+            self.db.change_current_table(DATA_TABLE_NAME)
+        else:
             self.db.change_current_table(DATA_TABLE_NAME, table_column)
         self.logger.info("预检通过")
         return True
