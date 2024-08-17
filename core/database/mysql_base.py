@@ -489,14 +489,14 @@ class MySQLDatabase:
         else:
             export_folder = filepath
 
-        # 获取当前时间戳
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        # # 获取当前时间戳
+        # timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-        # 构建新的文件名，包括时间戳
-        new_filename = f"{filename}_{timestamp}.csv"
+        # # 构建新的文件名，包括时间戳
+        # new_filename = f"{filename}_{timestamp}.csv"
 
         # 构建完整的文件路径
-        full_path = os.path.join(export_folder, new_filename)
+        full_path = os.path.join(export_folder, filename)
 
         with self.connection.cursor() as cursor:
             try:

@@ -3,6 +3,7 @@ from core.database import outputdb
 from flask import request, jsonify
 from core.statement.statement import generate_pdf
 from core.auto_collection.auto_collection import DATA_TABLE_NAME
+from flask import send_file
 
 
 @db.route("/data", methods=["GET", "POST", "PUT", "DELETE"])
@@ -151,7 +152,6 @@ def api_showall_v2():
 def export():
     # filename = 'fans_data1.csv'
     filename = request.args.get("filename")
-    filepath = request.args.get("filepath")
     ids_input = request.args.get("ids_input", "")
     additional_conditions = request.args.get("additional_conditions", "")
     try:
@@ -160,12 +160,11 @@ def export():
                 return jsonify({"status": "error", "message": "表不存在"}), 404
         status, err, export_filepath = outputdb.export_data_with_conditions_to_csv(
             filename=filename,
-            filepath=filepath,
             ids_input=ids_input,
             additional_conditions=additional_conditions,
         )
         if status:
-            return jsonify({"status": "success", "message": f"{export_filepath}"})
+            return send_file(export_filepath, as_attachment=True)
         else:
             return jsonify({"status": "error", "message": "Data export failed"})
     except Exception as e:
@@ -179,7 +178,7 @@ def statement():
     示例:
     curl -X POST http://127.0.0.1:5000/db/statement \
         -H "Content-Type: application/json" \
-        -d '{"ids_input": [1,2,3,4], "draw_parameters": ["负载量", "设定转速"], "data_column": ["负载量", "设定转速", "速度环补偿系数", "电流环带宽", "观测器补偿系数", "目标转速", "实际转速"], "input_form": {"实验员姓名": "张三", "公司名称": "XX公司"} }'
+        -d '{"ids_input": [1,2,3,4,"5-10"], "draw_parameters": ["负载量", "设定转速"], "data_column": ["负载量", "设定转速", "速度环补偿系数", "电流环带宽", "观测器补偿系数", "目标转速", "实际转速"], "input_form": {"实验员姓名": "张三", "公司名称": "XX公司"} }'
     """
     # filename = request.args.get("filename")
     input_form = request.get_json().get("input_form")
@@ -194,7 +193,7 @@ def statement():
         if "ID" not in data_column:
             data_column.insert(0, "ID")
         data_dict_list = [dict(zip(data_column, row)) for row in data]
-        generate_pdf(draw_parameters, input_form, data_dict_list, "C:\\files\\Desktop")
-        return jsonify({"status": "success", "message": "Statement generated successfully"})
+        export_path = generate_pdf(draw_parameters, input_form, data_dict_list)
+        return send_file(export_path, as_attachment=True)
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})

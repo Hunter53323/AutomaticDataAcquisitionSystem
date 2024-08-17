@@ -113,13 +113,13 @@ class AutoCollection:
             if not err_handle_status:
                 # 清障失败，需要人工干预
                 # 故障预警
-                self.communication.breakdown_handler.breakdown_warning(code)
                 self.wait_until_no_breakdown()
             time.sleep(2)
             # 顺利采集完成一条数据
         self.__auto_running: bool = False
         self.clear_para()
         self.logger.info("自动采集结束")
+        self.communication.close_all_device()
         return True
 
     def clear_para(self):

@@ -150,9 +150,10 @@ def email_set():
     else:
         sender_mail = request.form.get("sender_mail")
         sender_passwd = request.form.get("sender_passwd")
-        receiver = request.form.get("receiver")
+        receiver_name = request.form.get("receiver_name")
+        receiver_email = request.form.get("receiver_email")
         if sender_mail and sender_passwd:
             emailsender.set_sender_mail(sender_mail, sender_passwd)
-        if receiver:
-            emailsender.set_receiver(receiver)
+        if receiver_name and receiver_email:
+            emailsender.set_receiver(receiver_name, receiver_email)
         return jsonify({"status": True}), 200

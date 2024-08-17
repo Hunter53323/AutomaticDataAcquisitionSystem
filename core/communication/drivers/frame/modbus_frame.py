@@ -9,11 +9,12 @@ from sympy import symbols, Eq, solve, sympify
 
 class Framer:
     def __init__(self):
-        self.tid = b"\x00\x00"
+        # self.tid = b"\x00\x00"
         self.pid = b"\x00\x00"
         self.length = 0
-        self.uid = b"\x01"
+        self.uid = 1
         self.fc = b"\x03"
+        self.begin_byte = 0
         self.data = {}  # self.data[index] = Field(index, name, type, size, formula),int:Field
 
     def str2byte(self, char: str, size=1) -> bytes:
@@ -29,6 +30,16 @@ class Framer:
             return char.hex()
         else:
             raise ValueError(f"输入长度不是{size}个字节")
+
+    def set_begin_byte(self, begin_byte: int) -> tuple[bool, None] | tuple[bool, Exception]:
+        try:
+            if isinstance(begin_byte, int):
+                self.begin_byte = begin_byte
+                return True, None
+            else:
+                raise Exception(f"开始字节类型输入错误{type(begin_byte)}")
+        except Exception as e:
+            return False, e
 
     def set_tid(self, tid: str) -> tuple[True, None] | tuple[False, Exception]:
         try:
@@ -58,7 +69,8 @@ class Framer:
         except Exception as e:
             return False, e
 
-    def set_data(self, index: int, name: str, type: str, size: int, formula: str, **kwargs) -> tuple[bool, None] | tuple[bool, Exception]:
+    def set_data(self, index: int, name: str, type: str, size: int, formula: str, **kwargs) -> tuple[bool, None] | \
+                                                                                               tuple[bool, Exception]:
         try:
             if index in self.data:
                 raise Exception(f"第{index}位置已存在数据{self.data[index].name}")
@@ -110,7 +122,8 @@ class Framer:
 
     def export_framer(self):
         self.cal_len()
-        return {"tid": self.tid, "pid": self.pid, "length": self.length, "uid": self.uid, "fc": self.fc, "data": self.export_data()}
+        return {"tid": self.tid, "pid": self.pid, "length": self.length, "uid": self.uid, "fc": self.fc,
+                "data": self.export_data()}
 
     def load_framer(self, framer: dict) -> tuple[bool, None] | tuple[bool, Exception]:
         try:
@@ -148,20 +161,29 @@ class Framer:
 
     def cofirm_framer(self, msg: bytes) -> tuple[bool, None] | tuple[bool, Exception]:
         try:
-            tid, pid, length, uid, fc, data_size = struct.unpack(">HHHBBB", msg[:9])
-            if pid.to_bytes(2) == self.pid and uid.to_bytes() == self.uid and fc.to_bytes() == self.fc:
-                if data_size == sum(value.size for _, value in self.data.items()):
-                    # 先假设字典有序
-                    cur = 9
-                    for key, value in self.data.items():
-                        value.decode_data(msg[cur : cur + value.size])
-                        cur += value.size
-                    self.tid = tid  # 更新标识方便回复
-                    return True, None
-                else:
-                    raise Exception("数据个数错误")
+            if len(msg) == sum(value.size for _, value in self.data.items()):
+                # 先假设字典有序
+                cur = 0
+                for key, value in self.data.items():
+                    value.decode_data(msg[cur: cur + value.size])
+                    cur += value.size
+                return True, None
             else:
-                raise Exception("协议标识、设备地址、功能码不匹配")
+                raise Exception("数据个数错误")
+            # tid, pid, length, uid, fc, data_size = struct.unpack(">HHHBBB", msg[:9])
+            # if pid.to_bytes(2) == self.pid and uid.to_bytes() == self.uid and fc.to_bytes() == self.fc:
+            #     if data_size == sum(value.size for _, value in self.data.items()):
+            #         # 先假设字典有序
+            #         cur = 9
+            #         for key, value in self.data.items():
+            #             value.decode_data(msg[cur: cur + value.size])
+            #             cur += value.size
+            #         self.tid = tid  # 更新标识方便回复
+            #         return True, None
+            #     else:
+            #         raise Exception("数据个数错误")
+            # else:
+            #     raise Exception("协议标识、设备地址、功能码不匹配")
         except Exception as e:
             return False, e
 

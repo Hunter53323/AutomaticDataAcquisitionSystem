@@ -299,11 +299,9 @@ class Communication:
             return True
         return False
 
-    def reset():
-        pass
-
-    def reload():
-        pass
+    def close_all_device(self):
+        for driver in self.drivers:
+            driver.close_device()
 
 
 def type2sqltype(data_type: str) -> str:
