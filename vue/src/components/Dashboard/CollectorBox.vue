@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { UploadInstance, UploadProps, UploadRawFile, genFileId } from 'element-plus'
+import { ElMessage, UploadInstance, UploadProps, UploadRawFile, genFileId } from 'element-plus'
 import { useGlobalStore, useDashboardStore } from '@/stores/global'
-import { c } from 'vite/dist/node/types.d-aGj9QkWt';
 
 const upload = ref<UploadInstance>()
 const global = useGlobalStore()
 const dashboard = useDashboardStore()
+const uploadDisable = ref(false)
 const startDisable = ref(true)
 const stopDisable = ref(true)
 const pauseDisable = ref(true)
@@ -21,7 +21,7 @@ const handleExceed: UploadProps['onExceed'] = (files) => {
   upload.value!.handleStart(file)
 }
 
-const uploadCSV = param => {
+const uploadCSV = (param) => {
   const formData = new FormData()
   formData.append('file', param.file)
   fetch(global.url + '/collect/csvupload', {
@@ -30,12 +30,16 @@ const uploadCSV = param => {
   })
     .then(response => response.json())
     .then(data => {
+      if (data.message != "文件上传成功") {
+        throw new Error(data.message)
+      }
+      ElMessage.success('数采配置文件上传成功')
       dashboard.collectCount = data.line_count
-      dashboard.collectCountNow = 0
+      dashboard.updateCollectState()
       startDisable.value = false
     })
-    .catch(response => {
-      console.log('上传失败')
+    .catch(err => {
+      ElMessage.error('数采配置文件上传失败' + err)
     })
 }
 
@@ -55,14 +59,16 @@ const collectorStart = () => {
       if (data.status == 'error') {
         throw new Error(data.message)
       }
+      ElMessage.success('数采开始成功')
       startDisable.value = true
       stopDisable.value = false
       pauseDisable.value = false
       clearDisable.value = false
       continueDisable.value = true
+      uploadDisable.value = true
     })
     .catch(response => {
-      console.log('开始失败')
+      ElMessage.error('数采开始失败')
     })
 }
 
@@ -78,14 +84,16 @@ const collectorPause = () => {
       if (data.status == 'error') {
         throw new Error()
       }
+      ElMessage.success('数采暂停成功')
       startDisable.value = false
       stopDisable.value = false
       pauseDisable.value = true
       clearDisable.value = false
       continueDisable.value = false
+      uploadDisable.value = true
     })
     .catch(response => {
-      console.log('暂停失败')
+      ElMessage.error('数采暂停失败')
     })
 }
 
@@ -101,14 +109,16 @@ const collectorStop = () => {
       if (data.status == 'error') {
         throw new Error()
       }
+      ElMessage.success('数采停止成功')
       startDisable.value = true
       stopDisable.value = true
       pauseDisable.value = true
       clearDisable.value = false
       continueDisable.value = false
+      uploadDisable.value = true
     })
     .catch(response => {
-      console.log('停止失败')
+      ElMessage.error('数采停止失败')
     })
 }
 
@@ -124,14 +134,16 @@ const collectorContinue = () => {
       if (data.status == 'error') {
         throw new Error()
       }
+      ElMessage.success('数采继续成功')
       startDisable.value = true
       stopDisable.value = false
       pauseDisable.value = false
       clearDisable.value = false
       continueDisable.value = true
+      uploadDisable.value = true
     })
     .catch(response => {
-      console.log('继续失败')
+      ElMessage.error('数采继续失败')
     })
 }
 
@@ -147,14 +159,16 @@ const collectorClear = () => {
       if (data.status == 'error') {
         throw new Error()
       }
+      ElMessage.success('数采清空成功')
       startDisable.value = false
       stopDisable.value = true
       pauseDisable.value = true
       clearDisable.value = true
       continueDisable.value = false
+      uploadDisable.value = true
     })
     .catch(response => {
-      console.log('清空失败')
+      ElMessage.error('数采清空失败')
     })
 }
 
@@ -164,7 +178,7 @@ const collectorClear = () => {
   <el-upload ref="upload" class="upload-demo" :limit="1" :on-exceed="handleExceed" :auto-upload="false"
     :http-request="uploadCSV">
     <template #trigger>
-      <el-button type="primary">选择</el-button>
+      <el-button type="primary" :disabled="uploadDisable">选择</el-button>
     </template>
     <el-button type="success" @click="submitUpload">上传</el-button>
     <el-button type="primary" @click="collectorStart" :disabled="startDisable">开始</el-button>
@@ -175,7 +189,8 @@ const collectorClear = () => {
   </el-upload>
   <div>
     <el-text class="collectorCount" size="large" type="primary">
-      共有{{ dashboard.collectCount }}条数据需要采集，当前为第{{ dashboard.collectCountNow }}条。
+      共{{ dashboard.collectCount }}条，剩余{{ dashboard.remainCount }}条，成功{{ dashboard.successCount }}条，
+      失败{{ dashboard.failCount }}条
     </el-text>
   </div>
 

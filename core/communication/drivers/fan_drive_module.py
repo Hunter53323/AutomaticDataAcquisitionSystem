@@ -338,7 +338,7 @@ class FanDriver(DriverBase):
 
     def export_config(self):
         return {
-            "query_f": json.dumps(self.pre_dict(self.query_f.export_framer())),
+            "query_f": self.pre_dict(self.query_f.export_framer()),
             "control_f": json.dumps(self.pre_dict(self.control_f.export_framer())),
             "ack_query_f": json.dumps(self.pre_dict(self.ack_query_f.export_framer())),
             "ack_control_f": json.dumps(self.pre_dict(self.ack_control_f.export_framer())),

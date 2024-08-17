@@ -1,20 +1,11 @@
 <script setup>
-import { RouterLink, RouterView } from 'vue-router'
+import { RouterView } from 'vue-router'
 import AsideMenu from './components/AsideMenu.vue'
-import { onMounted, h, reactive } from 'vue';
-import { useDashboardStore, useSettingsStore } from '@/stores/global';
-import { ElMessage, ElMessageBox, ElInput, ElForm, ElFormItem } from 'element-plus'
+import { useDashboardStore, useSettingsStore } from '@/stores/global'
 
 
-const dashboard = useDashboardStore()
 const settings = useSettingsStore()
 
-
-onMounted(() => {
-  dashboard.initList()
-  dashboard.initDeviceState()
-  settings.initSettings()
-})
 </script>
 
 <template>
@@ -40,7 +31,7 @@ onMounted(() => {
                 </el-text>
                 <el-divider direction="vertical" class="info-divider" />
                 <el-text size="large">
-                  {{ settings.user.phone }}
+                  {{ settings.user.email }}
                 </el-text>
               </el-button>
             </div>
@@ -101,9 +92,9 @@ onMounted(() => {
 }
 
 .user-change-form .el-message-box__message {
-  
+
   margin-top: 10px;
-  width: 100%;
+  width: 95%;
 }
 
 .user-change-form .el-button {

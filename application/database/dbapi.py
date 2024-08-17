@@ -67,7 +67,7 @@ def api_showall():
 
         column_names = [desc[0] for desc in cursor.description]
         data_with_column_names = [dict(zip(column_names, row)) for row in data]
-        print(data_with_column_names)
+        # print(data_with_column_names)
 
         return jsonify(
             {
@@ -99,8 +99,8 @@ def api_show_meta():
         column_names_to_fill = column_names.copy()
         column_names_to_fill.remove("ID")
         column_names_to_fill.remove("时间戳")
-        print(column_names)
-        print(column_names_to_fill)
+        # print(column_names)
+        # print(column_names_to_fill)
         return jsonify({"columns": column_names, "columns_to_fill": column_names_to_fill, "total_count": total_count})
     except Exception as e:
         return jsonify({"message": "读取数据列名失败，" + str(e)}), 500
@@ -128,7 +128,7 @@ def api_showall_v2():
 
         column_names = [desc[0] for desc in cursor.description]
         data_with_column_names = [dict(zip(column_names, row)) for row in data]
-        print(data_with_column_names)
+        # print(data_with_column_names)
 
         total_pages = (total_count + per_page - 1) // per_page  # 计算总页数
         return jsonify(

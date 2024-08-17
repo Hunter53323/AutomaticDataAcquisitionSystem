@@ -2,11 +2,13 @@
 import { reactive, ref, onMounted, h } from 'vue'
 import { ElTable, ElButton } from 'element-plus'
 import DBPagination from '@/components/database/DBPagination.vue'
-import { useGlobalStore } from '@/stores/global'
-import { useDBStore } from '@/stores/global'
+import { useGlobalStore, useDashboardStore, useSettingsStore, useDBStore } from '@/stores/global'
 
 const global = useGlobalStore()
 const db = useDBStore()
+const dashboard = useDashboardStore()
+const settings = useSettingsStore()
+
 const dbDataObjList = ref([])
 
 const multipleSelection = ref([])
@@ -17,10 +19,6 @@ const handleSelectionChange = (val) => {
     multipleSelection.value.push(element.ID)
   })
 }
-
-
-
-
 
 const handleDBEdit = () => {
   const data = dbDataObjList.value.filter((element) => {
@@ -38,6 +36,11 @@ const handleDBEdit = () => {
 }
 
 onMounted(() => {
+  dashboard.initList()
+  dashboard.initDeviceState()
+  settings.initSettings()
+  settings.updateConf()
+  settings.updateDefined()
   db.updateMeta()
   db.dbDataUpdate()
 })

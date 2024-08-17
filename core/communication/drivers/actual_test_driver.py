@@ -96,7 +96,7 @@ class TestDevice(DriverBase):
             result = self.client.write_register(address, value, slave=1)
         elif command == "write":
             address = 2
-            data_value = float(para_dict["load"])
+            data_value = float(para_dict["负载量"])
             # 将浮点数打包为四个字节
             packed_value = struct.pack(">f", data_value)
             # 将四个字节解包为两个16位的整数

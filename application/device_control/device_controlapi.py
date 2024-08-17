@@ -245,21 +245,25 @@ def custom_column():
         示例：curl -X POST http://127.0.0.1:5000/control/custom_column -d 'data=效率%3D输入功率/输出功率'
         %3D是=的url编码
         """
-        datasstr: str = request.form.get("data")
-        return jsonify(communicator.add_custom_column([datasstr])), 200
+        name: str = request.form.get("name")
+        formula: str = request.form.get("formula")
+        datastr: str = name + '=' + formula
+        return jsonify({"status":communicator.add_custom_column([datastr])}), 200
     elif request.method == "PUT":
         """
         示例：curl -X POST http://127.0.0.1:5000/control/custom_column -d 'data=效率%3D输入功率/输出功率'
         %3D是=的url编码
         """
-        datasstr: str = request.form.get("data")
-        return jsonify(communicator.add_custom_column([datasstr])), 200
+        name: str = request.form.get("name")
+        formula: str = request.form.get("formula")
+        datastr: str = name + '=' + formula
+        return jsonify({"status":communicator.add_custom_column([datastr])}), 200
     else:
         """
         示例：curl -X DELETE http://127.0.0.1:5000/control/custom_column -d 'name=效率'
         """
-        column_name = request.form.get("name")
-        return jsonify(communicator.del_custom_column(column_name)), 200
+        name = request.form.get("name")
+        return jsonify({"status":communicator.del_custom_column(name)}), 200
 
 
 def config_to_columns(config: dict[str, any]) -> dict[str, str]:

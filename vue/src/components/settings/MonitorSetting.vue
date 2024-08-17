@@ -4,19 +4,19 @@ import SelectionBox from '@/components/settings/SelectionBox.vue'
 import { useDashboardStore } from '@/stores/global';
 
 const dashboard = useDashboardStore()
-const activeNames = ref([])
+const activeNames = ref(['1', '2', '3'])
 
 </script>
 
 <template>
   <el-collapse v-model="activeNames">
     <el-collapse-item title="被测设备" name="1">
-      <SelectionBox class="selector" :refList="dashboard.dataList['FanDriver']"
+      <SelectionBox class="selector" :refList="dashboard.dataObjList['FanDriver']"
         :selectedList="dashboard.dataShowSelected['FanDriver']"
         @selectedChange="(selectedList) => dashboard.dataShowSelected['FanDriver'] = selectedList" />
     </el-collapse-item>
     <el-collapse-item title="测试设备" name="2">
-      <SelectionBox class="selector" :refList="dashboard.dataList['TestDevice']"
+      <SelectionBox class="selector" :refList="dashboard.dataObjList['TestDevice']"
         :selectedList="dashboard.dataShowSelected['TestDevice']"
         @selectedChange="(selectedList) => dashboard.dataShowSelected['TestDevice'] = selectedList" />
     </el-collapse-item>
@@ -29,7 +29,7 @@ const activeNames = ref([])
 
 <style scoped>
 .selector {
-  margin: 10px;
+  margin: 0;
 }
 
 .el-collapse-item__content {

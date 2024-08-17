@@ -2,15 +2,40 @@
 import { ref, onMounted } from 'vue'
 import ProtocolsSetting from '@/components/settings/ProtocolsSetting.vue'
 import MonitorSetting from '@/components/settings/MonitorSetting.vue'
-import StaffSetting from '@/components/settings/UserSetting.vue'
+import UserSetting from '@/components/settings/UserSetting.vue'
 import DatabaseSetting from '@/components/settings/DatabaseSetting.vue'
+import DeviceSetting from '@/components/settings/DeviceSetting.vue'
+import { useDashboardStore, useSettingsStore, useDBStore } from '@/stores/global'
+import CollectorSetting from '@/components/settings/CollectorSetting.vue'
+
+const dashboard = useDashboardStore()
+const settings = useSettingsStore()
+const db = useDBStore()
 
 const activeNames = ref(['1'])
+
+
+onMounted(() => {
+  dashboard.initList()
+  dashboard.initDeviceState()
+  settings.initSettings()
+  settings.updateConf()
+  settings.updateDefined()
+  settings.updateUser()
+  db.updateMeta()
+})
 </script>
 
 <template>
   <el-collapse v-model="activeNames" accordion>
     <el-collapse-item name="1">
+      <template #title>
+        <div class="collapse-title">设备配置</div>
+      </template>
+      <DeviceSetting />
+    </el-collapse-item>
+
+    <el-collapse-item name="2">
       <template #title>
         <div class="collapse-title">通讯协议</div>
       </template>
@@ -21,21 +46,28 @@ const activeNames = ref(['1'])
       </el-row>
     </el-collapse-item>
 
-    <el-collapse-item name="2">
+    <el-collapse-item name="3">
+      <template #title>
+        <div class="collapse-title">自动数采</div>
+      </template>
+      <CollectorSetting />
+    </el-collapse-item>
+
+    <el-collapse-item name="4">
       <template #title>
         <div class="collapse-title">监控面板</div>
       </template>
       <MonitorSetting />
     </el-collapse-item>
 
-    <el-collapse-item name="3">
+    <el-collapse-item name="5">
       <template #title>
         <div class="collapse-title">人员信息</div>
       </template>
-      <StaffSetting />
+      <UserSetting />
     </el-collapse-item>
 
-    <el-collapse-item name="4">
+    <el-collapse-item name="6">
       <template #title>
         <div class="collapse-title">数据库</div>
       </template>
@@ -46,7 +78,10 @@ const activeNames = ref(['1'])
 
 <style>
 .collapse-title {
-  font-size: 18px;
+  font-size: 20px;
+}
+.collapse-son .el-collapse-item__header {
+  font-size: 16px;
 }
 
 .el-collapse-item__content {
