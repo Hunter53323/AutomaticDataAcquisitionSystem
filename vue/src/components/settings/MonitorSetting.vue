@@ -9,7 +9,7 @@ const activeNames = ref(['1', '2', '3'])
 </script>
 
 <template>
-  <el-collapse v-model="activeNames">
+  <el-collapse v-model="activeNames" class="collapse-son">
     <el-collapse-item title="被测设备" name="1">
       <SelectionBox class="selector" :refList="dashboard.dataObjList['FanDriver']"
         :selectedList="dashboard.dataShowSelected['FanDriver']"
@@ -35,11 +35,12 @@ const activeNames = ref(['1', '2', '3'])
 .el-collapse-item__content {
   padding: 0;
 }
+
 .el-collapse-item__header {
   font-size: 16px;
 }
 
-.el-collapse-item__wrap{
+.el-collapse-item__wrap {
   margin: 0;
 }
 </style>

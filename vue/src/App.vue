@@ -1,10 +1,15 @@
 <script setup>
 import { RouterView } from 'vue-router'
 import AsideMenu from './components/AsideMenu.vue'
-import { useDashboardStore, useSettingsStore } from '@/stores/global'
+import { useDashboardStore, useSettingsStore, useDBStore, useGlobalStore } from '@/stores/global'
 
 
+const global = useGlobalStore()
+const dashboard = useDashboardStore()
 const settings = useSettingsStore()
+const db = useDBStore()
+
+
 
 </script>
 
@@ -76,8 +81,6 @@ const settings = useSettingsStore()
 }
 
 .info-divider {
-  border-width: 2px;
-  height: 20px;
   border-color: #6b6d71;
 }
 
@@ -91,22 +94,13 @@ const settings = useSettingsStore()
   margin-right: 10px;
 }
 
-.user-change-form .el-message-box__message {
+.el-message-box__message {
 
   margin-top: 10px;
   width: 95%;
 }
 
-.user-change-form .el-button {
-  margin: 0 0 0 10px;
-}
-
-.db-operation-box .el-message-box__message {
-  margin-top: 10px;
-  width: 95%;
-}
-
-.db-operation-box .el-button {
+.el-message-box__btns .el-button {
   margin: 0 0 0 10px;
 }
 </style>

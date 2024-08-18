@@ -353,8 +353,8 @@ export const useDashboardStore = defineStore('dashboard', {
 export const useSettingsStore = defineStore('settings', {
   state: () => ({
     user: {
-      name: '用户名',
-      email: '1101111111',
+      name: '',
+      email: '',
       sender_email: '',
       lastTime: (new Date()).toLocaleString(),
     },
@@ -369,21 +369,33 @@ export const useSettingsStore = defineStore('settings', {
       port: ''
     },
     definedColumns: {},
-
+    protocol: {}
   }),
   actions: {
-    async initSettings() {
-      fetch(useGlobalStore().url + "/control/config", {
+    async updateProtocol() {
+      fetch(useGlobalStore().url + "/control/deviceset?config_item=config&driver_name=FanDriver", {
         method: 'GET'
       })
         .then(response => response.json())
         .then(data => {
-          this.user = data
-          this.user.lastTime = Date().toLocaleString()
+          this.protocol['FanDriver'] = data
         })
         .catch(error => {
           ElMessage({
-            message: '无法获取配置信息，请检查服务器是否正常运行！',
+            message: '无法获取被测设备协议配置，请检查服务器是否正常运行！',
+            type: 'error'
+          })
+        })
+      fetch(useGlobalStore().url + "/control/deviceset?config_item=config&driver_name=TestDevice", {
+        method: 'GET'
+      })
+        .then(response => response.json())
+        .then(data => {
+          this.protocol['TestDevice'] = data
+        })
+        .catch(error => {
+          ElMessage({
+            message: '无法获取测试设备协议配置，请检查服务器是否正常运行！',
             type: 'error'
           })
         })
@@ -403,7 +415,8 @@ export const useSettingsStore = defineStore('settings', {
         cancelButtonText: '取消',
       }).then(() => {
         const formData = new FormData()
-        formData.append('receiver', formUser.email)
+        formData.append('receiver_email', formUser.email)
+        formData.append('receiver_name', formUser.name)
         fetch(useGlobalStore().url + '/collect/emailset', {
           method: 'POST',
           body: formData,
@@ -478,7 +491,8 @@ export const useSettingsStore = defineStore('settings', {
         .then(data => data.json())
         .then(data => {
           this.user.sender_email = data.sender_mail
-          this.user.email = data.receiver
+          this.user.email = data.receiver_email
+          this.user.name = data.receiver_name
         })
         .catch((e) => {
           ElMessage({

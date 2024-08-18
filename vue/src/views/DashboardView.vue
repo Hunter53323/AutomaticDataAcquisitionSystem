@@ -64,15 +64,13 @@ socket.on('data_from_device', data => {
     timeData.value = timeData.value.filter((val, index, arr) => val.time > timeMax - 10000);
   }
 })
-
-onMounted(() => {
-  dashboard.initList()
-  dashboard.initDeviceState()
-  settings.initSettings()
-  settings.updateConf()
-  settings.updateDefined()
-  db.updateMeta()
-})
+dashboard.initList()
+dashboard.initDeviceState()
+settings.updateProtocol()
+settings.updateConf()
+settings.updateDefined()
+settings.updateUser()
+db.updateMeta()
 
 </script>
 

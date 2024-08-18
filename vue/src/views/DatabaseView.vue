@@ -34,16 +34,13 @@ const handleDBEdit = () => {
     }
   })
 }
-
-onMounted(() => {
-  dashboard.initList()
-  dashboard.initDeviceState()
-  settings.initSettings()
-  settings.updateConf()
-  settings.updateDefined()
-  db.updateMeta()
-  db.dbDataUpdate()
-})
+dashboard.initList()
+dashboard.initDeviceState()
+settings.updateProtocol()
+settings.updateConf()
+settings.updateDefined()
+settings.updateUser()
+db.updateMeta()
 
 </script>
 

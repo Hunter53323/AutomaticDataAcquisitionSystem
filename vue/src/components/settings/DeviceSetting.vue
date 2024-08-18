@@ -65,20 +65,12 @@ const uploadTestForm = () => {
     })
 }
 
-watch(() => [settings.fanConf, settings.testConf], (newFan, newTest) => {
-  console.log(newFan, newTest)
+watch(() => [settings.fanConf, settings.testConf], ([newFan, newTest]) => {
   formFan.cpu = newFan.cpu
   formFan.port = newFan.port
   formTest.ip = newTest.ip
   formTest.port = newTest.port
 }, { deep: true })
-
-onMounted(() => {
-  formFan.cpu = settings.fanConf.cpu
-  formFan.port = settings.fanConf.port
-  formTest.ip = settings.testConf.ip
-  formTest.port = settings.testConf.port
-})
 
 </script>
 
@@ -137,5 +129,3 @@ onMounted(() => {
   </el-collapse>
 
 </template>
-
-<style scoped></style>

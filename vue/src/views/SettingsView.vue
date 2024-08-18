@@ -14,16 +14,14 @@ const db = useDBStore()
 
 const activeNames = ref(['1'])
 
+dashboard.initList()
+dashboard.initDeviceState()
+settings.updateProtocol()
+settings.updateConf()
+settings.updateDefined()
+settings.updateUser()
+db.updateMeta()
 
-onMounted(() => {
-  dashboard.initList()
-  dashboard.initDeviceState()
-  settings.initSettings()
-  settings.updateConf()
-  settings.updateDefined()
-  settings.updateUser()
-  db.updateMeta()
-})
 </script>
 
 <template>
@@ -80,6 +78,7 @@ onMounted(() => {
 .collapse-title {
   font-size: 20px;
 }
+
 .collapse-son .el-collapse-item__header {
   font-size: 16px;
 }
