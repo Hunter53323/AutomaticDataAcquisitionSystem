@@ -184,6 +184,7 @@ def config_save():
                 count += 1
                 continue
             load_config_dict[key] = json.loads(driver_config[0][count])
+            count += 1
         driver.load_config(load_config_dict)
         return jsonify({"status": True}), 200
     else:
