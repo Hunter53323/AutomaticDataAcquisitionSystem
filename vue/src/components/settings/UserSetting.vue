@@ -1,17 +1,15 @@
 <script setup lang="ts">
 import { useSettingsStore } from '@/stores/global';
-import { User, Iphone, Clock } from '@element-plus/icons-vue'
+import { User, Iphone, Clock, Bell } from '@element-plus/icons-vue'
 
 const settings = useSettingsStore();
-
-
 
 </script>
 
 <template>
   <el-row :gutter="20">
     <el-col :span="22">
-      <el-descriptions class="user-desc" :column="3" size="large" border>
+      <el-descriptions class="user-desc" :column="4" size="large" border>
         <el-descriptions-item>
           <template #label>
             <div class="innerLabel">
@@ -32,7 +30,7 @@ const settings = useSettingsStore();
             联系方式
             </div>
           </template>
-          {{ settings.user.phone }}
+          {{ settings.user.email }}
         </el-descriptions-item>
         <el-descriptions-item>
           <template #label>
@@ -44,6 +42,17 @@ const settings = useSettingsStore();
             </div>
           </template>
           {{ settings.user.lastTime }}
+        </el-descriptions-item>
+        <el-descriptions-item>
+          <template #label>
+            <div class="innerLabel">
+              <el-icon size="large" class="innerIcon">
+                <Bell />
+              </el-icon>
+              通知邮箱
+            </div>
+          </template>
+          {{ settings.user.sender_email }}
         </el-descriptions-item>
       </el-descriptions>
     </el-col>

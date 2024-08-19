@@ -25,6 +25,14 @@ const getUnit = (key) => {
   }
 }
 
+const fommatValue = (value) => {
+  if (typeof value === 'string') {
+    return value
+  } else if (typeof value === 'number') {
+    return value.toFixed(2)
+  }
+}
+
 </script>
 
 <template>
@@ -36,7 +44,7 @@ const getUnit = (key) => {
           {{ getUnit(key) }}
         </template>
         <template #prefix>
-          <span>{{ value }}</span>
+          <span>{{ fommatValue(value) }}</span>
         </template>
       </el-statistic>
     </el-col>
@@ -54,11 +62,11 @@ const getUnit = (key) => {
 }
 
 
-.el-statistic :deep .el-statistic__head {
-  font-size: 14px!important;
+.el-statistic :deep(.el-statistic__head) {
+  font-size: 14px !important;
 }
 
-.el-statistic :deep() .el-statistic__content {
-  font-size: 16px!important;
+.el-statistic :deep(.el-statistic__content) {
+  font-size: 14px !important;
 }
 </style>

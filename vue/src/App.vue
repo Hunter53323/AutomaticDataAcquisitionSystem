@@ -1,20 +1,16 @@
 <script setup>
-import { RouterLink, RouterView } from 'vue-router'
+import { RouterView } from 'vue-router'
 import AsideMenu from './components/AsideMenu.vue'
-import { onMounted, h, reactive } from 'vue';
-import { useDashboardStore, useSettingsStore } from '@/stores/global';
-import { ElMessage, ElMessageBox, ElInput, ElForm, ElFormItem } from 'element-plus'
+import { useDashboardStore, useSettingsStore, useDBStore, useGlobalStore } from '@/stores/global'
 
 
+const global = useGlobalStore()
 const dashboard = useDashboardStore()
 const settings = useSettingsStore()
+const db = useDBStore()
 
 
-onMounted(() => {
-  dashboard.initList()
-  dashboard.initDeviceState()
-  settings.initSettings()
-})
+
 </script>
 
 <template>
@@ -40,7 +36,7 @@ onMounted(() => {
                 </el-text>
                 <el-divider direction="vertical" class="info-divider" />
                 <el-text size="large">
-                  {{ settings.user.phone }}
+                  {{ settings.user.email }}
                 </el-text>
               </el-button>
             </div>
@@ -85,8 +81,6 @@ onMounted(() => {
 }
 
 .info-divider {
-  border-width: 2px;
-  height: 20px;
   border-color: #6b6d71;
 }
 
@@ -100,22 +94,13 @@ onMounted(() => {
   margin-right: 10px;
 }
 
-.user-change-form .el-message-box__message {
-  
-  margin-top: 10px;
-  width: 100%;
-}
+.el-message-box__message {
 
-.user-change-form .el-button {
-  margin: 0 0 0 10px;
-}
-
-.db-operation-box .el-message-box__message {
   margin-top: 10px;
   width: 95%;
 }
 
-.db-operation-box .el-button {
+.el-message-box__btns .el-button {
   margin: 0 0 0 10px;
 }
 </style>

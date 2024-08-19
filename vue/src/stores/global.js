@@ -4,6 +4,7 @@ import { ElMessage, ElMessageBox, ElForm, ElFormItem, ElInput } from 'element-pl
 import DBExportBox from '@/components/database/DBExportBox.vue'
 import StatementBox from '@/components/database/StatementBox.vue'
 import DBAddBox from '@/components/database/DBAddBox.vue'
+import UserChangeBox from '@/components/UserChangeBox.vue'
 
 export const useGlobalStore = defineStore('global', {
   state: () => {
@@ -24,7 +25,7 @@ export const useDBStore = defineStore('database', {
     currentPage: 1
   }),
   actions: {
-    updateMeta() {
+    async updateMeta() {
       fetch(useGlobalStore().url + "/db/data/meta", {
         method: 'GET'
       })
@@ -38,7 +39,7 @@ export const useDBStore = defineStore('database', {
           this.totalCount = data.total_count
         })
     },
-    dbDataUpdate() {
+    async dbDataUpdate() {
       fetch(useGlobalStore().url + "/db/data/pagev2?page=" + this.currentPage + "&per_page=" + this.pageSize, {
         method: 'GET',
       }).then(response => response.json())
@@ -50,7 +51,7 @@ export const useDBStore = defineStore('database', {
           ElMessage.error('无法获取数据，请检查数据库是否正常运行')
         })
     },
-    handleDBDelete(ids) {
+    async handleDBDelete(ids) {
       console.log(ids)
       if (ids.length == 0) {
         ElMessage.error('请选择要删除的数据')
@@ -136,7 +137,7 @@ export const useDBStore = defineStore('database', {
         })
 
     },
-    handleDBExport() {
+    async handleDBExport() {
       const form = reactive({
         filepath: '',
         filename: '',
@@ -177,7 +178,7 @@ export const useDBStore = defineStore('database', {
         })
 
     },
-    handleStatementExport() {
+    async handleStatementExport() {
       const form = reactive({
         filepath: '',
         filename: '',
@@ -217,7 +218,7 @@ export const useDBStore = defineStore('database', {
         })
 
     },
-    handleDBAdd() {
+    async handleDBAdd() {
       const form = reactive({})
       this.columnsToFill.forEach((column) => {
         form[column] = ''
@@ -265,7 +266,9 @@ export const useDBStore = defineStore('database', {
 export const useDashboardStore = defineStore('dashboard', {
   state: () => ({
     collectCount: 0,
-    collectCountNow: 0,
+    remainCount: 0,
+    successCount: 0,
+    failCount: 0,
     isFanConnected: false,
     isTestConnected: false,
     isFanRunning: false,
@@ -273,22 +276,22 @@ export const useDashboardStore = defineStore('dashboard', {
     isFanBreakDown: false,
     isTestBreakDown: false,
     isAutoCollecting: false,
-    dataList: {},
+    dataObjList: {},
     dataShowSelected: {},
     paraList: [],
     paraShowSelected: [],
 
   }),
   actions: {
-    initList() {
+    async initList() {
       fetch(useGlobalStore().url + "/control/data", {
         method: 'GET'
       })
         .then(response => response.json())
         .then(data => {
-          // console.log(data)
-          this.dataList = Object.assign({}, data)
-          this.dataShowSelected = Object.assign({}, this.dataList)
+          this.dataObjList = Object.assign({}, data)
+          this.dataShowSelected = Object.assign({}, this.dataObjList)
+          useSettingsStore().varChoice = [...data['FanDriver'], ...data['TestDevice']].filter((item) => item != "故障")
         })
         .catch(error => {
           ElMessage({
@@ -311,18 +314,18 @@ export const useDashboardStore = defineStore('dashboard', {
           })
         })
     },
-    initDeviceState() {
+    async initDeviceState() {
       fetch(useGlobalStore().url + '/control/state', {
         method: 'GET',
       })
         .then((response) => response.json())
         .then((data) => {
-          this.isFanConnected = data.FanDriver.connected
-          this.isFanRunning = data.FanDriver.running
-          this.isFanBreakDown = data.FanDriver.breakdown
-          this.isTestConnected = data.TestDevice.connected
-          this.isTestRunning = data.TestDevice.running
-          this.isTestBreakDown = data.TestDevice.breakdown
+          this.isFanConnected = data.FanDriver['连接状态']
+          this.isFanRunning = data.FanDriver['运行状态']
+          this.isFanBreakDown = data.FanDriver['故障']
+          this.isTestConnected = data.TestDevice['连接状态']
+          this.isTestRunning = data.TestDevice['运行状态']
+          this.isTestBreakDown = data.TestDevice['故障']
         })
         .catch(error => {
           ElMessage({
@@ -330,66 +333,118 @@ export const useDashboardStore = defineStore('dashboard', {
             type: 'error'
           })
         })
+    },
+    async updateCollectState() {
+      fetch(useGlobalStore().url + "/collect/view")
+        .then(response => response.json())
+        .then(data => {
+          ElMessage.success('数采状态更新成功')
+          this.remainCount = data.remaining
+          this.successCount = data.success
+          this.failCount = data.fail
+          this.isAutoCollecting = !data.complete
+        })
+        .catch(error => {
+          ElMessage.error('无法获取数采状态，请检查服务器是否正常运行')
+        });
     }
   }
 })
 export const useSettingsStore = defineStore('settings', {
   state: () => ({
     user: {
-      name: '用户名',
-      phone: '1101111111',
+      name: '',
+      email: '',
+      sender_email: '',
       lastTime: (new Date()).toLocaleString(),
     },
+    varChoice: [],
+    operationChoice: ['+', '-', '*', '/', '(', ')'],
+    testConf: {
+      ip: '',
+      port: ''
+    },
+    fanConf: {
+      cpu: '',
+      port: ''
+    },
+    definedColumns: {},
+    protocol: {}
   }),
   actions: {
-    initSettings() {
-      fetch(useGlobalStore().url + "/control/config", {
+    async updateProtocol() {
+      fetch(useGlobalStore().url + "/control/deviceset?config_item=config&driver_name=FanDriver", {
         method: 'GET'
       })
         .then(response => response.json())
         .then(data => {
-          this.user = data
-          this.user.lastTime = Date().toLocaleString()
+          this.protocol['FanDriver'] = data
         })
         .catch(error => {
           ElMessage({
-            message: '无法获取配置信息，请检查服务器是否正常运行！',
+            message: '无法获取被测设备协议配置，请检查服务器是否正常运行！',
+            type: 'error'
+          })
+        })
+      fetch(useGlobalStore().url + "/control/deviceset?config_item=config&driver_name=TestDevice", {
+        method: 'GET'
+      })
+        .then(response => response.json())
+        .then(data => {
+          this.protocol['TestDevice'] = data
+        })
+        .catch(error => {
+          ElMessage({
+            message: '无法获取测试设备协议配置，请检查服务器是否正常运行！',
             type: 'error'
           })
         })
     },
-    changeUser() {
+    async changeUser() {
       const formUser = reactive({
         name: '',
-        phone: '',
+        email: '',
       })
       ElMessageBox({
         title: '请输入您的信息',
         customClass: "user-change-form",
         message:
-          h(ElForm,
-            { labelWidth: "auto", labelPosition: "left" },
-            () => [
-              h(ElFormItem, { label: "用户名", required: true }, () => {
-                return h(ElInput, { modelValue: formUser.name, 'onUpdate:modelValue': name => formUser.name = name }, null)
-              }),
-              h(ElFormItem, { label: "联系方式", required: true }, () => {
-                return h(ElInput, { modelValue: formUser.phone, "onUpdate:modelValue": phone => formUser.phone = phone }, null)
-              }),
-            ]),
+          h(UserChangeBox, { modelValue: formUser, 'onUpdate:modelValue': value => formUser = value }),
         showCancelButton: true,
         confirmButtonText: '确认',
         cancelButtonText: '取消',
       }).then(() => {
-        this.user = {
-          name: formUser.name,
-          phone: formUser.phone,
-          lastTime: new Date().toLocaleString()
-        }
-        ElMessage({
-          type: 'success',
-          message: '用户更改成功',
+        const formData = new FormData()
+        formData.append('receiver_email', formUser.email)
+        formData.append('receiver_name', formUser.name)
+        fetch(useGlobalStore().url + '/collect/emailset', {
+          method: 'POST',
+          body: formData,
         })
+          .then((data) => data.json())
+          .then((data) => {
+            if (data.status != true) {
+              throw new Error()
+            }
+            this.user = {
+              name: formUser.name,
+              email: formUser.email,
+              lastTime: new Date().toLocaleString()
+            }
+            this.updateUser()
+            ElMessage({
+              type: 'success',
+              message: '用户更改成功',
+            })
+          })
+          .catch(() => {
+
+            this.updateUser()
+            ElMessage({
+              type: 'error',
+              message: '用户更改失败',
+            })
+          })
       })
         .catch(() => {
           ElMessage({
@@ -397,7 +452,54 @@ export const useSettingsStore = defineStore('settings', {
             message: '用户更改取消',
           })
         })
+    },
+    async updateConf() {
+      fetch(useGlobalStore().url + '/control/deviceset?config_item=normal&driver_name=TestDevice')
+        .then(data => data.json())
+        .then(data => {
+          this.testConf.ip = data.ip
+          this.testConf.port = data.port
+        })
+        .catch((e) => {
+          ElMessage.error("无法获取测试设备基本参数，请检查服务器是否正常运行！")
+        })
+      fetch(useGlobalStore().url + '/control/deviceset?config_item=normal&driver_name=FanDriver')
+        .then(data => data.json())
+        .then(data => {
+          this.fanConf.cpu = data.cpu
+          this.fanConf.port = data.port
+        })
+        .catch((e) => {
+          ElMessage.error("无法获取测试设备基本参数，请检查服务器是否正常运行！")
+        })
+    },
+    async updateDefined() {
+      fetch(useGlobalStore().url + '/control/custom_column')
+        .then(data => data.json())
+        .then(data => {
+          this.definedColumns = data
+        })
+        .catch((e) => {
+          ElMessage({
+            message: '无法获取用户自定义数据列，请检查服务器是否正常运行！',
+            type: 'error'
+          })
+        })
+    },
+    async updateUser() {
+      fetch(useGlobalStore().url + '/collect/emailset')
+        .then(data => data.json())
+        .then(data => {
+          this.user.sender_email = data.sender_mail
+          this.user.email = data.receiver_email
+          this.user.name = data.receiver_name
+        })
+        .catch((e) => {
+          ElMessage({
+            message: '无法获取用户自定义数据列，请检查服务器是否正常运行！',
+            type: 'error'
+          })
+        })
     }
-
   }
 })
