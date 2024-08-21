@@ -347,6 +347,8 @@ class FanDriver(DriverBase):
                 elif key == "ack_control_f":
                     self.ack_control_f.reset_all()
                     self.ack_control_f.load_framer(value)
+                elif key == "hardware_para":
+                    self.update_hardware_parameter(value)
             self.logger.info("风机帧配置导入成功！")
             return True, None
         except Exception as e:
@@ -359,6 +361,7 @@ class FanDriver(DriverBase):
             "control_f": self.pre_dict(self.control_f.export_framer()),
             "ack_query_f": self.pre_dict(self.ack_query_f.export_framer()),
             "ack_control_f": self.pre_dict(self.ack_control_f.export_framer()),
+            "hardware_para": self.get_hardware_parameter(),
         }
 
     def get_database_table(self) -> dict[str, str]:
