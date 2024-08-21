@@ -61,6 +61,7 @@ def handle_socketio_events(socketio: SocketIO):
         while True:
             global thread
             if communicator.check_error():
+                communicator.close_all_device()
                 communicator.stop_read_all()
                 communicator.disconnect()
                 thread_running.set()
