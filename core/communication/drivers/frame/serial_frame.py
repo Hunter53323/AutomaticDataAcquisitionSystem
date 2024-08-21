@@ -59,7 +59,7 @@ class Framer:
         except Exception as e:
             return False, e
 
-    def set_data(self, index: int, name: str, type: str, size: int, formula: str,breakdowns:list, **kwargs) -> tuple[bool, None] | tuple[bool, Exception]:
+    def set_data(self, index: int, name: str, type: str, size: int, formula: str="",breakdowns:list=[], **kwargs) -> tuple[bool, None] | tuple[bool, Exception]:
         try:
             if index in self.data:
                 raise Exception(f"第{index}位置已存在数据{self.data[index].name}")
@@ -156,8 +156,8 @@ class Framer:
                 and msg[1].to_bytes() == self.addr
                 and msg[2].to_bytes() == self.cmd
             ):
-                # print(msg[-2])
-                # print(self.check_check(msg[0:-2]))
+                print(msg[-2])
+                print(self.check_check(msg[0:-2]))
                 if msg[-2] == self.check_check(msg[0:-2]):
                     # 先假设字典有序
                     cur = 4
@@ -177,8 +177,8 @@ class Framer:
         checksum = 0
         # 对数据中的每个字节进行累加
         for data in msg:
-            # if data == msg[1]:  # 如果校验和包括地址就去掉if
-            #     continue
+            if data == msg[1]:  # 如果校验和包括地址就去掉if
+                continue
             checksum += data
         # 取累加结果的低8位
         checksum_low8 = checksum & 0xFF
@@ -264,22 +264,22 @@ class Field:
 
 if __name__ == "__main__":
     ff = Framer()
-    ff.set_data(index=1, name="speed", type="int16", size=2, formula="real_data=raw_data")
-    ff.set_data(index=2, name="torp", type="int16", size=2, formula="real_data=raw_data")
-    ff.set_data(index=3, name="power", type="int16", size=2, formula="real_data=raw_data")
+    ff.set_data(index=1, name="speed", type="int16", size=2, formula="real_data=raw_data",breakdowns=[])
+    ff.set_data(index=2, name="torp", type="int16", size=2, formula="real_data=raw_data",breakdowns=[])
+    ff.set_data(index=3, name="power", type="int16", size=2, formula="real_data=raw_data",breakdowns=[])
     ff.set_data(index=4, name="breakdown1", type="bit8", size=1, formula="",breakdowns=["故障1","故障2","故障3","故障4","故障5","故障6","故障7","故障8"])
     ff.set_data(index=5, name="breakdown2", type="bit8", size=1, formula="",breakdowns=["故障1","故障2","故障3","故障4","故障5","故障6","故障7","故障8"])
-    ff.set_data(index=6, name="test", type="bit8", size=1, formula="")
-    one_f = ff.export_framer()
-    print(one_f)
-    author_f = Framer()
-    author_f.load_framer(one_f)
-    print(author_f.export_framer())
+    ff.set_data(index=6, name="test", type="bit8", size=1, formula="",breakdowns=["故障1"])
+    # one_f = ff.export_framer()
+    # print(one_f)
+    # author_f = Framer()
+    # author_f.load_framer(one_f)
+    # print(author_f.export_framer())
     # for _, v in ff.data.items():
     #     v.set_realdata(100)
     # ff.encode_framer()
-    # ff.cofirm_framer(b'\xA5\xFF\x00\x03\x00\x01\x00\x02\x03\x03\x01\x02\xb4\x5A')
-    print(ff.check_check(b"\x5a\xFF\x02\x0c\x00\x01\x00\x02\x00\x03\x00\x04\x00\x05\x00\x00"))
+    print(ff.cofirm_framer(b'\xA5\xFF\x00\x03\x00\x01\x00\x02\x03\x03\x01\x02\x00\xb4\x5A'))
+    # print(ff.check_check(b"\x5a\xFF\x02\x0c\x00\x01\x00\x02\x00\x03\x00\x04\x00\x05\x00\x00"))
     # 一个查询回复报文5aFF020c00010002000300040005000076A5
-    # data = ff.get_data()
-    # print(data)
+    data = ff.get_data()
+    print(data)
