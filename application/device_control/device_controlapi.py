@@ -185,8 +185,10 @@ def config_save():
                 continue
             load_config_dict[key] = json.loads(driver_config[0][count])
             count += 1
-        driver.load_config(load_config_dict)
-        return jsonify({"status": True}), 200
+        if driver.load_config(load_config_dict):
+            status, err = communicator.update_map()
+            return jsonify({"status": status, "error": err}), 200
+        return jsonify({"status": False}), 400
     else:
         # 删除配置
         """
