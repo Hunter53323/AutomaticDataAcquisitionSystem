@@ -237,9 +237,6 @@ class TestDevice(DriverBase):
     def handle_breakdown(self, breakdown: int) -> bool:
         try:
             if breakdown != 0:
-                parameters = {"测试设备控制命令": "P_mode"}
-                if not testdevice.write(parameters):
-                    raise Exception(f"{parameters}")
                 parameters = {"测试设备控制命令": "write", "load": float(0) / 10}  # 假设空载为0
                 if not testdevice.write(parameters):
                     raise Exception(f"{parameters}")
@@ -252,8 +249,6 @@ class TestDevice(DriverBase):
         except Exception as e:
             self.logger.error(f"故障处理模块报错！ error:{e}")
             self.logger.error(f"再次尝试空载！")
-            parameters = {"测试设备控制命令": "P_mode"}
-            testdevice.write(parameters)
             parameters = {"测试设备控制命令": "write", "load": float(0) / 10}  # 假设空载为0
             testdevice.write(parameters)
             parameters = {"测试设备控制命令": "启动"}
@@ -291,7 +286,9 @@ class TestDevice(DriverBase):
             for key, value in F_config.items():
                 if key == "rev_f":
                     self.rev_f.reset_all()
-                    self.rev_f.load_framer(json.loads(value))
+                    self.rev_f.load_framer(value)
+                elif key == "hardware_para":
+                    self.update_hardware_parameter(value)
             self.logger.info(f"测试设备帧配置导入成功！")
             return True, None
         except Exception as e:
@@ -299,7 +296,7 @@ class TestDevice(DriverBase):
         return False, e
 
     def export_config(self):
-        return {"rev_f": json.dumps(self.pre_dict(self.rev_f.export_framer()))}
+        return {"rev_f": self.pre_dict(self.rev_f.export_framer()), "hardware_para": self.get_hardware_parameter()}
 
     # 转换帧对象的变量中byte为str
     def pre_dict(self, obj: dict):
