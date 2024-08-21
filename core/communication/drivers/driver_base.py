@@ -14,6 +14,8 @@ class DriverBase(ABC):
         self.__read_all_running: bool = False
         self.__iswriting = False
         self.__isreading = False
+        self.read_error = False
+        self.write_error = False
         # self.curr_data = {key: 0 for key in data_list}
         # self.curr_para = {key: 0 for key in para_list}
         self.curr_data = {}
@@ -137,19 +139,30 @@ class DriverBase(ABC):
             if stop_event.is_set():
                 print(f"{self.device_name}:read_all线程正在退出")
                 break
+            count = 0
             while self.__iswriting:
+                count += 1
                 time.sleep(0.005)
+                if count == 1000:
+                    self.logger.error(f"串口不可读!")
+                    self.read_error = True
+                    break
             self.__isreading = True
-            self.read_all()
+            if not self.read_all():
+                self.read_error = True
+                self.logger.error(f"{self.device_name}读取数据失败")
+                break
             self.__isreading = False
             time.sleep(0.05)
 
     def write(self, para_dict: dict[str, any]) -> bool:
         if not self.check_writable():
             self.logger.error(f"串口不可写!")
+            self.write_error = True
             return False
         self.__iswriting = True
         status = self.write_execute(para_dict)
+        self.write_error = not status
         self.__iswriting = False
         return status
 
@@ -165,7 +178,9 @@ class DriverBase(ABC):
         while self.__isreading:
             time.sleep(0.005)
             count += 1
-            if count == 100:
+            if count == 1000:
+                # 若5秒都没有读取成功，那么报错
+                self.logger.error(f"串口不可写!")
                 return False
         return True
 
@@ -179,3 +194,10 @@ class DriverBase(ABC):
 
     def clear_curr_data(self):
         self.curr_data = {key: 0 for key in self.curr_data.keys()}
+
+    def reset_error(self):
+        self.read_error = False
+        self.write_error = False
+
+    def check_error(self):
+        return self.read_error or self.write_error

@@ -7,6 +7,7 @@ from core.communication import communicator
 import threading
 from . import socketio_http
 from core.communication.exception_handling import BREAKDOWNMAP
+from core.warningmessage import emailsender
 
 thread = None
 thread_running = threading.Event()
@@ -58,6 +59,13 @@ def handle_socketio_events(socketio: SocketIO):
         从数据采集模块获取数据，
         """
         while True:
+            global thread
+            if communicator.check_error():
+                communicator.stop_read_all()
+                communicator.disconnect()
+                thread_running.set()
+                thread = None
+                emailsender.send_email("读写故障", "数据采集模块出现读写故障，请检查")
             if thread_running.is_set():
                 thread_running.clear()
                 break

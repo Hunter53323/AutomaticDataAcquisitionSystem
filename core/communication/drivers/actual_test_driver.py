@@ -118,6 +118,7 @@ class TestDevice(DriverBase):
 
     def connect(self) -> bool:
         try:
+            self.reset_error()
             if self.client.is_socket_open():
                 self.conn_state = True
                 return True
@@ -151,10 +152,12 @@ class TestDevice(DriverBase):
                     self.logger.error(f"服务器未连接! 非法读！")
                     return False
 
-                response = self.client.read_holding_registers(address=self.rev_f.begin_byte, count=2*len(self.rev_f.data),slave=self.rev_f.uid)#一个寄存器2字节
+                response = self.client.read_holding_registers(
+                    address=self.rev_f.begin_byte, count=2 * len(self.rev_f.data), slave=self.rev_f.uid
+                )  # 一个寄存器2字节
                 if not response.isError():
                     # 将寄存器值转换为字节串
-                    byte_string = b''.join([reg.to_bytes(2, byteorder='big') for reg in response.registers])
+                    byte_string = b"".join([reg.to_bytes(2, byteorder="big") for reg in response.registers])
                     self.logger.info(f"Byte String: {byte_string.hex()}")
                     state, e = self.rev_f.cofirm_framer(byte_string)
                     if not state:

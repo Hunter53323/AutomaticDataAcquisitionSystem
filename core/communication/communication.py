@@ -303,6 +303,12 @@ class Communication:
         for driver in self.drivers:
             driver.close_device()
 
+    def check_error(self):
+        for driver in self.drivers:
+            if driver.check_error():
+                return True
+        return False
+
 
 def type2sqltype(data_type: str) -> str:
     if data_type == "int16" or data_type == "float" or data_type == "FLOAT":

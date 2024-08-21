@@ -10,7 +10,7 @@ import time
 import copy
 
 serial_port = "COM9"  # 请替换为您的串行端口
-serial_baudrate = 9600  # 根据实际情况设置波特率
+serial_baudrate = 115200  # 根据实际情况设置波特率
 serial_parity = "N"  # None表示无校验
 serial_stopbits = 1  # 停止位
 serial_bytesize = 8  # 数据位
@@ -24,6 +24,7 @@ class FanDriver(DriverBase):
             self.curr_para[key] = 0
         self.cpu = "M0"
         self.port = serial_port
+        self.serial_baudrate = serial_baudrate
         self.device_address = None
         self.is_set_data = False
         # 帧声明,及默认初始化
@@ -33,7 +34,7 @@ class FanDriver(DriverBase):
         self.ack_control_f = serial_frame.Framer()
         self.default_frame()
 
-        self.hardware_para = ["port", "cpu"]
+        self.hardware_para = ["port", "cpu", "baudrate"]
         self.command = "控制命令"
 
         self.ser: serial.Serial = serial.Serial(
@@ -65,6 +66,11 @@ class FanDriver(DriverBase):
     def set_port(self, value: str) -> None:
         self.port = value
         self.logger.info(f"设置串口为{value}")
+
+    def set_baudrate(self, value: int) -> None:
+        self.serial_baudrate = value
+        self.ser.baudrate = value
+        self.logger.info(f"设置波特率为{value}")
 
     def default_frame(self):
         # 初始化命令码
@@ -112,10 +118,10 @@ class FanDriver(DriverBase):
 
         self.updata_F_data(index=1, name="控制命令", type="bit8", size=1, formula="real_data=raw_data", f_name="control_f")
         self.updata_F_data(index=2, name="设定转速", type="int16", size=2, formula="real_data=raw_data", f_name="control_f")
-        self.updata_F_data(index=3, name="速度环补偿系数", type="int16", size=2, formula="real_data=raw_data*10", f_name="control_f")
+        self.updata_F_data(index=3, name="速度环补偿系数", type="int16", size=2, formula="real_data=raw_data/10", f_name="control_f")
         self.updata_F_data(index=4, name="电流环带宽", type="int16", size=2, formula="real_data=raw_data", f_name="control_f")
-        self.updata_F_data(index=5, name="观测器补偿系数", type="int16", size=2, formula="real_data=raw_data*100", f_name="control_f")
-
+        self.updata_F_data(index=5, name="观测器补偿系数", type="int16", size=2, formula="real_data=raw_data/100", f_name="control_f")
+        # TODO: realdata表示给用户展示或者用户输入的数据，rawdata表示实际发送或接受的数据
         self.curr_para = {"控制命令": 0, "设定转速": 0, "速度环补偿系数": 0, "电流环带宽": 0, "观测器补偿系数": 0}
 
         self.set_default()
@@ -182,6 +188,7 @@ class FanDriver(DriverBase):
             return False, e
 
     def connect(self) -> bool:
+        self.reset_error()
         if self.cpu is None:
             self.logger.error("self.cpu is None")
             return False
@@ -270,7 +277,7 @@ class FanDriver(DriverBase):
         if "故障" in self.curr_data:
             if self.curr_data["故障"] != 0:
                 pass  # 故障处理未写
-                # self.logger.info(f"查询到故障! 故障码:{', '.join(str(breakdown) for breakdown in breakdowns)}")
+                self.logger.info(f"查询到故障! 故障码:{self.curr_data["故障"]}")
                 self.run_state = False
                 self.breakdown = True
         else:
@@ -279,11 +286,21 @@ class FanDriver(DriverBase):
 
     def read_msg(self) -> tuple[bytes, bool]:
         try:
+            read_count = 0
             while self.ser.in_waiting < 4:
+                read_count += 1
                 time.sleep(0.005)
+                if read_count == 100:
+                    self.logger.error(f"读取串口数据超时,情况1！")
+                    return b"", False
             recv = self.ser.read(4)
+            read_count = 0
             while self.ser.in_waiting < recv[3] + 2:
+                read_count += 1
                 time.sleep(0.005)
+                if read_count == 100:
+                    self.logger.error(f"读取串口数据超时，情况2")
+                    return b"", False
             recv = recv + self.ser.read(recv[3] + 2)
             return recv, True
         except Exception as e:
@@ -465,12 +482,14 @@ class FanDriver(DriverBase):
                 self.set_device_cpu(value)
             elif key == "port":
                 self.set_port(value)
+            elif key == "baudrate":
+                self.set_baudrate(value)
             else:
                 self.logger.error(f"未定义的参数{key}")
         return True
 
     def get_hardware_parameter(self) -> dict[str, any]:
-        return {"cpu": self.cpu, "port": self.port}
+        return {"cpu": self.cpu, "port": self.port, "baudrate": self.serial_baudrate}
 
     def close_device(self):
         return self.write({"控制命令": "停止"})

@@ -50,7 +50,8 @@ def fan_control():
             #         "控制命令": "启动",
             #     }
             # )
-            status = True
+
+            status = fan.write({"控制命令": "启动", "设定转速": 300, "速度环补偿系数": 20, "电流环带宽": 200, "观测器补偿系数": 3.1})
         elif command == "stop":
             status = fan.write({"控制命令": "停止"})
         elif command == "clear_breakdown":
