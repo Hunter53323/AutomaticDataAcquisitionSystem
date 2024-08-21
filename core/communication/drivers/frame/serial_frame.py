@@ -59,11 +59,11 @@ class Framer:
         except Exception as e:
             return False, e
 
-    def set_data(self, index: int, name: str, type: str, size: int, formula: str, **kwargs) -> tuple[bool, None] | tuple[bool, Exception]:
+    def set_data(self, index: int, name: str, type: str, size: int, formula: str,breakdowns:list, **kwargs) -> tuple[bool, None] | tuple[bool, Exception]:
         try:
             if index in self.data:
                 raise Exception(f"第{index}位置已存在数据{self.data[index].name}")
-            temp_Field = Field(index, name, type, size, formula)
+            temp_Field = Field(index, name, type, size, formula,breakdowns)
             state, e = temp_Field.evaluate_formula()
             if not state:
                 raise Exception(e)
@@ -188,12 +188,11 @@ class Framer:
 
 class Fieldtype(Enum):
     int16 = 1
-    bit16 = 2
-    bit8 = 3
+    bit8 = 2
 
 
 class Field:
-    def __init__(self, index: int, name: str, type: str, size: int, formula: str = ""):
+    def __init__(self, index: int, name: str, type: str, size: int, formula: str = "",breakdowns:list=[]):
         if type in Fieldtype._member_names_:
             self.type = type
         else:
@@ -208,6 +207,7 @@ class Field:
                 formula = ""
         self.formula = formula  # 格式为"real_data=(raw_data+2)/3"
         self.inv_formula = ""
+        self.breakdown=breakdowns
         self.raw_data = 0
         self.real_data = 0
 
@@ -215,9 +215,9 @@ class Field:
         if self.type == "int16":
             self.raw_data = int.from_bytes(data, byteorder="big", signed=False)
             self.evaluate_formula(to_real=True)
-        elif self.type == "bit16" or self.type == "bit8":
-            self.real_data = int.from_bytes(data, byteorder="big", signed=False)
-            self.raw_data = self.real_data
+        elif self.type == "bit8":
+            self.raw_data = int.from_bytes(data, byteorder="big", signed=False)
+            self.real_data = self.breakdown[self.raw_data]
         else:
             pass
 
@@ -229,7 +229,7 @@ class Field:
         self.real_data = real_data
         if self.type == "int16":
             self.evaluate_formula(to_real=False)
-        elif self.type == "bit16" or self.type == "bit8":
+        elif self.type == "bit8":
             self.raw_data = real_data
         else:
             pass
@@ -243,7 +243,7 @@ class Field:
 
     def evaluate_formula(self, to_real=True) -> tuple[bool, None] | tuple[bool, Exception]:
         try:
-            if self.type == "bit16" or self.type == "bit8":
+            if self.type == "bit8":
                 return True, None
             local_vars = {}
             if to_real:
@@ -267,8 +267,9 @@ if __name__ == "__main__":
     ff.set_data(index=1, name="speed", type="int16", size=2, formula="real_data=raw_data")
     ff.set_data(index=2, name="torp", type="int16", size=2, formula="real_data=raw_data")
     ff.set_data(index=3, name="power", type="int16", size=2, formula="real_data=raw_data")
-    ff.set_data(index=4, name="breakdown", type="bit16", size=2, formula="")
-    ff.set_data(index=5, name="test", type="bit8", size=1, formula="")
+    ff.set_data(index=4, name="breakdown1", type="bit8", size=1, formula="",breakdowns=["故障1","故障2","故障3","故障4","故障5","故障6","故障7","故障8"])
+    ff.set_data(index=5, name="breakdown2", type="bit8", size=1, formula="",breakdowns=["故障1","故障2","故障3","故障4","故障5","故障6","故障7","故障8"])
+    ff.set_data(index=6, name="test", type="bit8", size=1, formula="")
     one_f = ff.export_framer()
     print(one_f)
     author_f = Framer()
