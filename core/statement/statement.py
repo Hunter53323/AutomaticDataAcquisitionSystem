@@ -59,6 +59,45 @@ def connect_database():
         sys.exit(0)
 
 
+def table_para(para_inform):
+    # 提取键名作为表头的第一列
+    headers = ["参数名称", "数值"]
+    # 创建一个列表来存储表格的每一行数据
+    all_tables = []  # 存储所有表格数据
+    current_table_data = []  # 当前表格数据
+    current_table_data.append(headers)  # 添加表头
+
+    # 创建表格样式
+    table_style = TableStyle(
+        [
+            ("BACKGROUND", (0, 0), (-1, 0), colors.Color(163 / 255, 190 / 255, 219 / 255)),
+            ("TEXTCOLOR", (0, 0), (-1, 0), "whitesmoke"),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("FONTNAME", (0, 0), (-1, -1), "SimHei"),  # 根据系统字体情况可能需要调整
+            ("FONTSIZE", (0, 0), (-1, -1), 12),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
+            ("GRID", (0, 0), (-1, -1), 1, colors.black),
+        ]
+    )
+
+    # 遍历input_inform字典，将键值对添加到表格数据中
+    for key, value in para_inform.items():
+        # 每个参数的名称和值作为一行数据
+        current_table_data.append([key, value])
+        # 检查当前表格是否超过15行（不包括表头）
+        if len(current_table_data) > 16:
+            # 如果超过，则将当前表格数据添加到all_tables，并开始新的表格
+            all_tables.append((current_table_data, table_style))
+            current_table_data = [headers]  # 重新开始一个表格，并添加表头
+
+    # 添加最后一页的表格数据（如果有剩余的数据）
+    if current_table_data:
+        all_tables.append((current_table_data, table_style))
+
+    # 返回所有表格数据和样式
+    return all_tables
+
+
 def table_pdf(data):
     # 提取键名作为列名
     headers = [key for key in data[0].keys()]
@@ -158,6 +197,10 @@ def generate_pdf(parameters: list, input_inform: dict, data: list[dict[str, str]
     # 从input_inform中获取公司名称和实验员姓名，如果不存在则使用默认值
     company_name = input_inform.get("公司名称", "未知公司名称")
     experimenter = input_inform.get("实验员姓名", "未知实验员")
+    # 指定要剔除的键
+    keys_to_remove = ["风机名称", "风机型号", "公司名称", "实验员姓名"]
+    # 使用字典推导式创建新字典，构建参数信息
+    paras_inform = {key: value for key, value in input_inform.items() if key not in keys_to_remove}
 
     export_folder = os.path.join(os.getcwd(), "export")
     if not os.path.exists(export_folder):
@@ -167,6 +210,11 @@ def generate_pdf(parameters: list, input_inform: dict, data: list[dict[str, str]
 
     # 首页内容样式
     first_page_style = ParagraphStyle("FirstPage", fontName="SimHei", fontSize=14, alignment=TA_CENTER, fontWeight="bold")
+
+    # 参数信息展示样式
+    para_title_style = ParagraphStyle(
+        "para_Title", fontName="SimHei", fontSize=24, alignment=TA_CENTER, spaceBefore=10, spaceAfter=15, fontWeight="bold"
+    )
 
     title_style = ParagraphStyle("Title", fontName="SimHei", fontSize=36, alignment=TA_CENTER, spaceBefore=10, spaceAfter=18, fontWeight="bold")
 
@@ -211,8 +259,19 @@ def generate_pdf(parameters: list, input_inform: dict, data: list[dict[str, str]
 
     if not direction_vertical:
         # 横板PDF
+        # 横板PDF
+        # 在第二页开始处添加参数信息
+        story.append(Paragraph("参数信息", para_title_style))
+        story.append(Spacer(1, 15))  # 调整间距
+        tables_para = table_para(paras_inform)
+        for table_data, table_style in tables_para:
+            table = Table(table_data, colWidths=[200, 100])
+            table.setStyle(table_style)
+            story.append(table)
+            if table_data != tables_para[-1][0]:  # 如果不是最后一个表格，则添加分页
+                story.append(PageBreak())
 
-        # 构建首页的PDF
+        story.append(PageBreak())
         doc.build(story)
 
         # 第二页和第三页需要横向排布，创建一个新的PDF文档
@@ -256,6 +315,18 @@ def generate_pdf(parameters: list, input_inform: dict, data: list[dict[str, str]
         # 最后，将三个PDF合并为一个PDF（这一步需要额外的处理）
         return output_file
     else:
+        # 在第二页开始处添加参数信息
+        story.append(Paragraph("参数信息", para_title_style))
+        story.append(Spacer(1, 15))  # 调整间距
+        tables_para = table_para(paras_inform)
+        for table_data, table_style in tables_para:
+            table = Table(table_data, colWidths=[200, 100])
+            table.setStyle(table_style)
+            story.append(table)
+            if table_data != tables_para[-1][0]:  # 如果不是最后一个表格，则添加分页
+                story.append(PageBreak())
+
+        story.append(PageBreak())
 
         # 第二页展示所有数据，分页处理
         tables = table_pdf(data)
@@ -281,7 +352,30 @@ def main():
     input_inform = "Yuxiang Liu"
     parameters = []
     parameters = ["转速", "功率", "速度环补偿系数", "观测器补偿系数"]
-    input_inform = {"实验员姓名": "Yuxiang Liu", "公司名称": "Haier", "风机名称": "示例风机1", "风机型号": "型号X"}
+    input_inform = {
+        "实验员姓名": "Yuxiang Liu",
+        "公司名称": "Haier",
+        "风机名称": "示例风机1",
+        "风机型号": "型号X",
+        "实验次数": "100",
+        "采集次数": "100",
+        "负载量范围": "800~1500",
+        "负载量步长": "100",
+        "速度环补偿系数范围": "0~2",
+        "速度环补偿系数步长": "0.1",
+        "实验次数1": "100",
+        "采集次数1": "100",
+        "负载量范围1": "800~1500",
+        "负载量步长1": "100",
+        "速度环补偿系数范围1": "0~2",
+        "速度环补偿系数步长1": "0.1",
+        "实验次数2": "100",
+        "采集次数2": "100",
+        "负载量范围2": "800~1500",
+        "负载量步长2": "100",
+        "速度环补偿系数范围2": "0~2",
+        "速度环补偿系数步长2": "0.1",
+    }
 
     data = [
         {
