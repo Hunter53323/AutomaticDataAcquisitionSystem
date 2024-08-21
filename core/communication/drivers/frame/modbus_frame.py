@@ -9,11 +9,12 @@ from sympy import symbols, Eq, solve, sympify
 
 class Framer:
     def __init__(self):
-        self.tid = b'\x00\x00'
-        self.pid = b'\x00\x00'
+        # self.tid = b"\x00\x00"
+        self.pid = b"\x00\x00"
         self.length = 0
-        self.uid = b'\x01'
-        self.fc = b'\x03'
+        self.uid = 1
+        self.fc = b"\x03"
+        self.begin_byte = 0
         self.data = {}  # self.data[index] = Field(index, name, type, size, formula),int:Field
 
     def str2byte(self, char: str, size=1) -> bytes:
@@ -29,6 +30,16 @@ class Framer:
             return char.hex()
         else:
             raise ValueError(f"输入长度不是{size}个字节")
+
+    def set_begin_byte(self, begin_byte: int) -> tuple[bool, None] | tuple[bool, Exception]:
+        try:
+            if isinstance(begin_byte, int):
+                self.begin_byte = begin_byte
+                return True, None
+            else:
+                raise Exception(f"开始字节类型输入错误{type(begin_byte)}")
+        except Exception as e:
+            return False, e
 
     def set_tid(self, tid: str) -> tuple[True, None] | tuple[False, Exception]:
         try:
@@ -59,8 +70,7 @@ class Framer:
             return False, e
 
     def set_data(self, index: int, name: str, type: str, size: int, formula: str, **kwargs) -> tuple[bool, None] | \
-                                                                                               tuple[
-                                                                                                   bool, Exception]:
+                                                                                               tuple[bool, Exception]:
         try:
             if index in self.data:
                 raise Exception(f"第{index}位置已存在数据{self.data[index].name}")
@@ -85,16 +95,16 @@ class Framer:
         return num
 
     def reset_all(self) -> bool:
-        self.tid = b'\x00\x00'
-        self.pid = b'\x00\x00'
+        self.tid = b"\x00\x00"
+        self.pid = b"\x00\x00"
         self.length = 0
-        self.uid = b'\x01'
-        self.fc = b'\x03'
+        self.uid = b"\x01"
+        self.fc = b"\x03"
         self.reset_data()
         return True
 
     def reset_data(self) -> bool:
-        self.data = {}  # self.data[index] = Field(index, name, type, size, formula),int:Field
+        self.data: dict[int, Field] = {}  # self.data[index] = Field(index, name, type, size, formula),int:Field
         return True
 
     def export_data(self):
@@ -134,7 +144,7 @@ class Framer:
         return real_data
 
     def encode_framer(self) -> bytes:  # human->computer
-        all_msg = b''
+        all_msg = b""
         self.cal_len()
         all_msg += self.tid + self.pid + self.length.to_bytes(2) + self.uid + self.fc + len(self.data).to_bytes()
         for _, value in self.data.items():
@@ -151,20 +161,29 @@ class Framer:
 
     def cofirm_framer(self, msg: bytes) -> tuple[bool, None] | tuple[bool, Exception]:
         try:
-            tid, pid, length, uid, fc, data_size = struct.unpack(">HHHBBB", msg[:9])
-            if pid.to_bytes(2) == self.pid and uid.to_bytes() == self.uid and fc.to_bytes() == self.fc:
-                if data_size == sum(value.size for _, value in self.data.items()):
-                    # 先假设字典有序
-                    cur = 9
-                    for key, value in self.data.items():
-                        value.decode_data(msg[cur:cur + value.size])
-                        cur += value.size
-                    self.tid = tid  # 更新标识方便回复
-                    return True, None
-                else:
-                    raise Exception("数据个数错误")
+            if len(msg) == sum(value.size for _, value in self.data.items()):
+                # 先假设字典有序
+                cur = 0
+                for key, value in self.data.items():
+                    value.decode_data(msg[cur: cur + value.size])
+                    cur += value.size
+                return True, None
             else:
-                raise Exception("协议标识、设备地址、功能码不匹配")
+                raise Exception("数据个数错误")
+            # tid, pid, length, uid, fc, data_size = struct.unpack(">HHHBBB", msg[:9])
+            # if pid.to_bytes(2) == self.pid and uid.to_bytes() == self.uid and fc.to_bytes() == self.fc:
+            #     if data_size == sum(value.size for _, value in self.data.items()):
+            #         # 先假设字典有序
+            #         cur = 9
+            #         for key, value in self.data.items():
+            #             value.decode_data(msg[cur: cur + value.size])
+            #             cur += value.size
+            #         self.tid = tid  # 更新标识方便回复
+            #         return True, None
+            #     else:
+            #         raise Exception("数据个数错误")
+            # else:
+            #     raise Exception("协议标识、设备地址、功能码不匹配")
         except Exception as e:
             return False, e
 
@@ -217,9 +236,9 @@ class Field:
             pass
 
     def inverse_formula(self):
-        raw_data_sym = symbols('raw_data')
-        real_data_sym = symbols('real_data')
-        expr = sympify(self.formula.split('=')[1])
+        raw_data_sym = symbols("raw_data")
+        real_data_sym = symbols("real_data")
+        expr = sympify(self.formula.split("=")[1])
         raw_data_inverse_expr = solve(Eq(real_data_sym, expr), raw_data_sym)[0]
         return f"raw_data={raw_data_inverse_expr}"
 
@@ -229,15 +248,15 @@ class Field:
                 return True, None
             local_vars = {}
             if to_real:
-                local_vars['raw_data'] = self.raw_data
+                local_vars["raw_data"] = self.raw_data
                 exec(self.formula, {}, local_vars)
-                self.real_data = local_vars.get('real_data')
+                self.real_data = local_vars.get("real_data")
             else:
                 if self.inv_formula == "":
                     self.inv_formula = self.inverse_formula()
-                local_vars['real_data'] = self.real_data
+                local_vars["real_data"] = self.real_data
                 exec(self.inv_formula, {}, local_vars)
-                self.raw_data = local_vars.get('raw_data')
+                self.raw_data = local_vars.get("raw_data")
             return True, None
         except Exception as e:
             print(e)

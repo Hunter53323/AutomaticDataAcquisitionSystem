@@ -3,7 +3,6 @@ from core.communication import Communication
 from core.database.mysql_base import MySQLDatabase
 from collections import deque
 import threading
-from core.database import TABLE_COLUMNS, TABLE_TRANSLATE
 import re
 
 # TODO：强行杀掉有问题的自动采集线程
@@ -44,11 +43,11 @@ class AutoCollection:
         return True
 
     def precheck(self) -> bool:
-        data_names = re.findall(r"[^\+\-\*/\(\) ]+", self.__custom_steady_state_determination)
+        data_names = re.findall(r"[^\+\-\*/\(\) =><!~\d\.]+", self.__custom_steady_state_determination)
         for name in data_names:
             if (
-                name not in self.communication.__para_map.keys()
-                and name not in self.communication.__data_map.keys()
+                name not in self.communication.get_para_map().keys()
+                and name not in self.communication.get_data_map().keys()
                 and name not in self.communication.custom_calculate_map.keys()
             ):
                 # 稳态配置中的数据项不存在于数据库中，重新配置
@@ -56,8 +55,11 @@ class AutoCollection:
                 return False
         # 检查当前配置是否存在数据表，若没有的话则创建
         table_column = self.communication.get_cureent_data_table()
-        if table_column not in self.db.table_columns_list():
+        if self.db.check_exists(DATA_TABLE_NAME, table_column):
+            self.db.change_current_table(DATA_TABLE_NAME)
+        else:
             self.db.change_current_table(DATA_TABLE_NAME, table_column)
+        self.logger.info("预检通过")
         return True
 
     def pause_auto_collect(self) -> bool:
@@ -111,12 +113,13 @@ class AutoCollection:
             if not err_handle_status:
                 # 清障失败，需要人工干预
                 # 故障预警
-                self.communication.breakdown_handler.breakdown_warning(code)
                 self.wait_until_no_breakdown()
+            time.sleep(2)
             # 顺利采集完成一条数据
         self.__auto_running: bool = False
         self.clear_para()
         self.logger.info("自动采集结束")
+        self.communication.close_all_device()
         return True
 
     def clear_para(self):
@@ -164,8 +167,8 @@ class AutoCollection:
         while True:
             curr_data: dict[str, any] = self.communication.read()
             # 有故障，进入故障处理模块
-            if curr_data["breakdown"] != [] and curr_data["breakdown"] != 0:
-                status, breakdown_type, err = self.communication.breakdown_handler.error_handle(curr_data["breakdown"])
+            if curr_data["故障"] != [] and curr_data["故障"] != 0:
+                status, breakdown_type, err = self.communication.breakdown_handler.error_handle([curr_data["故障"]])
                 if count == 3:
                     # 错误尝试次数过多，直接退出
                     return {}, status, breakdown_type, err
@@ -180,8 +183,9 @@ class AutoCollection:
                     pass
             # 故障处理完毕，正常运行
             count += 1
-            # TODO:这里需要确保数据是更新后的，因为之前的数据就是稳定的，如果读到的是历史数据，那么稳态判断就容易出问题，这里可以考虑是否清空一下历史数据，清空是可以的
-            if self.steady_state_determination(curr_data, para_dict):
+            # TODO: 开始前请启动机器
+            # count的判断是避免当前的稳定状态影响稳态判断,
+            if self.steady_state_determination(curr_data, para_dict) and count > 10:
                 self.__stable_state = True
                 final_data = self.calculate_result(curr_data, para_dict)
                 self.logger.info(f"稳定后结果为{final_data}")
@@ -208,7 +212,7 @@ class AutoCollection:
 
         for key in data_dict.keys():
             if key in self.db.table_columns.keys():
-                save_data_dict[TABLE_TRANSLATE[key]] = data_dict[key]
+                save_data_dict[key] = data_dict[key]
             else:
                 # 数据库表中没有这一项数据,不需要保存
                 self.logger.error(f"非法数据:{key}")
@@ -232,11 +236,11 @@ class AutoCollection:
         # 三大类的字符串解析可以统一起来，后面也用类似的方式去做
         # 需要对前端的配置做一个解码，可能需要一个解码函数
         solve_str = self.__custom_steady_state_determination
-        data_names = re.findall(r"[^\+\-\*/\(\) ]+", solve_str)
+        data_names = re.findall(r"[^\+\-\*/\(\) =><!~\d\.]+", solve_str)
         for name in data_names:
-            if name in self.communication.__para_map.keys():
+            if name in self.communication.get_para_map().keys():
                 solve_str = solve_str.replace(name, str(para_dict[name]))
-            elif name in self.communication.__data_map.keys():
+            elif name in self.communication.get_data_map().keys():
                 solve_str = solve_str.replace(name, str(data_dict[name]))
             elif name in self.communication.custom_calculate_map.keys():
                 solve_str = solve_str.replace(name, str(self.communication.custom_calculate_map[name]))
@@ -250,18 +254,19 @@ class AutoCollection:
         if not any(op in input_str for op in [">", "<", ">=", "<=", "==", "!="]):
             self.logger.error("稳态判断条件不合法")
             return False
-
-        data_names = re.findall(r"[^\+\-\*/\(\) ]+", input_str)
+        data_names = re.findall(r"[^\+\-\*/\(\) =><!~\d\.]+", input_str)
         for name in data_names:
             if (
-                name not in self.communication.__para_map.keys()
-                and name not in self.communication.__data_map.keys()
+                name not in self.communication.get_para_map().keys()
+                and name not in self.communication.get_data_map().keys()
                 and name not in self.communication.custom_calculate_map.keys()
             ):
                 # 稳态配置中的数据项不存在于数据库中，重新配置
+                self.logger.error(f"稳态判断条件中的数据项{name}不存在")
                 return False
 
         self.__custom_steady_state_determination = input_str
+        return True
 
     def get_steady_state_determination(self) -> str:
         return self.__custom_steady_state_determination
@@ -291,48 +296,53 @@ class AutoCollection:
         self.__para_queue_inited = True
         return True, len(self.__para_queue)
 
-    def init_para_pool_from_csv(self, para_dict: dict, data_count: int) -> bool:
-        if self.__auto_running:
-            self.logger.warning("正在自动采集，请结束或暂停后初始化参数队列")
-            return False
-        self.logger.info("初始化参数队列")
-        self.__para_vals.clear()
-        error_key_list: list[str] = []
-        self.__para_vals = {key: None for key in self.communication.get_para_map().keys()}
-        for key, val in para_dict.items():
-            if key not in self.__para_vals.keys():
-                error_key_list.append(key)
-                continue
-            self.__para_vals[key] = val
-        if error_key_list:
-            self.__para_vals.clear()
-            self.logger.error(f"非法参数{error_key_list}")
-            return False
-        if None in self.__para_vals.values():
-            self.logger.error("存在未指派的参数!")
-            return False
-        para_pool = itertools.product(*self.__para_vals.values())
-        self.__para_queue = deque(para_pool)
-        self.__para_queue_inited = True
+    # def init_para_pool_from_csv(self, para_dict: dict, data_count: int) -> bool:
+    #     if self.__auto_running:
+    #         self.logger.warning("正在自动采集，请结束或暂停后初始化参数队列")
+    #         return False
+    #     self.logger.info("初始化参数队列")
+    #     self.__para_vals.clear()
+    #     error_key_list: list[str] = []
+    #     self.__para_vals = {key: None for key in self.communication.get_para_map().keys()}
+    #     for key, val in para_dict.items():
+    #         if key not in self.__para_vals.keys():
+    #             error_key_list.append(key)
+    #             continue
+    #         self.__para_vals[key] = val
+    #     if error_key_list:
+    #         self.__para_vals.clear()
+    #         self.logger.error(f"非法参数{error_key_list}")
+    #         return False
+    #     if None in self.__para_vals.values():
+    #         self.logger.error("存在未指派的参数!")
+    #         return False
+    #     para_pool = itertools.product(*self.__para_vals.values())
+    #     self.__para_queue = deque(para_pool)
+    #     self.__para_queue_inited = True
 
     def init_para_pool_from_csv(self, para_dict_list: list[dict]) -> bool:
-        if self.__auto_running:
-            self.logger.warning("正在自动采集，请结束或暂停后初始化参数队列")
-            return False
-        self.__para_vals = {key: 0 for key in self.communication.get_para_map().keys()}
-        data_count = len(para_dict_list)
-        para_dict_list_key = para_dict_list[0].keys()
-        for key in self.__para_vals.keys():
-            if key not in para_dict_list_key:
-                self.logger.error(f"参数{key}不存在")
+        try:
+            if self.__auto_running:
+                self.logger.warning("正在自动采集，请结束或暂停后初始化参数队列")
                 return False
-
-        for i in range(data_count):
+            self.__para_vals = {key: 0 for key in self.communication.get_para_map().keys()}
+            data_count = len(para_dict_list)
+            para_dict_list_key = para_dict_list[0].keys()
             for key in self.__para_vals.keys():
-                self.__para_vals[key] = para_dict_list[i][key]
-            self.__para_queue.append(tuple(self.__para_vals.values()))
+                if key not in para_dict_list_key:
+                    self.logger.error(f"参数{key}不存在")
+                    return False
 
-        self.__para_queue_inited = True
+            for i in range(data_count):
+                for key in self.__para_vals.keys():
+                    self.__para_vals[key] = float(para_dict_list[i][key])
+                self.__para_queue.append(tuple(self.__para_vals.values()))
+            self.logger.info("参数队列初始化完成")
+            self.__para_queue_inited = True
+            return True
+        except Exception as e:
+            self.logger.error(f"参数队列初始化失败,{e}")
+            return False
 
     def is_auto_running(self):
         return self.__auto_running

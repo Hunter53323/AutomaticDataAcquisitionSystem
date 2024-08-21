@@ -8,16 +8,13 @@ import CollectorBox from '@/components/Dashboard/CollectorBox.vue'
 import ShowSelection from '@/components/ShowSelection.vue'
 import { io } from 'socket.io-client'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { UploadInstance, UploadProps, UploadRawFile, genFileId } from 'element-plus'
-import { useGlobalStore, useDashboardStore } from '@/stores/global'
-import { ElMessage } from 'element-plus'
-import { select } from '@antv/g2'
-import { c } from 'vite/dist/node/types.d-aGj9QkWt'
-import { da, pa } from 'element-plus/es/locale'
+import { useGlobalStore, useDashboardStore, useSettingsStore, useDBStore } from '@/stores/global'
 
 const dataAll = ref({})
 const global = useGlobalStore()
 const dashboard = useDashboardStore()
+const settings = useSettingsStore()
+const db = useDBStore()
 const socket = io(global.url)
 const timeData = ref([])
 const graphSelected = ref(["实际转速", "目标转速"])
@@ -67,7 +64,13 @@ socket.on('data_from_device', data => {
     timeData.value = timeData.value.filter((val, index, arr) => val.time > timeMax - 10000);
   }
 })
-
+dashboard.initList()
+dashboard.initDeviceState()
+settings.updateProtocol()
+settings.updateConf()
+settings.updateDefined()
+settings.updateUser()
+db.updateMeta()
 
 </script>
 
@@ -77,7 +80,7 @@ socket.on('data_from_device', data => {
       <el-card shadow="hover">
         <template #header>
           <div class="card-header">
-            <span>测试设备控制</span>
+            <span>被测设备控制</span>
           </div>
         </template>
         <FanControl :socket="socket" />
@@ -87,7 +90,7 @@ socket.on('data_from_device', data => {
       <el-card shadow="hover">
         <template #header>
           <div class="card-header">
-            <span>被测设备控制</span>
+            <span>测试设备控制</span>
           </div>
         </template>
         <TestControl :socket="socket" />
@@ -104,37 +107,42 @@ socket.on('data_from_device', data => {
   </el-row>
 
   <el-row :gutter="20">
-    <el-col :span="8">
-      <el-card shadow="hover">
-        <template #header>
-          <div class="card-header">
-            <span>测试设备数据</span>
-            <ShowSelection :refList="dashboard.dataList['TestDevice']"
-              :selectedList="dashboard.dataShowSelected['TestDevice']"
-              @selected-change="(selectedList) => dashboard.dataShowSelected['TestDevice'] = selectedList" />
+    <el-col :span="16">
+      <el-row>
+        <el-col :span="24">
+          <el-card shadow="hover">
+            <template #header>
+              <div class="card-header">
+                <span>测试设备数据</span>
+                <ShowSelection :refList="dashboard.dataObjList['TestDevice']"
+                  :selectedList="dashboard.dataShowSelected['TestDevice']"
+                  @selected-change="(selectedList) => dashboard.dataShowSelected['TestDevice'] = selectedList" />
+              </div>
+            </template>
+            <div class="statisticBox">
+              <StatisticBox :contentObj="dataShow.TestDevice" :count="3" />
+            </div>
+          </el-card>
+        </el-col>
+      </el-row>
+      <el-row style="margin: 0">
+        <el-col :span="24">
+          <el-card shadow="hover">
+            <template #header>
+              <div class="card-header">
+                <span>被测设备数据</span>
+                <ShowSelection :refList="dashboard.dataObjList['FanDriver']"
+                  :selectedList="dashboard.dataShowSelected['FanDriver']"
+                  @selected-change="(selectedList) => dashboard.dataShowSelected['FanDriver'] = selectedList" />
+              </div>
+            </template>
+            <div class="statisticBox">
+              <StatisticBox :contentObj="dataShow.FanDriver" :count="6" />
+            </div>
+          </el-card>
+        </el-col>
+      </el-row>
 
-
-          </div>
-        </template>
-        <div class="statisticBox">
-          <StatisticBox :contentObj="dataShow.TestDevice" :count="3" />
-        </div>
-      </el-card>
-    </el-col>
-    <el-col :span="8">
-      <el-card shadow="hover">
-        <template #header>
-          <div class="card-header">
-            <span>被测设备数据</span>
-            <ShowSelection :refList="dashboard.dataList['FanDriver']"
-              :selectedList="dashboard.dataShowSelected['FanDriver']"
-              @selected-change="(selectedList) => dashboard.dataShowSelected['FanDriver'] = selectedList" />
-          </div>
-        </template>
-        <div class="statisticBox">
-          <StatisticBox :contentObj="dataShow.FanDriver" :count="3" />
-        </div>
-      </el-card>
     </el-col>
     <el-col :span="8">
       <el-card shadow="hover">
@@ -172,12 +180,18 @@ socket.on('data_from_device', data => {
 </template>
 
 
-
 <style scoped>
-.el-card :deep() .el-card__header {
-  padding: 15px 20px;
+.el-card :deep(.el-card__header) {
+  padding: 10px 20px;
 }
 
+.el-card :deep(.el-card__body) {
+  padding: 10px 20px;
+}
+
+.el-card {
+  height: 100%;
+}
 
 .el-row {
   margin: 0 0 10px 0;

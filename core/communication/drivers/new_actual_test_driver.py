@@ -1,14 +1,14 @@
+# -*- coding:utf-8 -*-
 import json
 import time
 
 from pymodbus.framer import ModbusSocketFramer
-from .frame import modbus_frame
-from .frame.modbus_frame import Field
-from .driver_base import DriverBase
+from frame import modbus_frame
+from frame.modbus_frame import Field
+from driver_base import DriverBase
 from pymodbus.client import ModbusTcpClient
 import struct
 import ipaddress
-
 
 class TestDevice(DriverBase):
 
@@ -19,7 +19,6 @@ class TestDevice(DriverBase):
         self.command = "测试设备控制命令"
         self.rev_f = modbus_frame.Framer()
         self.is_set_f = False
-        self.axis = 2
         self.default_frame()
 
     def default_frame(self):
@@ -28,7 +27,7 @@ class TestDevice(DriverBase):
         self.rev_f.set_data(index=2, name="扭矩", type="float", size=4, formula=f"real_data=raw_data")
         self.rev_f.set_data(index=3, name="输出功率", type="float", size=4, formula=f"real_data=raw_data")
         self.curr_data = {"输入功率": 0, "扭矩": 0, "输出功率": 0}
-        self.curr_para = {"测功机控制值": 0, "测试设备控制命令": "write"}
+        self.curr_para = {"负载量": 0, "测试设备控制命令": "write"}
 
     def updata_F_data(self, f_name: str, index: int, name: str, type: str, size: int, formula: str):
         if f_name == "rev_f":
@@ -37,9 +36,6 @@ class TestDevice(DriverBase):
     def delete_F_data(self, f_name: str, index: int):
         if f_name == "rev_f":
             self.rev_f.data.pop(index)
-
-    def set_axis(self, axis: int):
-        self.axis = axis
 
     def __set_client(self, ip: str, port: int):
         self.ip = ip
@@ -66,32 +62,32 @@ class TestDevice(DriverBase):
             command = "write"
         else:
             command = para_dict[self.command]
-        if "测功机控制值" not in para_dict:
-            para_dict["测功机控制值"] = 0
+        if "负载量" not in para_dict:
+            para_dict["负载量"] = 0
 
-        if command == "启动":
-            address = 0 + (self.axis - 1) * 3
+        if command == "start_device" or command == "启动":
+            address = 0
             value = 1
             result = self.client.write_register(address, value, slave=1)
-        elif command == "停止":
-            address = 0 + (self.axis - 1) * 3
+        elif command == "stop_device" or command == "停止":
+            address = 0
             value = 0
             result = self.client.write_register(address, value, slave=1)
-        elif command == "切换P模式":
-            address = 1 + (self.axis - 1) * 3
+        elif command == "P_mode":
+            address = 1
             value = 1
             result = self.client.write_register(address, value, slave=1)
-        elif command == "切换M模式":
-            address = 1 + (self.axis - 1) * 3
+        elif command == "N_mode":
+            address = 1
             value = 2
             result = self.client.write_register(address, value, slave=1)
-        elif command == "切换N1模式":
-            address = 1 + (self.axis - 1) * 3
+        elif command == "N1_mode":
+            address = 1
             value = 4
             result = self.client.write_register(address, value, slave=1)
         elif command == "write":
-            address = 2 + (self.axis - 1) * 3
-            data_value = float(para_dict["测功机控制值"])
+            address = 2
+            data_value = float(para_dict["load"])
             # 将浮点数打包为四个字节
             packed_value = struct.pack(">f", data_value)
             # 将四个字节解包为两个16位的整数
@@ -108,9 +104,9 @@ class TestDevice(DriverBase):
             return False
         else:
             # 确认写正确后，更改状态值
-            if command == "启动":
+            if command == "start_device" or command == "启动":
                 self.run_state = True
-            elif command == "停止":
+            elif command == "stop_device" or command == "停止":
                 self.run_state = False
             for key in self.curr_para:
                 self.curr_para[key] = para_dict[key]
@@ -118,7 +114,6 @@ class TestDevice(DriverBase):
 
     def connect(self) -> bool:
         try:
-            self.reset_error()
             if self.client.is_socket_open():
                 self.conn_state = True
                 return True
@@ -152,12 +147,10 @@ class TestDevice(DriverBase):
                     self.logger.error(f"服务器未连接! 非法读！")
                     return False
 
-                response = self.client.read_holding_registers(
-                    address=self.rev_f.begin_byte, count=2 * len(self.rev_f.data), slave=self.rev_f.uid
-                )  # 一个寄存器2字节
+                response = self.client.read_holding_registers(address=self.rev_f.begin_byte, count=2*len(self.rev_f.data),slave=self.rev_f.uid)#一个寄存器2字节
                 if not response.isError():
                     # 将寄存器值转换为字节串
-                    byte_string = b"".join([reg.to_bytes(2, byteorder="big") for reg in response.registers])
+                    byte_string = b''.join([reg.to_bytes(2, byteorder='big') for reg in response.registers])
                     self.logger.info(f"Byte String: {byte_string.hex()}")
                     state, e = self.rev_f.cofirm_framer(byte_string)
                     if not state:
@@ -172,67 +165,6 @@ class TestDevice(DriverBase):
             except Exception as e:
                 self.logger.error(f"error:{e},count：{count}")
         return False
-
-    # def recv_one(self, timeout: float = 1) -> bytes:
-    #     self.client.comm_params.timeout_connect = timeout  # 设置接收超时时间，如果超时即使接收的字节数少于目标值也返回
-    #     try:
-    #         msg = self.client.recv(6)
-    #         if len(msg) == 6:  # 数据头
-    #             length = int.from_bytes(msg[-2:], byteorder="big", signed=False)
-    #             msg += self.client.recv(length)
-    #             if len(msg) == 6 + length:
-    #                 self.logger.debug(f"收到的报文为：{msg.hex()}")
-    #                 return msg
-    #             else:
-    #                 raise Exception(f"接收到的数据体长度不符合预期:{msg.hex()}")
-    #         elif len(msg) == 0:
-    #             return b""
-    #         else:
-    #             raise Exception(f"接收到的数据头长度不符合预期:{msg.hex()}")
-    #     except Exception as e:
-    #         self.logger.error(f"接收错误! error:{e}")
-    #         return b""
-    #     finally:
-    #         pass  # 收尾
-    #
-    # def recv(self, timeout=0.02) -> bytes:
-    #     msg = self.recv_one(timeout * 10)  # 放大区间使得可以收到报文
-    #     count = 0
-    #     while msg:  # 如果报文不为空，则可能后面有新报文
-    #         count += 1
-    #         msg_cache = self.recv_one(timeout)  # 更新新报文
-    #         if msg_cache and count < 20:
-    #             msg = msg_cache
-    #         else:
-    #             if count == 20:
-    #                 self.logger.warn(f"警告更新报文时间设置过长！ 报文更新周期小于{timeout}s")
-    #             elif count == 0:
-    #                 self.logger.warn(f"警告更新报文时间设置过短！请增大！ 报文更新周期大于{timeout * 10}s")
-    #             break
-    #     return msg
-    #
-    # def read_all(self, read_count=3) -> bool:
-    #     if not self.is_set_f:
-    #         return False
-    #     for count in range(read_count):
-    #         try:
-    #             if not self.conn_state:
-    #                 self.logger.error(f"服务器未连接! 非法读！")
-    #                 return False
-    #             result = self.recv()
-    #             if not result:
-    #                 raise Exception(f"接收失败! result：{result.hex()}")
-    #             else:
-    #                 state, e = self.rev_f.cofirm_framer(result)
-    #                 if not state:
-    #                     self.logger.error(f"查询回复解析报错{e}")
-    #                     raise Exception(e)
-    #                 # 数据检查完毕后开始读取数据
-    #                 self.curr_data = self.rev_f.get_data()
-    #                 return True
-    #         except Exception as e:
-    #             self.logger.error(f"error:{e},count：{count}")
-    #     return False
 
     def handle_breakdown(self, breakdown: int) -> bool:
         try:
@@ -333,20 +265,11 @@ if __name__ == "__main__":
     # testdevice.update_hardware_parameter(para_dict={"ip": "120.76.28.211", "port": 80})
     # parameters = {"test_device_command": "start_device"}
     # testdevice.write(parameters)
-    # parameters = {"test_device_command": "write", "load": 200}
-    while 1:
-        if testdevice.read_all():
-            print(testdevice.curr_data)
-        # testdevice.write(parameters)
-        time.sleep(0.1)
-    # parameters = {"command": "stop_device"}
-    # print("Test stop:", testdevice.write(parameters))
-    # parameters = {"command": "P_mode"}
-    # print("Test P:", testdevice.write(parameters))
-    # parameters = {"command": "N_mode"}
-    # print("Test N:", testdevice.write(parameters))
-    # parameters = {"command": "N1_mode"}
-    # print("Test N1:", testdevice.write(parameters))
-    # parameters = {"command": "write", "loading": 200}
-    # print("Test write:", testdevice.write(parameters))
-    # testdevice.disconnect()
+    parameters = {"测试设备控制命令": "write", "load": 200}
+    testdevice.write(parameters)
+    testdevice.read_all()
+    # while 1:
+    #     if testdevice.read_all():
+    #         print(testdevice.curr_data)
+    #     # testdevice.write(parameters)
+    #     time.sleep(0.1)

@@ -5,9 +5,9 @@ import random
 from flask import request, jsonify
 from core.communication import communicator
 import threading
-from application.utils import cn_translate, TABLE_TRANSLATE
 from . import socketio_http
-from core.communication.drivers.fan_drive_module import breakdownmap
+from core.communication.exception_handling import BREAKDOWNMAP
+from core.warningmessage import emailsender
 
 thread = None
 thread_running = threading.Event()
@@ -59,6 +59,14 @@ def handle_socketio_events(socketio: SocketIO):
         从数据采集模块获取数据，
         """
         while True:
+            global thread
+            if communicator.check_error():
+                communicator.close_all_device()
+                communicator.stop_read_all()
+                communicator.disconnect()
+                thread_running.set()
+                thread = None
+                emailsender.send_email("读写故障", "数据采集模块出现读写故障，请检查")
             if thread_running.is_set():
                 thread_running.clear()
                 break
@@ -69,23 +77,33 @@ def handle_socketio_events(socketio: SocketIO):
             if "故障" in total.keys():
                 breakdown_list = breakdown_replace(total["故障"])
                 total["故障"] = breakdown_list
-            for key in list(total.keys()).copy():
-                # if key in TABLE_TRANSLATE.keys():
-                total[cn_translate(key)] = total.pop(key)
+            # for key in list(total.keys()).copy():
+            #     # if key in TABLE_TRANSLATE.keys():
+            #     total[cn_translate(key)] = total.pop(key)
             socketio.emit("data_from_device", total)
 
 
-def breakdown_replace(breakdown: list[str]) -> list[str]:
+# def breakdown_replace(breakdown: list[str]) -> list[str]:
+#     """
+#     将故障代码翻译为中文
+#     """
+#     result = []
+#     for item in breakdown:
+#         if item in BREAKDOWNMAP.keys():
+#             result.append(BREAKDOWNMAP[item])
+#         else:
+#             result.append(item)
+#     return result
+
+
+def breakdown_replace(breakdown: int) -> list[str]:
     """
     将故障代码翻译为中文
     """
-    result = []
-    for item in breakdown:
-        if item in breakdownmap.keys():
-            result.append(breakdownmap[item])
-        else:
-            result.append(item)
-    return result
+    if breakdown in BREAKDOWNMAP.keys():
+        return BREAKDOWNMAP[breakdown]
+    else:
+        return breakdown
 
 
 # 导出函数以便在主应用中调用

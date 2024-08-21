@@ -6,7 +6,7 @@ import time
 
 
 class DriverBase(ABC):
-    def __init__(self, device_name: str, data_list: list[str], para_list: list[str]):
+    def __init__(self, device_name: str):
         self.device_name = device_name
         self.conn_state = False
         self.run_state = False
@@ -14,8 +14,12 @@ class DriverBase(ABC):
         self.__read_all_running: bool = False
         self.__iswriting = False
         self.__isreading = False
-        self.curr_data = {key: 0 for key in data_list}
-        self.curr_para = {key: 0 for key in para_list}
+        self.read_error = False
+        self.write_error = False
+        # self.curr_data = {key: 0 for key in data_list}
+        # self.curr_para = {key: 0 for key in para_list}
+        self.curr_data = {}
+        self.curr_para = {}
         self.command = None
         self.hardware_para = []
         self.logger = self.set_logger()
@@ -40,16 +44,16 @@ class DriverBase(ABC):
         return logger
 
     @abstractmethod
-    def write(self, para_dict: dict[str, any]) -> bool:
-        pass
-
-    @abstractmethod
     def connect(self) -> bool:
         return True
 
     @abstractmethod
     def disconnect(self) -> bool:
         return True
+
+    @abstractmethod
+    def write_execute(self) -> bool:
+        pass
 
     @abstractmethod
     def read_all(self) -> bool:
@@ -82,9 +86,14 @@ class DriverBase(ABC):
         # 获取要存储到数据库中的所有数据名及类型
         pass
 
+    @abstractmethod
+    def close_device(self) -> bool:
+        # 关闭设备
+        pass
+
     def get_device_state(self) -> dict[str, any]:
         # 当前是否连接，设备当前是否启动，设备当前是否故障
-        return {"connected": self.conn_state, "running": self.run_state, "breakdown": self.breakdown}
+        return {"连接状态": self.conn_state, "运行状态": self.run_state, "故障": self.breakdown}
 
     def is_connected(self) -> bool:
         return self.conn_state
@@ -130,12 +139,32 @@ class DriverBase(ABC):
             if stop_event.is_set():
                 print(f"{self.device_name}:read_all线程正在退出")
                 break
+            count = 0
             while self.__iswriting:
+                count += 1
                 time.sleep(0.005)
+                if count == 1000:
+                    self.logger.error(f"串口不可读!")
+                    self.read_error = True
+                    break
             self.__isreading = True
-            self.read_all()
+            if not self.read_all():
+                self.read_error = True
+                self.logger.error(f"{self.device_name}读取数据失败")
+                break
             self.__isreading = False
             time.sleep(0.05)
+
+    def write(self, para_dict: dict[str, any]) -> bool:
+        if not self.check_writable():
+            self.logger.error(f"串口不可写!")
+            self.write_error = True
+            return False
+        self.__iswriting = True
+        status = self.write_execute(para_dict)
+        self.write_error = not status
+        self.__iswriting = False
+        return status
 
     def check_thread_alive(self) -> bool:
         if not self.__read_Thread.is_alive():
@@ -149,7 +178,9 @@ class DriverBase(ABC):
         while self.__isreading:
             time.sleep(0.005)
             count += 1
-            if count == 100:
+            if count == 1000:
+                # 若5秒都没有读取成功，那么报错
+                self.logger.error(f"串口不可写!")
                 return False
         return True
 
@@ -163,3 +194,10 @@ class DriverBase(ABC):
 
     def clear_curr_data(self):
         self.curr_data = {key: 0 for key in self.curr_data.keys()}
+
+    def reset_error(self):
+        self.read_error = False
+        self.write_error = False
+
+    def check_error(self):
+        return self.read_error or self.write_error

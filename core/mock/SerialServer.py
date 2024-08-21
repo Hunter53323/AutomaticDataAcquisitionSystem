@@ -19,6 +19,8 @@ def handle_command(data: bytes, fan: Fan, testbreakdown: bool = False):
             byte2 = b"\x01"
             byte3 = b"\x01"
             data_checksum = calculate_checksum(data[0:13])
+            # print(data_checksum)
+            # print(data[13].to_bytes())
             if data_checksum == data[13].to_bytes():
                 # 执行电机控制
                 speed = int.from_bytes(data[5:7])
@@ -27,6 +29,7 @@ def handle_command(data: bytes, fan: Fan, testbreakdown: bool = False):
                     state = True
                 elif control == 2:
                     state = False
+                    speed = 0
                 elif control == 4:
                     state = fan.state
                 elif control == 0:
@@ -37,6 +40,7 @@ def handle_command(data: bytes, fan: Fan, testbreakdown: bool = False):
 
                 byte4 = b"\x01"
             else:
+                print("checksum error")
                 byte4 = b"\x02"
             byte5 = calculate_checksum(byte0, byte1, byte2, byte3, byte4)
             if byte5 != b"\x5C" and byte5 != b"\x5D":
@@ -84,7 +88,8 @@ def handle_command(data: bytes, fan: Fan, testbreakdown: bool = False):
             byte6 = b"\xA5"
             response = byte0 + byte1 + byte2 + byte3 + byte5 + byte6
         return response
-    except:
+    except Exception as e:
+        print(e)
         byte2 = b"\x00"
         byte3 = b"\x00"
         byte5 = b"\x00"
@@ -136,7 +141,7 @@ if __name__ == "__main__":
                 # 处理命令
                 # 在处理之前应该检查报文是否为有效报文！
                 response = handle_command(data, fan, False)
-                print(time.time())
+                # print(time.time())
                 print("发送回复:", response.hex())
                 ser.write(response)
 
