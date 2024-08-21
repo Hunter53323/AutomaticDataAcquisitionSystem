@@ -6,7 +6,8 @@ from flask import request, jsonify
 from core.communication import communicator
 import threading
 from . import socketio_http
-from core.communication.exception_handling import BREAKDOWNMAP
+
+# from core.communication.exception_handling import BREAKDOWNMAP
 from core.warningmessage import emailsender
 
 thread = None
@@ -74,12 +75,9 @@ def handle_socketio_events(socketio: SocketIO):
             data = communicator.read()
             para = communicator.get_curr_para()
             total = {**data, **para}
-            if "故障" in total.keys():
-                breakdown_list = breakdown_replace(total["故障"])
-                total["故障"] = breakdown_list
-            # for key in list(total.keys()).copy():
-            #     # if key in TABLE_TRANSLATE.keys():
-            #     total[cn_translate(key)] = total.pop(key)
+            # if "故障" in total.keys():
+            #     breakdown_list = breakdown_replace(total["故障"])
+            #     total["故障"] = breakdown_list
             socketio.emit("data_from_device", total)
 
 
@@ -96,14 +94,14 @@ def handle_socketio_events(socketio: SocketIO):
 #     return result
 
 
-def breakdown_replace(breakdown: int) -> list[str]:
-    """
-    将故障代码翻译为中文
-    """
-    if breakdown in BREAKDOWNMAP.keys():
-        return BREAKDOWNMAP[breakdown]
-    else:
-        return breakdown
+# def breakdown_replace(breakdown: int) -> list[str]:
+#     """
+#     将故障代码翻译为中文
+#     """
+#     if breakdown in BREAKDOWNMAP.keys():
+#         return BREAKDOWNMAP[breakdown]
+#     else:
+#         return breakdown
 
 
 # 导出函数以便在主应用中调用

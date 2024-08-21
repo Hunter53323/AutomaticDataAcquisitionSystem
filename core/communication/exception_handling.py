@@ -2,21 +2,6 @@ from .drivers.fan_drive_module import FanDriver
 from .drivers.actual_test_driver import TestDevice
 from core.warningmessage import emailsender
 
-BREAKDOWNMAP = {
-    0: "采样偏置故障",
-    1: "缺相故障",
-    2: "硬件过流故障",
-    3: "电机堵转故障",
-    4: "电机失步故障",
-    5: "软件 RMS 过流故障",
-    6: "软件峰值过流故障",
-    7: "直流母线欠压故障",
-    8: "IPM 过温故障",
-    9: "启动失败故障",
-    10: "直流母线过压故障",
-    11: "网压瞬时掉电故障",
-}
-
 
 class BreakdownHanding:
     def __init__(self):
@@ -41,13 +26,12 @@ class BreakdownHanding:
         # 判断故障类型，1是过流故障，2是普通故障
 
         for i in range(len(breakdowns)):
-            if breakdowns[i] == 2 or breakdowns[i] == 5 or breakdowns[i] == 6:
+            if "过流" in breakdowns[i]:
                 self.breakdown_type = 1
-                return 1, BREAKDOWNMAP[breakdowns[i]]
-        for i in range(len(breakdowns)):
-            if 0 <= breakdowns[i] < 12:
+                return 1, breakdowns[i]
+            else:
                 self.breakdown_type = 2
-                return 2, BREAKDOWNMAP[breakdowns[i]]
+                return 2, breakdowns[i]
         # 传错了，没故障
         self.breakdown_type = 0
         return 0, ""
