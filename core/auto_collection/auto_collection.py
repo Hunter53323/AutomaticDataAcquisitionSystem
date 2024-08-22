@@ -19,7 +19,7 @@ class AutoCollection:
         self.__auto_running: bool = False
         self.__pause_flag: bool = False
         self.__stop_flag: bool = False
-        self.__custom_steady_state_determination: str = "目标转速 - 实际转速 < 1"
+        self.__custom_steady_state_determination: str = "目标转速 - 实际转速 < 5"
 
         self.__collect_count: list[int] = [0, 0]  # 第一位是成功数量，第二位是失败数量
 
@@ -112,7 +112,7 @@ class AutoCollection:
             self.__collect_count[0 if collect_data else 1] += 1
             if not err_handle_status:
                 # 清障失败，需要人工干预
-                # 故障预警
+                # TODO：多次出现过流情况，直接停止整个数采或者打乱数据顺序重新进行数采
                 self.wait_until_no_breakdown()
             time.sleep(2)
             # 顺利采集完成一条数据
@@ -164,6 +164,7 @@ class AutoCollection:
         self.logger.info(f"当前测试的参数为{para_dict}")
         curr_time = time.time()
         count = 0
+        avg_data = {key: [] for key in self.communication.get_data_map().keys()}
         while True:
             curr_data: dict[str, any] = self.communication.read()
             # 有故障，进入故障处理模块
@@ -183,9 +184,15 @@ class AutoCollection:
                     pass
             # 故障处理完毕，正常运行
             count += 1
+            for key, value in curr_data.items():
+                avg_data[key].append(value)
+                if len(avg_data[key]) > 10:
+                    avg_data[key].pop(0)
+            avg_data_calculated = {key: sum(value) / len(value) for key, value in avg_data.items()}
             # TODO: 开始前请启动机器
             # count的判断是避免当前的稳定状态影响稳态判断,
-            if self.steady_state_determination(curr_data, para_dict) and count > 10:
+            # if self.steady_state_determination(curr_data, para_dict) and count > 10:
+            if self.steady_state_determination(avg_data_calculated, para_dict) and count > 10:
                 self.__stable_state = True
                 final_data = self.calculate_result(curr_data, para_dict)
                 self.logger.info(f"稳定后结果为{final_data}")
