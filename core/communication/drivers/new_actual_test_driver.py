@@ -169,7 +169,7 @@ class TestDevice(DriverBase):
     def handle_breakdown(self, breakdown: int) -> bool:
         try:
             if breakdown != 0:
-                parameters = {"测试设备控制命令": "P_mode"}
+                parameters = {"测试设备控制命令": "切换P模式"}
                 if not testdevice.write(parameters):
                     raise Exception(f"{parameters}")
                 parameters = {"测试设备控制命令": "write", "load": float(0) / 10}  # 假设空载为0
@@ -184,7 +184,7 @@ class TestDevice(DriverBase):
         except Exception as e:
             self.logger.error(f"故障处理模块报错！ error:{e}")
             self.logger.error(f"再次尝试空载！")
-            parameters = {"测试设备控制命令": "P_mode"}
+            parameters = {"测试设备控制命令": "切换P模式"}
             testdevice.write(parameters)
             parameters = {"测试设备控制命令": "write", "load": float(0) / 10}  # 假设空载为0
             testdevice.write(parameters)
@@ -265,9 +265,19 @@ if __name__ == "__main__":
     # testdevice.update_hardware_parameter(para_dict={"ip": "120.76.28.211", "port": 80})
     # parameters = {"test_device_command": "start_device"}
     # testdevice.write(parameters)
-    parameters = {"测试设备控制命令": "write", "load": 200}
+    parameters = {"测试设备控制命令": "停止"}
     testdevice.write(parameters)
-    testdevice.read_all()
+    # parameters = {"测试设备控制命令": "启动"}
+    # testdevice.write(parameters)
+    # parameters = {"测试设备控制命令": "切换P模式"}
+    # testdevice.write(parameters)
+    # parameters = {"测试设备控制命令": "切换M模式"}
+    # testdevice.write(parameters)
+    # parameters = {"测试设备控制命令": "切换N1模式"}
+    # testdevice.write(parameters)
+    # parameters = {"测试设备控制命令": "write", "测功机控制值": 11.21}
+    # testdevice.write(parameters)
+    # parameters = {"test_device_command": "write", "load": 200}
     # while 1:
     #     if testdevice.read_all():
     #         print(testdevice.curr_data)

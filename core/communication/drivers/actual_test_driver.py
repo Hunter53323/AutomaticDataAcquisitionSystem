@@ -2,9 +2,9 @@ import json
 import time
 
 from pymodbus.framer import ModbusSocketFramer
-from .frame import modbus_frame
-from .frame.modbus_frame import Field
-from .driver_base import DriverBase
+from frame import modbus_frame
+from frame.modbus_frame import Field
+from driver_base import DriverBase
 from pymodbus.client import ModbusTcpClient
 import struct
 import ipaddress
@@ -14,7 +14,7 @@ class TestDevice(DriverBase):
 
     def __init__(self, device_name: str):
         super().__init__(device_name)
-        self.__set_client(ip="127.0.0.1", port=5020)
+        self.__set_client(ip="192.168.1.254", port=3000)
         self.hardware_para = ["ip", "port"]
         self.command = "测试设备控制命令"
         self.rev_f = modbus_frame.Framer()
@@ -173,70 +173,12 @@ class TestDevice(DriverBase):
                 self.logger.error(f"error:{e},count：{count}")
         return False
 
-    # def recv_one(self, timeout: float = 1) -> bytes:
-    #     self.client.comm_params.timeout_connect = timeout  # 设置接收超时时间，如果超时即使接收的字节数少于目标值也返回
-    #     try:
-    #         msg = self.client.recv(6)
-    #         if len(msg) == 6:  # 数据头
-    #             length = int.from_bytes(msg[-2:], byteorder="big", signed=False)
-    #             msg += self.client.recv(length)
-    #             if len(msg) == 6 + length:
-    #                 self.logger.debug(f"收到的报文为：{msg.hex()}")
-    #                 return msg
-    #             else:
-    #                 raise Exception(f"接收到的数据体长度不符合预期:{msg.hex()}")
-    #         elif len(msg) == 0:
-    #             return b""
-    #         else:
-    #             raise Exception(f"接收到的数据头长度不符合预期:{msg.hex()}")
-    #     except Exception as e:
-    #         self.logger.error(f"接收错误! error:{e}")
-    #         return b""
-    #     finally:
-    #         pass  # 收尾
-    #
-    # def recv(self, timeout=0.02) -> bytes:
-    #     msg = self.recv_one(timeout * 10)  # 放大区间使得可以收到报文
-    #     count = 0
-    #     while msg:  # 如果报文不为空，则可能后面有新报文
-    #         count += 1
-    #         msg_cache = self.recv_one(timeout)  # 更新新报文
-    #         if msg_cache and count < 20:
-    #             msg = msg_cache
-    #         else:
-    #             if count == 20:
-    #                 self.logger.warn(f"警告更新报文时间设置过长！ 报文更新周期小于{timeout}s")
-    #             elif count == 0:
-    #                 self.logger.warn(f"警告更新报文时间设置过短！请增大！ 报文更新周期大于{timeout * 10}s")
-    #             break
-    #     return msg
-    #
-    # def read_all(self, read_count=3) -> bool:
-    #     if not self.is_set_f:
-    #         return False
-    #     for count in range(read_count):
-    #         try:
-    #             if not self.conn_state:
-    #                 self.logger.error(f"服务器未连接! 非法读！")
-    #                 return False
-    #             result = self.recv()
-    #             if not result:
-    #                 raise Exception(f"接收失败! result：{result.hex()}")
-    #             else:
-    #                 state, e = self.rev_f.cofirm_framer(result)
-    #                 if not state:
-    #                     self.logger.error(f"查询回复解析报错{e}")
-    #                     raise Exception(e)
-    #                 # 数据检查完毕后开始读取数据
-    #                 self.curr_data = self.rev_f.get_data()
-    #                 return True
-    #         except Exception as e:
-    #             self.logger.error(f"error:{e},count：{count}")
-    #     return False
-
     def handle_breakdown(self, breakdown: int) -> bool:
         try:
             if breakdown != 0:
+                parameters = {"测试设备控制命令": "切换P模式"}
+                if not testdevice.write(parameters):
+                    raise Exception(f"{parameters}")
                 parameters = {"测试设备控制命令": "write", "load": float(0) / 10}  # 假设空载为0
                 if not testdevice.write(parameters):
                     raise Exception(f"{parameters}")
@@ -249,6 +191,8 @@ class TestDevice(DriverBase):
         except Exception as e:
             self.logger.error(f"故障处理模块报错！ error:{e}")
             self.logger.error(f"再次尝试空载！")
+            parameters = {"测试设备控制命令": "切换P模式"}
+            testdevice.write(parameters)
             parameters = {"测试设备控制命令": "write", "load": float(0) / 10}  # 假设空载为0
             testdevice.write(parameters)
             parameters = {"测试设备控制命令": "启动"}
@@ -323,19 +267,28 @@ class TestDevice(DriverBase):
 
 if __name__ == "__main__":
     testdevice = TestDevice(device_name="TestDevice")
-    testdevice.default_frame()
     testdevice.connect()
     # testdevice.update_hardware_parameter(para_dict={"ip": "127.0.0.1", "port": 504})
     # print(testdevice.connect())
     # testdevice.update_hardware_parameter(para_dict={"ip": "120.76.28.211", "port": 80})
-    # parameters = {"test_device_command": "start_device"}
+    parameters = {"测试设备控制命令": "停止"}
+    testdevice.write(parameters)
+    # parameters = {"测试设备控制命令": "启动"}
+    # testdevice.write(parameters)
+    # parameters = {"测试设备控制命令": "切换P模式"}
+    # testdevice.write(parameters)
+    # parameters = {"测试设备控制命令": "切换M模式"}
+    # testdevice.write(parameters)
+    # parameters = {"测试设备控制命令": "切换N1模式"}
+    # testdevice.write(parameters)
+    # parameters = {"测试设备控制命令": "write", "测功机控制值": 11.21}
     # testdevice.write(parameters)
     # parameters = {"test_device_command": "write", "load": 200}
-    while 1:
-        if testdevice.read_all():
-            print(testdevice.curr_data)
-        # testdevice.write(parameters)
-        time.sleep(0.1)
+    # while 1:
+    #     if testdevice.read_all():
+    #         print(testdevice.curr_data)
+    #     # testdevice.write(parameters)
+    #     time.sleep(0.1)
     # parameters = {"command": "stop_device"}
     # print("Test stop:", testdevice.write(parameters))
     # parameters = {"command": "P_mode"}
