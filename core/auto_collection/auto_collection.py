@@ -271,11 +271,19 @@ class AutoCollection:
     def get_steady_state_determination(self) -> str:
         return self.__custom_steady_state_determination
 
-    def init_para_pool(self, para_pool_dict: dict[str, list[any]]) -> tuple[bool, int]:
+    def init_para_pool(self, para_pool_dict: dict[str, dict[str, any]]) -> tuple[bool, int]:
         if self.__auto_running:
             self.logger.warning("正在自动采集，请结束或暂停后初始化参数队列")
             return False
         self.logger.info("初始化参数队列")
+        # 将参数的配置转换为参数的值列表
+        tmp_dict = {}
+        for key, para_config in para_pool_dict.items():
+            min = para_config.get("min", None)
+            max = para_config.get("max", None)
+            step = para_config.get("step", None)
+            tmp_dict[key] = self.generate_test_params(min, max, step)
+        para_pool_dict = tmp_dict
         self.__para_vals.clear()
         error_key_list: list[str] = []
         self.__para_vals = {key: None for key in self.communication.get_para_map().keys()}
@@ -295,6 +303,21 @@ class AutoCollection:
         self.__para_queue = deque(para_pool)
         self.__para_queue_inited = True
         return True, len(self.__para_queue)
+
+    def generate_test_params(self, min_value, max_value, step):
+        # 确保步长是正数
+        if step <= 0:
+            raise ValueError("步长必须大于0")
+
+        # 生成测试参数列表
+        test_params = []
+        param = min_value
+
+        while param <= max_value:
+            test_params.append(float(param))
+            param += step
+
+        return test_params
 
     # def init_para_pool_from_csv(self, para_dict: dict, data_count: int) -> bool:
     #     if self.__auto_running:

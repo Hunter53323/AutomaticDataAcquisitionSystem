@@ -67,6 +67,7 @@ def upload_parameter():
     示例请求：curl -X POST http://127.0.0.1:5000/collect/uploadparameter \
     -H "Content-Type: application/json" \
     -d '{"parameters": {"负载量": [1, 2, 3, 4], "设定转速": [1, 2, 3, 4], "速度环补偿系数": [1, 2, 3, 4], "电流环带宽": [1, 2, 3, 4], "观测器补偿系数": [1, 2, 3, 4]}}'
+    {"parameters": {"负载量": {"min":1,"max":10,"step":2}}}
     """
     para_dict = request.get_json().get("parameters")
     if not isinstance(para_dict, dict):
