@@ -2,9 +2,9 @@ import json
 import time
 
 from pymodbus.framer import ModbusSocketFramer
-from frame import modbus_frame
-from frame.modbus_frame import Field
-from driver_base import DriverBase
+from .frame import modbus_frame
+from .frame.modbus_frame import Field
+from .driver_base import DriverBase
 from pymodbus.client import ModbusTcpClient
 import struct
 import ipaddress
