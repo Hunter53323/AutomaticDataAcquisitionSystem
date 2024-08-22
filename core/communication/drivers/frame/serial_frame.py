@@ -106,6 +106,8 @@ class Framer:
     def load_data(self, data_dict: list) -> bool:
         self.reset_data()
         for value in data_dict:
+            if value["type"] == "bit8":
+                value["name_list"] = value["formula"]
             self.set_data(**value)
         self.cal_len()
         return True
