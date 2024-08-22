@@ -116,9 +116,10 @@ class FanDriver(DriverBase):
             formula=f"real_data=raw_data* {IB} * {VB} * {Cofe3} / {Cofe4} / {Cofe2} / {Cofe5}",
             f_name="ack_query_f", init=init
         )
-        self.updata_F_data(index=6, name="故障", type="bit16", size=2, formula="", f_name="ack_query_f", init=init)
-
-        self.curr_data = {"目标转速": 0, "实际转速": 0, "直流母线电压": 0, "U相电流有效值": 0, "功率": 0, "故障": 0}
+        self.updata_F_data(index=6, name="故障1", type="bit8", size=1, formula="", f_name="ack_query_f", init=init,name_list=['采样偏置故障', '缺相故障', '硬件过流故障', '电机堵转故障', '电机失步故障', '软件 RMS 过流故障', '软件峰值过流故障', '直流母线欠压故障']
+)
+        self.updata_F_data(index=7, name="故障2", type="bit8", size=1, formula="", f_name="ack_query_f", init=init,name_list=['IPM 过温故障', '启动失败故障', '直流母线过压故障', '网压瞬时掉电故障','','','',''])
+        self.curr_data = {"目标转速": 0, "实际转速": 0, "直流母线电压": 0, "U相电流有效值": 0, "功率": 0, "故障1": 0,"故障2":0}
 
         self.updata_F_data(index=1, name="控制命令", type="bit8", size=1, formula="real_data=raw_data",
                            f_name="control_f", init=init)
@@ -163,14 +164,14 @@ class FanDriver(DriverBase):
             else:
                 return False, e
 
-    def updata_F_data(self, f_name: str, index: int, name: str, type: str, size: int, formula: str,
+    def updata_F_data(self, f_name: str, index: int, name: str, type: str, size: int, formula: str,name_list:list=[],
                       init: bool = False) -> tuple[bool, None] | tuple[bool, Exception]:
         try:
             state1 = True
             e1 = None
             if not init:
                 state1, e1 = self.delete_F_data(f_name=f_name, index=index)
-            state2, e2 = self.set_data(index=index, name=name, type=type, size=size, formula=formula, f_name=f_name)
+            state2, e2 = self.set_data(index=index, name=name, type=type, size=size, formula=formula, f_name=f_name,name_list=name_list)
             if not (state1 and state2):
                 raise Exception(f"删除帧：{e1},增加帧：{e2}")
             return True, None
