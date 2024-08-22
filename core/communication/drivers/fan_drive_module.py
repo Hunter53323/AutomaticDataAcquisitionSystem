@@ -3,7 +3,7 @@ import json
 from typing import Tuple, Any
 
 import serial
-from .serial.serialutil import SerialTimeoutException
+from serial.serialutil import SerialTimeoutException
 from .driver_base import DriverBase
 from .frame import serial_frame
 import time
