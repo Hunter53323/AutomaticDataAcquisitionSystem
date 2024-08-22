@@ -136,7 +136,7 @@ class FanDriver(DriverBase):
 
         self.set_default()
 
-    def set_data(self, index: int, name: str, type: str, size: int, formula: str, f_name: str,name_list:list) -> tuple[bool, None] | tuple[bool, Any]:
+    def set_data(self, index: int, name: str, type: str, size: int, formula: str, f_name: str,name_list:list=[]) -> tuple[bool, None] | tuple[bool, Any]:
         if f_name == "ack_query_f":
             state, e = self.ack_query_f.set_data(index=index, name=name, type=type, size=size, formula=formula,breakdowns=name_list)
             if state:
