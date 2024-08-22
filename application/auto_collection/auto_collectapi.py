@@ -147,10 +147,12 @@ def email_set():
     示例请求：curl -X POST http://127.0.0.1:5000/collect/emailset -d "sender_mail=12345&sender_passwd=12345"
     """
     if request.method == "GET":
-        return jsonify({"sender_mail": emailsender.sender_mail, 
-                        "receiver_email": emailsender.receiver_email,
-                        "receiver_name": emailsender.receiver_name
-                        }), 200
+        return (
+            jsonify(
+                {"sender_mail": emailsender.sender_mail, "receiver_email": emailsender.receiver_email, "receiver_name": emailsender.receiver_name}
+            ),
+            200,
+        )
     else:
         sender_mail = request.form.get("sender_mail")
         sender_passwd = request.form.get("sender_passwd")

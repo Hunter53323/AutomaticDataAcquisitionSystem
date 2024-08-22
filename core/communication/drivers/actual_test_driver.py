@@ -24,10 +24,10 @@ class TestDevice(DriverBase):
 
     def default_frame(self):
         self.is_set_f = True
-        self.rev_f.set_data(index=1, name="输入功率", type="float", size=4, formula=f"real_data=raw_data")
-        self.rev_f.set_data(index=2, name="扭矩", type="float", size=4, formula=f"real_data=raw_data")
-        self.rev_f.set_data(index=3, name="输出功率", type="float", size=4, formula=f"real_data=raw_data")
-        self.curr_data = {"输入功率": 0, "扭矩": 0, "输出功率": 0}
+        self.rev_f.set_data(index=1, name="扭矩", type="float", size=4, formula=f"real_data=raw_data")
+        self.rev_f.set_data(index=2, name="电机输出功率", type="float", size=4, formula=f"real_data=raw_data")
+        self.rev_f.set_data(index=3, name="交流功率", type="float", size=4, formula=f"real_data=raw_data")
+        self.curr_data = {"扭矩": 0, "电机输出功率": 0, "交流功率": 0}
         self.curr_para = {"测功机控制值": 0, "测试设备控制命令": "write"}
 
     def updata_F_data(self, f_name: str, index: int, name: str, type: str, size: int, formula: str):
@@ -63,33 +63,31 @@ class TestDevice(DriverBase):
             return False
 
         if self.command not in para_dict:
-            command = "write"
-        else:
-            command = para_dict[self.command]
+            para_dict[self.command] = "write"
         if "测功机控制值" not in para_dict:
             para_dict["测功机控制值"] = 0
 
-        if command == "启动":
+        if para_dict[self.command] == "启动":
             address = 0 + (self.axis - 1) * 3
             value = 1
             result = self.client.write_register(address, value, slave=1)
-        elif command == "停止":
+        elif para_dict[self.command] == "停止":
             address = 0 + (self.axis - 1) * 3
             value = 0
             result = self.client.write_register(address, value, slave=1)
-        elif command == "切换P模式":
+        elif para_dict[self.command] == "切换P模式":
             address = 1 + (self.axis - 1) * 3
             value = 1
             result = self.client.write_register(address, value, slave=1)
-        elif command == "切换M模式":
+        elif para_dict[self.command] == "切换M模式":
             address = 1 + (self.axis - 1) * 3
             value = 2
             result = self.client.write_register(address, value, slave=1)
-        elif command == "切换N1模式":
+        elif para_dict[self.command] == "切换N1模式":
             address = 1 + (self.axis - 1) * 3
             value = 4
             result = self.client.write_register(address, value, slave=1)
-        elif command == "write":
+        elif para_dict[self.command] == "write":
             address = 2 + (self.axis - 1) * 3
             data_value = float(para_dict["测功机控制值"])
             # 将浮点数打包为四个字节
@@ -100,17 +98,17 @@ class TestDevice(DriverBase):
             value = list(registers)
             result = self.client.write_registers(address, value, slave=1)
         else:
-            self.logger.error(f"发送指令错误：{command}")
+            self.logger.error(f"发送指令错误：{para_dict[self.command]}")
             return False
-        self.logger.info(f"发送指令：{command, value}")
+        self.logger.info(f"发送指令：{para_dict[self.command], value}")
         if result.isError():
             self.logger.error(f"发送失败！")
             return False
         else:
             # 确认写正确后，更改状态值
-            if command == "启动":
+            if para_dict[self.command] == "启动":
                 self.run_state = True
-            elif command == "停止":
+            elif para_dict[self.command] == "停止":
                 self.run_state = False
             for key in self.curr_para:
                 self.curr_para[key] = para_dict[key]
@@ -158,14 +156,14 @@ class TestDevice(DriverBase):
                 if not response.isError():
                     # 将寄存器值转换为字节串
                     byte_string = b"".join([reg.to_bytes(2, byteorder="big") for reg in response.registers])
-                    self.logger.info(f"Byte String: {byte_string.hex()}")
+                    # self.logger.info(f"Byte String: {byte_string.hex()}")
                     state, e = self.rev_f.cofirm_framer(byte_string)
                     if not state:
                         self.logger.error(f"查询回复解析报错{e}")
                         raise Exception(e)
                     # 数据检查完毕后开始读取数据
                     self.curr_data = self.rev_f.get_data()
-                    print(self.curr_data)
+                    # print(self.curr_data)
                     return True
                 else:
                     raise Exception("Failed to read holding registers")
@@ -258,11 +256,11 @@ class TestDevice(DriverBase):
         all_data = {}
         for _, value in self.rev_f.data.items():
             all_data[value.name] = value.type
-        all_data["负载量"] = "float"
+        all_data["测功机控制值"] = "float"
         return all_data
 
     def close_device(self):
-        return self.write({"测试设备控制命令": "stop_device"})
+        return self.write({"测试设备控制命令": "停止"})
 
 
 if __name__ == "__main__":

@@ -161,8 +161,8 @@ class Framer:
                 and msg[1].to_bytes() == self.addr
                 and msg[2].to_bytes() == self.cmd
             ):
-                print(msg[-2])
-                print(self.check_check(msg[0:-2]))
+                # print(msg[-2])
+                # print(self.check_check(msg[0:-2]))
                 if msg[-2] == self.check_check(msg[0:-2]):
                     # 先假设字典有序
                     cur = 4
@@ -182,8 +182,6 @@ class Framer:
         checksum = 0
         # 对数据中的每个字节进行累加
         for data in msg:
-            if data == msg[1]:  # 如果校验和包括地址就去掉if
-                continue
             checksum += data
         # 取累加结果的低8位
         checksum_low8 = checksum & 0xFF
@@ -222,7 +220,17 @@ class Field:
             self.evaluate_formula(to_real=True)
         elif self.type == "bit8":
             self.raw_data = int.from_bytes(data, byteorder="big", signed=False)
-            self.real_data = self.breakdown[self.raw_data]
+            # 对故障相关的bit做处理
+            if "故障" in self.name:
+                if self.raw_data == 0:
+                    self.real_data = ""
+                else:
+                    for i in range(8):
+                        if (self.raw_data & (1 << i)) != 0:
+                            self.real_data = self.breakdown[i]
+                            break
+            else:
+                self.real_data = self.raw_data
         else:
             pass
 

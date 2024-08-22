@@ -19,7 +19,7 @@ class AutoCollection:
         self.__auto_running: bool = False
         self.__pause_flag: bool = False
         self.__stop_flag: bool = False
-        self.__custom_steady_state_determination: str = "目标转速 - 实际转速 < 5"
+        self.__custom_steady_state_determination: str = "设定转速 - 实际转速 < 5"
 
         self.__collect_count: list[int] = [0, 0]  # 第一位是成功数量，第二位是失败数量
 
@@ -108,6 +108,8 @@ class AutoCollection:
             self.__stable_state = False
             tmp_para_dict = dict(zip(self.__para_vals.keys(), item_para))
             collect_data, err_handle_status, code, err = self.signal_progress(tmp_para_dict)
+            if self.__stop_flag:
+                break
             self.save_data(data_dict=collect_data, para_dict=tmp_para_dict, err=err)
             self.__collect_count[0 if collect_data else 1] += 1
             if not err_handle_status:
@@ -122,7 +124,7 @@ class AutoCollection:
         self.communication.close_all_device()
         return True
 
-    def clear_para(self):
+    def clear_para(self) -> bool:
         # 清理参数，结束一次采集循环
         if self.__auto_running:
             self.logger.warning("正在自动采集，无法清空参数,请先停止自动采集")
@@ -135,6 +137,7 @@ class AutoCollection:
         self.__stop_flag: bool = False
 
         self.__collect_count: list[int] = [0, 0]  # 第一位是成功数量，第二位是失败数量
+        return True
 
     def judge_pause_status(self):
         while self.__pause_flag:
@@ -163,36 +166,45 @@ class AutoCollection:
         self.communication.write(para_dict)
         self.logger.info(f"当前测试的参数为{para_dict}")
         curr_time = time.time()
-        count = 0
-        avg_data = {key: [] for key in self.communication.get_data_map().keys()}
+        time_count = 0
+        # avg_data = {key: [] for key in self.communication.get_data_map().keys()}
         while True:
             curr_data: dict[str, any] = self.communication.read()
             # 有故障，进入故障处理模块
-            if curr_data["故障"] != [] and curr_data["故障"] != 0:
-                status, breakdown_type, err = self.communication.breakdown_handler.error_handle([curr_data["故障"]])
-                if count == 3:
-                    # 错误尝试次数过多，直接退出
-                    return {}, status, breakdown_type, err
-                if breakdown_type == 1:
-                    # 过流故障，直接退出
-                    return {}, status, breakdown_type, err
-                elif breakdown_type == 2:
-                    # 普通故障，尝试清障
-                    return self.signal_progress(para_dict, count + 1)
-                else:
-                    # 无故障
-                    pass
-            # 故障处理完毕，正常运行
-            count += 1
+            if self.__stop_flag:
+                return {}, False, 0, ""
+            breakdown_dict = {}
             for key, value in curr_data.items():
-                avg_data[key].append(value)
-                if len(avg_data[key]) > 10:
-                    avg_data[key].pop(0)
-            avg_data_calculated = {key: sum(value) / len(value) for key, value in avg_data.items()}
+                if "故障" in key:
+                    breakdown_dict[key] = value
+            for key, value in breakdown_dict.items():
+                if value != "":
+                    status, breakdown_type, err = self.communication.breakdown_handler.error_handle([breakdown_dict[key]])
+                    if count == 3:
+                        # 错误尝试次数过多，直接退出
+                        return {}, status, breakdown_type, err
+                    if breakdown_type == 1:
+                        # 过流故障，直接退出
+                        return {}, status, breakdown_type, err
+                    elif breakdown_type == 2:
+                        # 普通故障，尝试清障
+                        return self.signal_progress(para_dict, count + 1)
+                    else:
+                        # 无故障
+                        pass
+            # 故障处理完毕，正常运行
+
+            # for key, value in curr_data.items():
+            #     avg_data[key].append(value)
+            #     if len(avg_data[key]) > 10:
+            #         avg_data[key].pop(0)
+            # avg_data_calculated = {key: sum(value) / len(value) for key, value in avg_data.items()}
+
+            time_count += 1
             # TODO: 开始前请启动机器
             # count的判断是避免当前的稳定状态影响稳态判断,
-            # if self.steady_state_determination(curr_data, para_dict) and count > 10:
-            if self.steady_state_determination(avg_data_calculated, para_dict) and count > 10:
+            if self.steady_state_determination(curr_data, para_dict) and time_count > 30:
+                # if self.steady_state_determination(avg_data_calculated, para_dict) and time_count > 10:
                 self.__stable_state = True
                 final_data = self.calculate_result(curr_data, para_dict)
                 self.logger.info(f"稳定后结果为{final_data}")
@@ -286,9 +298,9 @@ class AutoCollection:
         # 将参数的配置转换为参数的值列表
         tmp_dict = {}
         for key, para_config in para_pool_dict.items():
-            min = para_config.get("min", None)
-            max = para_config.get("max", None)
-            step = para_config.get("step", None)
+            min = int(para_config.get("min", None))
+            max = int(para_config.get("max", None))
+            step = int(para_config.get("step", None))
             tmp_dict[key] = self.generate_test_params(min, max, step)
         para_pool_dict = tmp_dict
         self.__para_vals.clear()
@@ -355,6 +367,7 @@ class AutoCollection:
             if self.__auto_running:
                 self.logger.warning("正在自动采集，请结束或暂停后初始化参数队列")
                 return False
+            self.__para_queue = deque()
             self.__para_vals = {key: 0 for key in self.communication.get_para_map().keys()}
             data_count = len(para_dict_list)
             para_dict_list_key = para_dict_list[0].keys()

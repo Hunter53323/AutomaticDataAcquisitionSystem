@@ -278,6 +278,12 @@ class Communication:
         # 获取用户自定义的运算的列名,用于构造数据库表
         return {key: "FLOAT" for key in self.custom_calculate_map.keys()}
 
+    def export_custom_column(self) -> dict:
+        return self.custom_calculate_map
+
+    def load_custom_column(self, column_dict: dict):
+        self.custom_calculate_map = column_dict
+
     def add_custom_column(self, user_input: list[str]) -> bool:
         # 添加用户自定义的运算列名
         # TODO:没有做输入合法性检查

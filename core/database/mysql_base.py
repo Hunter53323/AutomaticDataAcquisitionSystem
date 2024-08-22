@@ -119,7 +119,7 @@ class MySQLDatabase:
             else:
                 for column in columns:
                     name, data_type, is_nullable, extra, _, _ = column
-                    if name == "ID":
+                    if name == "ID" or name == "时间戳":
                         continue
                     if name not in table_columns.keys() or table_columns[name].lower() != data_type:
                         self.logger.error(f"表 '{table_name}' 的列 '{column[0]}' 与提供的列定义不匹配。")

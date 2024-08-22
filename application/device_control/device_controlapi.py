@@ -18,14 +18,15 @@ def testdevice_control():
         command = request.form.get("command")
         if command == "start":
             status = test_device.write({"测试设备控制命令": "启动"})
+            # status = test_device.write({"测试设备控制命令": "write", "测功机控制值": 100})
         elif command == "stop":
             status = test_device.write({"测试设备控制命令": "停止"})
         elif command == "P_mode":
-            status = test_device.write({"测试设备控制命令": "P_mode"})
+            status = test_device.write({"测试设备控制命令": "切换P模式"})
         elif command == "N_mode":
-            status = test_device.write({"测试设备控制命令": "N_mode"})
+            status = test_device.write({"测试设备控制命令": "切换M模式"})
         elif command == "N1_mode":
-            status = test_device.write({"测试设备控制命令": "N1_mode"})
+            status = test_device.write({"测试设备控制命令": "切换N1模式"})
         else:
             status = False
 
@@ -46,7 +47,7 @@ def fan_control():
         command = request.form.get("command")
         if command == "start":
             # status = fan.write(
-            #     {
+            #     {a
             #         "控制命令": "启动",
             #     }
             # )
@@ -205,6 +206,12 @@ def config_save():
             return jsonify({"status": False}), 400
 
 
+@control.route("/configsaveother", methods=["GET", "POST", "PUT", "DELETE"])
+def config_save_other():
+    communicator.export_custom_column()
+    communicator.load_custom_column()
+
+
 @control.route("/checkdata", methods=["GET"])
 def check_data():
     """
@@ -256,8 +263,8 @@ def custom_column():
         """
         name: str = request.form.get("name")
         formula: str = request.form.get("formula")
-        datastr: str = name + '=' + formula
-        return jsonify({"status":communicator.add_custom_column([datastr])}), 200
+        datastr: str = name + "=" + formula
+        return jsonify({"status": communicator.add_custom_column([datastr])}), 200
     elif request.method == "PUT":
         """
         示例：curl -X POST http://127.0.0.1:5000/control/custom_column -d 'data=效率%3D输入功率/输出功率'
@@ -265,14 +272,14 @@ def custom_column():
         """
         name: str = request.form.get("name")
         formula: str = request.form.get("formula")
-        datastr: str = name + '=' + formula
-        return jsonify({"status":communicator.add_custom_column([datastr])}), 200
+        datastr: str = name + "=" + formula
+        return jsonify({"status": communicator.add_custom_column([datastr])}), 200
     else:
         """
         示例：curl -X DELETE http://127.0.0.1:5000/control/custom_column -d 'name=效率'
         """
         name = request.form.get("name")
-        return jsonify({"status":communicator.del_custom_column(name)}), 200
+        return jsonify({"status": communicator.del_custom_column(name)}), 200
 
 
 def config_to_columns(config: dict[str, any]) -> dict[str, str]:

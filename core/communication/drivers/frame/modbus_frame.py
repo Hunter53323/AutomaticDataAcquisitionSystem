@@ -9,7 +9,7 @@ from sympy import symbols, Eq, solve, sympify
 
 class Framer:
     def __init__(self):
-        # self.tid = b"\x00\x00"
+        self.tid = b"\x00\x00"
         self.pid = b"\x00\x00"
         self.length = 0
         self.uid = 1
@@ -69,8 +69,7 @@ class Framer:
         except Exception as e:
             return False, e
 
-    def set_data(self, index: int, name: str, type: str, size: int, formula: str, **kwargs) -> tuple[bool, None] | \
-                                                                                               tuple[bool, Exception]:
+    def set_data(self, index: int, name: str, type: str, size: int, formula: str, **kwargs) -> tuple[bool, None] | tuple[bool, Exception]:
         try:
             if index in self.data:
                 raise Exception(f"第{index}位置已存在数据{self.data[index].name}")
@@ -122,8 +121,7 @@ class Framer:
 
     def export_framer(self):
         self.cal_len()
-        return {"tid": self.tid, "pid": self.pid, "length": self.length, "uid": self.uid, "fc": self.fc,
-                "data": self.export_data()}
+        return {"tid": self.tid, "pid": self.pid, "length": self.length, "uid": self.uid, "fc": self.fc, "data": self.export_data()}
 
     def load_framer(self, framer: dict) -> tuple[bool, None] | tuple[bool, Exception]:
         try:
@@ -165,7 +163,7 @@ class Framer:
                 # 先假设字典有序
                 cur = 0
                 for key, value in self.data.items():
-                    value.decode_data(msg[cur: cur + value.size])
+                    value.decode_data(msg[cur : cur + value.size])
                     cur += value.size
                 return True, None
             else:
