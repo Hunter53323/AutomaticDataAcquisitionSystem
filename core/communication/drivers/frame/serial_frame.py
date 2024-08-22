@@ -59,11 +59,13 @@ class Framer:
         except Exception as e:
             return False, e
 
-    def set_data(self, index: int, name: str, type: str, size: int, formula: str="",breakdowns:list=[], **kwargs) -> tuple[bool, None] | tuple[bool, Exception]:
+    def set_data(
+        self, index: int, name: str, type: str, size: int, formula: str = "", breakdowns: list = [], **kwargs
+    ) -> tuple[bool, None] | tuple[bool, Exception]:
         try:
             if index in self.data:
                 raise Exception(f"第{index}位置已存在数据{self.data[index].name}")
-            temp_Field = Field(index, name, type, size, formula,breakdowns)
+            temp_Field = Field(index, name, type, size, formula, breakdowns)
             state, e = temp_Field.evaluate_formula()
             if not state:
                 raise Exception(e)
@@ -107,7 +109,8 @@ class Framer:
         self.reset_data()
         for value in data_dict:
             if value["type"] == "bit8":
-                value["name_list"] = value["formula"]
+                if "name_list" not in value:
+                    value["name_list"] = value["formula"]
             self.set_data(**value)
         self.cal_len()
         return True
@@ -194,7 +197,7 @@ class Fieldtype(Enum):
 
 
 class Field:
-    def __init__(self, index: int, name: str, type: str, size: int, formula: str = "",breakdowns:list=[]):
+    def __init__(self, index: int, name: str, type: str, size: int, formula: str = "", breakdowns: list = []):
         if type in Fieldtype._member_names_:
             self.type = type
         else:
@@ -209,7 +212,7 @@ class Field:
                 formula = ""
         self.formula = formula  # 格式为"real_data=(raw_data+2)/3"
         self.inv_formula = ""
-        self.breakdown=breakdowns
+        self.breakdown = breakdowns
         self.raw_data = 0
         self.real_data = 0
 
@@ -266,12 +269,26 @@ class Field:
 
 if __name__ == "__main__":
     ff = Framer()
-    ff.set_data(index=1, name="speed", type="int16", size=2, formula="real_data=raw_data",breakdowns=[])
-    ff.set_data(index=2, name="torp", type="int16", size=2, formula="real_data=raw_data",breakdowns=[])
-    ff.set_data(index=3, name="power", type="int16", size=2, formula="real_data=raw_data",breakdowns=[])
-    ff.set_data(index=4, name="breakdown1", type="bit8", size=1, formula="",breakdowns=["故障1","故障2","故障3","故障4","故障5","故障6","故障7","故障8"])
-    ff.set_data(index=5, name="breakdown2", type="bit8", size=1, formula="",breakdowns=["故障1","故障2","故障3","故障4","故障5","故障6","故障7","故障8"])
-    ff.set_data(index=6, name="test", type="bit8", size=1, formula="",breakdowns=["故障1"])
+    ff.set_data(index=1, name="speed", type="int16", size=2, formula="real_data=raw_data", breakdowns=[])
+    ff.set_data(index=2, name="torp", type="int16", size=2, formula="real_data=raw_data", breakdowns=[])
+    ff.set_data(index=3, name="power", type="int16", size=2, formula="real_data=raw_data", breakdowns=[])
+    ff.set_data(
+        index=4,
+        name="breakdown1",
+        type="bit8",
+        size=1,
+        formula="",
+        breakdowns=["故障1", "故障2", "故障3", "故障4", "故障5", "故障6", "故障7", "故障8"],
+    )
+    ff.set_data(
+        index=5,
+        name="breakdown2",
+        type="bit8",
+        size=1,
+        formula="",
+        breakdowns=["故障1", "故障2", "故障3", "故障4", "故障5", "故障6", "故障7", "故障8"],
+    )
+    ff.set_data(index=6, name="test", type="bit8", size=1, formula="", breakdowns=["故障1"])
     # one_f = ff.export_framer()
     # print(one_f)
     # author_f = Framer()
@@ -280,7 +297,7 @@ if __name__ == "__main__":
     # for _, v in ff.data.items():
     #     v.set_realdata(100)
     # ff.encode_framer()
-    print(ff.cofirm_framer(b'\xA5\xFF\x00\x03\x00\x01\x00\x02\x03\x03\x01\x02\x00\xb4\x5A'))
+    print(ff.cofirm_framer(b"\xA5\xFF\x00\x03\x00\x01\x00\x02\x03\x03\x01\x02\x00\xb4\x5A"))
     # print(ff.check_check(b"\x5a\xFF\x02\x0c\x00\x01\x00\x02\x00\x03\x00\x04\x00\x05\x00\x00"))
     # 一个查询回复报文5aFF020c00010002000300040005000076A5
     data = ff.get_data()
