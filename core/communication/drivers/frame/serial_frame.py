@@ -60,12 +60,12 @@ class Framer:
             return False, e
 
     def set_data(
-        self, index: int, name: str, type: str, size: int, formula: str = "", breakdowns: list = [], **kwargs
+        self, index: int, name: str, type: str, size: int, formula: str = "", breakdown: list = [], **kwargs
     ) -> tuple[bool, None] | tuple[bool, Exception]:
         try:
             if index in self.data:
                 raise Exception(f"第{index}位置已存在数据{self.data[index].name}")
-            temp_Field = Field(index, name, type, size, formula, breakdowns)
+            temp_Field = Field(index, name, type, size, formula, breakdown)
             state, e = temp_Field.evaluate_formula()
             if not state:
                 raise Exception(e)
@@ -108,9 +108,6 @@ class Framer:
     def load_data(self, data_dict: list) -> bool:
         self.reset_data()
         for value in data_dict:
-            if value["type"] == "bit8":
-                if "name_list" not in value:
-                    value["name_list"] = value["formula"]
             self.set_data(**value)
         self.cal_len()
         return True
@@ -161,8 +158,8 @@ class Framer:
                 and msg[1].to_bytes() == self.addr
                 and msg[2].to_bytes() == self.cmd
             ):
-                print(msg[-2])
-                print(self.check_check(msg[0:-2]))
+                # print(msg[-2])
+                # print(self.check_check(msg[0:-2]))
                 if msg[-2] == self.check_check(msg[0:-2]):
                     # 先假设字典有序
                     cur = 4

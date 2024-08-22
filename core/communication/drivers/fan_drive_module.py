@@ -3,7 +3,7 @@ import json
 from typing import Tuple, Any
 
 import serial
-from serial.serialutil import SerialTimeoutException
+from .serial.serialutil import SerialTimeoutException
 from .driver_base import DriverBase
 from .frame import serial_frame
 import time
@@ -514,24 +514,24 @@ if __name__ == "__main__":
     fan_driver = FanDriver("Fan", device_address="01", cpu="M0", port=serial_port)
     # fan_driver.update_hardware_parameter({"device_address": "034", "cpu": "M0", "port": "COM6"})
     # print(fan_driver.get_hardware_parameter())
-    fan_driver.updata_F_data(f_name="ack_query_f", index=1, name="修改1", type="bit8", size=1, formula="")
-    print(fan_driver.curr_data)
-    fan_driver.updata_F_data(f_name="control_f", index=2, name="修改2", type="bit16", size=2, formula="")
-    print(fan_driver.curr_para)
-    fan_driver.updata_F_data(f_name="control_f", index=2, name="修改3", type="int16", size=2, formula="")
-    fan_driver.updata_F_data(f_name="control_f", index=2, name="修改2", type="float", size=2, formula="real_data=raw_data")
-    print(fan_driver.curr_para)
-    fan_driver.updata_F_data(f_name="control_f", index=2, name="修改4", type="int16", size=2, formula="real_data=raw_data*2")
-    print(fan_driver.curr_para)
+    # fan_driver.updata_F_data(f_name="ack_query_f", index=1, name="修改1", type="bit8", size=1, formula="")
+    # print(fan_driver.curr_data)
+    # fan_driver.updata_F_data(f_name="control_f", index=2, name="修改2", type="bit16", size=2, formula="")
+    # print(fan_driver.curr_para)
+    # fan_driver.updata_F_data(f_name="control_f", index=2, name="修改3", type="int16", size=2, formula="")
+    # fan_driver.updata_F_data(f_name="control_f", index=2, name="修改2", type="float", size=2, formula="real_data=raw_data")
+    # print(fan_driver.curr_para)
+    # fan_driver.updata_F_data(f_name="control_f", index=2, name="修改4", type="int16", size=2, formula="real_data=raw_data*2")
+    # print(fan_driver.curr_para)
     # fan_driver.connect()
     # fan_driver.read_all()
     # print(fan_driver.ack_query_f.get_data())
     # fan_driver.control_f.set_data(index=6, name="new", type="int16", size=2, formula="real_data=raw_data*100")
-    # json_dict = fan_driver.export_config()
-    # print(json_dict)
-    # fan_driver2 = FanDriver("Fan2", [], [], device_address="01", cpu="M0", port=serial_port)
-    # fan_driver2.load_config(json_dict)
-    # print(fan_driver2.export_config())
+    json_dict = fan_driver.export_config()
+    print(json_dict)
+    fan_driver2 = FanDriver("Fan2", device_address="01", cpu="M0", port=serial_port)
+    print(fan_driver2.load_config(json_dict))
+    print(fan_driver2.export_config())
 
     # para_dict = {
     #     "控制命令": "start",
