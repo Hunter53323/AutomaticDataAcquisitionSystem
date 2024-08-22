@@ -90,19 +90,23 @@ class FanDriver(DriverBase):
         # 默认控制应答data
         self.set_data(index=1, name="send_result", type="bit8", size=1, formula="", f_name="ack_control_f")
         # 默认一期配置
-        self.cpu_default_config()
+        self.cpu_default_config(True)
 
-    def cpu_default_config(self):
+    def cpu_default_config(self, init: bool = False):
         FB, VB, IB, Cofe1, Cofe2, Cofe3, Cofe4, Cofe5 = self.get_cpu_paras()
         self.updata_F_data(
-            index=1, name="目标转速", type="int16", size=2, formula=f"real_data=raw_data* {FB} * {Cofe1} / {Cofe2}", f_name="ack_query_f"
+            index=1, name="目标转速", type="int16", size=2, formula=f"real_data=raw_data* {FB} * {Cofe1} / {Cofe2}",
+            f_name="ack_query_f", init=init
         )
         self.updata_F_data(
-            index=2, name="实际转速", type="int16", size=2, formula=f"real_data=raw_data* {FB} * {Cofe1} / {Cofe2}", f_name="ack_query_f"
+            index=2, name="实际转速", type="int16", size=2, formula=f"real_data=raw_data* {FB} * {Cofe1} / {Cofe2}",
+            f_name="ack_query_f", init=init
         )
-        self.updata_F_data(index=3, name="直流母线电压", type="int16", size=2, formula=f"real_data=raw_data* {VB} / {Cofe2}", f_name="ack_query_f")
+        self.updata_F_data(index=3, name="直流母线电压", type="int16", size=2,
+                           formula=f"real_data=raw_data* {VB} / {Cofe2}", f_name="ack_query_f", init=init)
         self.updata_F_data(
-            index=4, name="U相电流有效值", type="int16", size=2, formula=f"real_data=raw_data* {IB} / {Cofe2} / {Cofe5}", f_name="ack_query_f"
+            index=4, name="U相电流有效值", type="int16", size=2,
+            formula=f"real_data=raw_data* {IB} / {Cofe2} / {Cofe5}", f_name="ack_query_f", init=init
         )
         self.updata_F_data(
             index=5,
@@ -110,17 +114,22 @@ class FanDriver(DriverBase):
             type="int16",
             size=2,
             formula=f"real_data=raw_data* {IB} * {VB} * {Cofe3} / {Cofe4} / {Cofe2} / {Cofe5}",
-            f_name="ack_query_f",
+            f_name="ack_query_f", init=init
         )
-        self.updata_F_data(index=6, name="故障", type="bit16", size=2, formula="", f_name="ack_query_f")
+        self.updata_F_data(index=6, name="故障", type="bit16", size=2, formula="", f_name="ack_query_f", init=init)
 
         self.curr_data = {"目标转速": 0, "实际转速": 0, "直流母线电压": 0, "U相电流有效值": 0, "功率": 0, "故障": 0}
 
-        self.updata_F_data(index=1, name="控制命令", type="bit8", size=1, formula="real_data=raw_data", f_name="control_f")
-        self.updata_F_data(index=2, name="设定转速", type="int16", size=2, formula="real_data=raw_data", f_name="control_f")
-        self.updata_F_data(index=3, name="速度环补偿系数", type="int16", size=2, formula="real_data=raw_data/10", f_name="control_f")
-        self.updata_F_data(index=4, name="电流环带宽", type="int16", size=2, formula="real_data=raw_data", f_name="control_f")
-        self.updata_F_data(index=5, name="观测器补偿系数", type="int16", size=2, formula="real_data=raw_data/100", f_name="control_f")
+        self.updata_F_data(index=1, name="控制命令", type="bit8", size=1, formula="real_data=raw_data",
+                           f_name="control_f", init=init)
+        self.updata_F_data(index=2, name="设定转速", type="int16", size=2, formula="real_data=raw_data",
+                           f_name="control_f", init=init)
+        self.updata_F_data(index=3, name="速度环补偿系数", type="int16", size=2, formula="real_data=raw_data*10",
+                           f_name="control_f", init=init)
+        self.updata_F_data(index=4, name="电流环带宽", type="int16", size=2, formula="real_data=raw_data",
+                           f_name="control_f", init=init)
+        self.updata_F_data(index=5, name="观测器补偿系数", type="int16", size=2, formula="real_data=raw_data*100",
+                           f_name="control_f", init=init)
         # TODO: realdata表示给用户展示或者用户输入的数据，rawdata表示实际发送或接受的数据
         self.curr_para = {"控制命令": 0, "设定转速": 0, "速度环补偿系数": 0, "电流环带宽": 0, "观测器补偿系数": 0}
 
@@ -154,12 +163,14 @@ class FanDriver(DriverBase):
             else:
                 return False, e
 
-    def updata_F_data(self, f_name: str, index: int, name: str, type: str, size: int, formula: str) -> tuple[bool, None] | tuple[bool, Exception]:
+    def updata_F_data(self, f_name: str, index: int, name: str, type: str, size: int, formula: str,
+                      init: bool = False) -> tuple[bool, None] | tuple[bool, Exception]:
         try:
-            state1, e1 = self.delete_F_data(f_name=f_name, index=index)
-            # print(e)
+            state1 = True
+            e1 = None
+            if not init:
+                state1, e1 = self.delete_F_data(f_name=f_name, index=index)
             state2, e2 = self.set_data(index=index, name=name, type=type, size=size, formula=formula, f_name=f_name)
-            # print(e)
             if not (state1 and state2):
                 raise Exception(f"删除帧：{e1},增加帧：{e2}")
             return True, None
