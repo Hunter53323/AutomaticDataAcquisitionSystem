@@ -85,6 +85,7 @@ def handle_socketio_events(socketio: SocketIO):
     @socketio.on("connect")
     def send_data():
         while True:
+            time.sleep(0.2)
             if send_data_thread_running.is_set():
                 send_data_thread_running.clear()
                 break
