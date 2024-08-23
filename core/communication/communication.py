@@ -17,7 +17,6 @@ class Communication:
         self.breakdown_handler = BreakdownHanding()
         self.logger = self.set_logger()
         self.conn_state: list = []
-        # TODO:这里考虑自定义的运算如何和参数表和数据表进行匹配，不然好像会出问题
 
     def set_logger(self) -> logging.Logger:
         # 创建一个日志记录器
@@ -258,7 +257,6 @@ class Communication:
 
     def get_cureent_data_table(self) -> dict[str, any]:
         # 根据已有的数据构造数据表，进一步构造新的数据库表
-        # TODO:根据用户配置的自定义运算逻辑添加到数据库表中
         table_columns = {"ID": "INT AUTO_INCREMENT PRIMARY KEY"}
         for driver in self.drivers:
             tmp_table = driver.get_database_table()
@@ -286,7 +284,6 @@ class Communication:
 
     def add_custom_column(self, user_input: list[str]) -> bool:
         # 添加用户自定义的运算列名
-        # TODO:没有做输入合法性检查
         for expression in user_input:
             column_name, expr = expression.split("=", 1)
             column_name = column_name.strip()
@@ -317,7 +314,7 @@ class Communication:
 
 
 def type2sqltype(data_type: str) -> str:
-    if data_type == "int16" or data_type == "float" or data_type == "FLOAT":
+    if data_type == "int16" or data_type == "float" or data_type == "FLOAT" or data_type == "int8":
         return "FLOAT"
     if data_type == "bit16" or data_type == "bit8":
         return "VARCHAR(255)"

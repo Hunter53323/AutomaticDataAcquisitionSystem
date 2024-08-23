@@ -51,7 +51,7 @@ class MySQLDatabase:
                 self.create_table()
             else:
                 self.logger.info(f"已切换到表 '{table_name}'")
-                self.logger.info(f"表结构：{self.table_columns}")
+                # self.logger.info(f"表结构：{self.table_columns}")
         else:
             table_name_index = self.table_name_list.index(table_name)
             self.table_name = table_name
