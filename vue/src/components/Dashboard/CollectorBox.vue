@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { ElMessage, UploadInstance, UploadProps, UploadRawFile, genFileId } from 'element-plus'
 import { useGlobalStore, useDashboardStore } from '@/stores/global'
 
 const upload = ref<UploadInstance>()
 const global = useGlobalStore()
 const dashboard = useDashboardStore()
+
 
 
 const handleExceed: UploadProps['onExceed'] = (files) => {
@@ -114,7 +115,6 @@ const collectorContinue = () => {
       ElMessage.error('数采继续失败')
     })
 }
-
 
 
 </script>

@@ -94,6 +94,7 @@ def handle_socketio_events(socketio: SocketIO):
             for driver in communicator.drivers:
                 send_dict[driver.device_name] = driver.get_device_state()
             socketio.emit("device_status", send_dict)
+            # print("send data")
 
     @socketio.on("connect")
     def connect():
