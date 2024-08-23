@@ -22,7 +22,7 @@ class BreakdownHanding:
             return False
         return True
 
-    def judge_breakdown(self, breakdowns: list[int]) -> tuple[int, str]:
+    def judge_breakdown(self, breakdowns: list[str]) -> tuple[int, str]:
         # 判断故障类型，1是过流故障，2是普通故障
 
         for i in range(len(breakdowns)):
@@ -59,7 +59,7 @@ class BreakdownHanding:
         self.breakdown_type = 0
         return True
 
-    def error_handle(self, breakdown: list[int]) -> tuple[bool, int, str]:
+    def error_handle(self, breakdown: list[str]) -> tuple[bool, int, str]:
         """
         :retuen status: True是故障处理成功，False是故障处理失败
         :return breakdown_type: 1是过流故障，2是普通故障
