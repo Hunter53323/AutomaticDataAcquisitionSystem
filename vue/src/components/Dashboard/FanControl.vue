@@ -13,7 +13,7 @@ const global = useGlobalStore()
 const handleConnect = () => {
   var command = ""
   if (dashboard.isFanConnected) {
-    if (dashboard.isFanRunning || dashboard.isTestRunning || dashboard.isAutoCollecting) {
+    if (dashboard.isFanRunning || dashboard.isTestRunning || dashboard.autoCollectStatus == 3 || dashboard.autoCollectStatus == 4) {
       ElMessage.error('请先停止风机、测试设备或自动采集');
       return;
     }
@@ -38,13 +38,6 @@ const handleConnect = () => {
       }
     })
     .then(() => {
-      if (command == 'connect') {
-        dashboard.isFanConnected = true;
-      }
-      if (command == 'disconnect') {
-        dashboard.isFanConnected = false;
-      }
-      dashboard.updateDeviceState()
     })
     .catch(error => {
       ElMessage.error('被测设备' + (command == 'disconnect' ? '断连' : '连接') + '失败');
@@ -70,7 +63,6 @@ const handleStartDevice = () => {
       else {
         throw new Error();
       }
-      dashboard.updateDeviceState()
     })
     .catch(error => {
       ElMessage.error('被测设备' + (command == 'stop' ? '停止' : '启动') + '失败')
@@ -95,7 +87,6 @@ const handleClearBreakdown = () => {
       else {
         throw new Error();
       }
-      dashboard.updateDeviceState()
     })
     .catch(error => {
       ElMessage.error('被测设备清障失败')
