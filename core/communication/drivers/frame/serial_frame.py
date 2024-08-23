@@ -101,8 +101,11 @@ class Framer:
 
     def export_data(self):
         data_dict = []
-        for _, value in self.data.items():
-            data_dict.append(vars(value))
+        dict_length = len(self.data.keys())
+        for i in range(dict_length):
+            data_dict.append(vars(self.data[i + 1]))
+        # for key, value in self.data.items():
+        #     data_dict.append(vars(value))
         return data_dict
 
     def load_data(self, data_dict: list) -> bool:
@@ -189,6 +192,7 @@ class Framer:
 class Fieldtype(Enum):
     int16 = 1
     bit8 = 2
+    int8 = 3
 
 
 class Field:
@@ -201,7 +205,7 @@ class Field:
         self.name = name
         self.size = size
         if formula == "":
-            if self.type == "int16":
+            if self.type == "int16" or self.type == "int8":
                 formula = "real_data=raw_data"
             else:
                 formula = ""
@@ -213,6 +217,9 @@ class Field:
 
     def decode_data(self, data: bytes):
         if self.type == "int16":
+            self.raw_data = int.from_bytes(data, byteorder="big", signed=False)
+            self.evaluate_formula(to_real=True)
+        elif self.type == "int8":
             self.raw_data = int.from_bytes(data, byteorder="big", signed=False)
             self.evaluate_formula(to_real=True)
         elif self.type == "bit8":
@@ -237,7 +244,7 @@ class Field:
 
     def set_realdata(self, real_data: int):
         self.real_data = real_data
-        if self.type == "int16":
+        if self.type == "int16" or self.type == "int8":
             self.evaluate_formula(to_real=False)
         elif self.type == "bit8":
             self.raw_data = real_data

@@ -56,7 +56,7 @@ class AutoCollection:
         # 检查当前配置是否存在数据表，若没有的话则创建
         table_column = self.communication.get_cureent_data_table()
         if self.db.check_exists(DATA_TABLE_NAME, table_column):
-            self.db.change_current_table(DATA_TABLE_NAME)
+            self.db.change_current_table(DATA_TABLE_NAME, table_column)
         else:
             self.db.change_current_table(DATA_TABLE_NAME, table_column)
         self.logger.info("预检通过")
@@ -223,7 +223,6 @@ class AutoCollection:
             # 故障处理完毕，正常运行
 
             time_count += 1
-            # TODO: 开始前请启动机器
             # count的判断是避免当前的稳定状态影响稳态判断,
             if steady_determination(curr_data, para_dict) and time_count > 30:
                 # if self.steady_state_determination(avg_data_calculated, para_dict) and time_count > 10:
@@ -261,7 +260,6 @@ class AutoCollection:
         return self.db.insert_data([save_data_dict])
 
     def calculate_result(self, data_dict: dict[str, any], para_dict: dict[str, any]) -> dict[str, any]:
-        # TODO: 后面需要加上真实的计算,应该需要在communication里面去做，这个计算如何和数据库结合
         custom_dict = {}
         print(data_dict)
         print(para_dict)
@@ -283,7 +281,6 @@ class AutoCollection:
         history_n = []
 
         def is_steady(data_dict: dict[str, any], para_dict: dict[str, any]) -> bool:
-            # TODO：大于、小于某个值、参数之间的差值、默认判断标准
             # 三大类的字符串解析可以统一起来，后面也用类似的方式去做
             # 需要对前端的配置做一个解码，可能需要一个解码函数
             set_value_name = self.__custom_steady_state_determination["设定值"]
@@ -317,7 +314,6 @@ class AutoCollection:
 
     # def steady_state_determination(self, data_dict: dict[str, any], para_dict: dict[str, any]) -> bool:
 
-    #     # TODO：大于、小于某个值、参数之间的差值、默认判断标准
     #     # 三大类的字符串解析可以统一起来，后面也用类似的方式去做
     #     # 需要对前端的配置做一个解码，可能需要一个解码函数
     #     set_value_name = self.__custom_steady_state_determination["设定值"]
@@ -343,7 +339,6 @@ class AutoCollection:
 
     def set_steady_state_determination(self, value_dict: dict) -> bool:
         # 示例：目标转速 - 实际转速 < 1
-        # TODO
         data_names = value_dict.values()
         for name in data_names:
             if (

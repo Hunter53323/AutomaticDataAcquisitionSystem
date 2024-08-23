@@ -58,10 +58,9 @@ class FanDriver(DriverBase):
         self.ack_control_f.set_tail(rev_tailor)
 
     def set_device_cpu(self, cpu: str) -> None:
-        # TODO: 当前的cpu配置仅支持默认配置的切换，在非默认配置的时候不做支持
         self.cpu = cpu
         self.logger.info(f"设置CPU为{cpu}")
-        self.cpu_default_config()
+        # self.cpu_default_config()
 
     def set_port(self, value: str) -> None:
         self.port = value
@@ -380,11 +379,13 @@ class FanDriver(DriverBase):
                 elif key == "control_f":
                     self.control_f.reset_all()
                     self.control_f.load_framer(value)
+                    self.curr_para = {}
                     for _, value in self.control_f.data.items():
                         self.curr_para[value.name] = 0
                 elif key == "ack_query_f":
                     self.ack_query_f.reset_all()
                     self.ack_query_f.load_framer(value)
+                    self.curr_data = {}
                     for _, value in self.ack_query_f.data.items():
                         self.curr_data[value.name] = 0
                 elif key == "ack_control_f":

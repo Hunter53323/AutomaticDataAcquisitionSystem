@@ -224,10 +224,14 @@ class TestDevice(DriverBase):
 
     def load_config(self, F_config: dict) -> tuple[bool, None] | tuple[bool, Exception]:
         try:
+            print(F_config)
             for key, value in F_config.items():
                 if key == "rev_f":
                     self.rev_f.reset_all()
                     self.rev_f.load_framer(value)
+                    self.curr_data = {}
+                    for _, value in self.rev_f.data.items():
+                        self.curr_data[value.name] = 0
                 elif key == "hardware_para":
                     self.update_hardware_parameter(value)
             self.logger.info(f"测试设备帧配置导入成功！")

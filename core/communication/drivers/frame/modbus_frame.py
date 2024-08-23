@@ -50,7 +50,7 @@ class Framer:
 
     def set_uid(self, uid: str) -> tuple[bool, None] | tuple[bool, Exception]:
         try:
-            self.uid = self.str2byte(uid)
+            self.uid = int(uid)
             return True, None
         except Exception as e:
             return False, e
@@ -97,7 +97,7 @@ class Framer:
         self.tid = b"\x00\x00"
         self.pid = b"\x00\x00"
         self.length = 0
-        self.uid = b"\x01"
+        self.uid = 1
         self.fc = b"\x03"
         self.reset_data()
         return True
@@ -147,7 +147,7 @@ class Framer:
         all_msg += self.tid + self.pid + self.length.to_bytes(2) + self.uid + self.fc + len(self.data).to_bytes()
         for _, value in self.data.items():
             all_msg += value.encode_data()
-        print(all_msg.hex())
+        # print(all_msg.hex())
         return all_msg
 
     def gen_data(self, name: str, data: int):
@@ -221,7 +221,7 @@ class Field:
             pass
 
     def encode_data(self) -> bytes:
-        print(self.name, self.raw_data)
+        # print(self.name, self.raw_data)
         return self.raw_data.to_bytes(self.size)
 
     def set_realdata(self, real_data: int):

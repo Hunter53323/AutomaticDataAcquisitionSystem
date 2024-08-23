@@ -71,7 +71,6 @@ def set():
     返回的是{"status": True or False}
     GET接收返回的是当前的设备参数，数据格式同上，为全部参数
     """
-    # TODO:获取设备协议或者硬件配置
     if request.method == "GET":
         """
         config为协议配置，normal为基础配置
@@ -122,6 +121,7 @@ def set():
             return jsonify({"status": False, "error": "请先关闭所有设备连接"}), 400
         config = request.json
         driver = communicator.find_driver(driver_name)
+        print(config)
         if driver.load_config(config):
             # 更新通讯模块的参数匹配
             status, err = communicator.update_map()
@@ -323,7 +323,6 @@ def state():
 
 @control.route("/custom_column", methods=["GET", "POST", "PUT", "DELETE"])
 def custom_column():
-    # TODO:用户自定义的参数计算
     if request.method == "GET":
         # 处理数据插入
         return jsonify(communicator.custom_calculate_map), 200
@@ -359,5 +358,10 @@ def config_to_columns(config: dict[str, any], size: str = "2048") -> dict[str, s
     """
     columns = {"ID": "INT AUTO_INCREMENT PRIMARY KEY"}
     for key, _ in config.items():
-        columns[key] = "VARCHAR(" + size + ")"
+        if key == "ack_query_f" or key == "rev_f":
+            columns[key] = "VARCHAR(8192)"
+        elif key == "query_f" or key == "control_f" or key == "ack_control_f":
+            columns[key] = "VARCHAR(4096)"
+        else:
+            columns[key] = "VARCHAR(255)"
     return columns
