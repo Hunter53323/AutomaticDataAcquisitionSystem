@@ -6,6 +6,7 @@ from flask import request, jsonify
 from core.communication import communicator
 import threading
 from . import socketio_http
+from core.auto_collection import auto_collector
 
 # from core.communication.exception_handling import BREAKDOWNMAP
 from core.warningmessage import emailsender
@@ -79,6 +80,9 @@ def handle_socketio_events(socketio: SocketIO):
             #     breakdown_list = breakdown_replace(total["故障"])
             #     total["故障"] = breakdown_list
             socketio.emit("data_from_device", total)
+
+            success, fail, remaining, status = auto_collector.get_current_progress()
+            socketio.emit("auto_collect_status", {"success": success, "fail": fail, "remaining": remaining, "status": status})
 
 
 # def breakdown_replace(breakdown: list[str]) -> list[str]:

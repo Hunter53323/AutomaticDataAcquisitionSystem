@@ -85,9 +85,23 @@ class AutoCollection:
         :return int 成功采集数量
         :return int 失败采集数量
         :return int 剩余采集数量
-        :return bool 是否正在自动采集
+        :return int 当前状态
         """
-        return self.__collect_count[0], self.__collect_count[1], len(self.__para_queue), self.__auto_running
+        if not self.__auto_running and not self.__pause_flag and not self.__para_queue_inited:
+            # 初始状态
+            state = 1
+        elif not self.__auto_running and not self.__pause_flag and self.__para_queue_inited:
+            # 初始化数据
+            state = 2
+        elif self.__auto_running and not self.__pause_flag and self.__para_queue_inited:
+            # 启动
+            state = 3
+        elif self.__auto_running and self.__pause_flag and self.__para_queue_inited:
+            # 暂停
+            state = 4
+        else:
+            state = 5
+        return self.__collect_count[0], self.__collect_count[1], len(self.__para_queue), state
 
     def get_current_para(self) -> dict[str, any]:
         return self.communication.get_curr_para()
