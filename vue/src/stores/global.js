@@ -161,7 +161,7 @@ export const useDBStore = defineStore('database', {
 
     },
     async handleDBExport() {
-      const form = reactive({
+      let form = reactive({
         filepath: '',
         filename: '',
         conditions: ''
@@ -202,7 +202,7 @@ export const useDBStore = defineStore('database', {
 
     },
     async handleStatementExport() {
-      const form = reactive({
+      let form = reactive({
         filepath: '',
         filename: '',
         conditions: ''
@@ -298,7 +298,7 @@ export const useDashboardStore = defineStore('dashboard', {
     isTestRunning: false,
     isFanBreakDown: false,
     isTestBreakDown: false,
-    isAutoCollecting: false,
+    autoCollectStatus: 1,
     dataObjList: {},
     dataShowSelected: {},
     paraList: [],
@@ -310,7 +310,12 @@ export const useDashboardStore = defineStore('dashboard', {
       "电压": [],
       "功率": [],
     },
-  }),
+  }), 
+  getters: {
+    isReady: () => {
+      return this.isFanConnected && this.isTestConnected && this.isTestRunning
+    },
+  },
   actions: {
     async initList() {
       fetch(useGlobalStore().url + "/control/data", {
@@ -327,7 +332,7 @@ export const useDashboardStore = defineStore('dashboard', {
             "电压": [],
             "功率": [],
           }
-          this.dataList.forEach((item) => {  
+          this.dataList.forEach((item) => {
             if (item.includes('功率')) {
               this.graphClass['功率'].push(item)
             } else if (item.includes('电流')) {
@@ -380,20 +385,6 @@ export const useDashboardStore = defineStore('dashboard', {
             type: 'error'
           })
         })
-    },
-    async updateCollectState() {
-      fetch(useGlobalStore().url + "/collect/view")
-        .then(response => response.json())
-        .then(data => {
-          ElMessage.success('数采状态更新成功')
-          this.remainCount = data.remaining
-          this.successCount = data.success
-          this.failCount = data.fail
-          this.isAutoCollecting = !data.complete
-        })
-        .catch(error => {
-          ElMessage.error('无法获取数采状态，请检查服务器是否正常运行')
-        });
     },
   }
 })
