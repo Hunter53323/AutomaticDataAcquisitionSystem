@@ -216,7 +216,7 @@ def config_savev2():
         config_dict[driver.device_name] = json.dumps(driver.export_config())
     config_dict["other_cnfig"] = json.dumps(communicator.export_custom_column())
     config_dict.update({"配置命名": "config_name"})
-    config_column = config_to_columns(config_dict)
+    config_column = config_to_columns(config_dict, size="4096")
     if request.method == "GET":
         """
         curl http://127.0.0.1:5000/control/configsave?driver_name=FanDriver
@@ -353,11 +353,11 @@ def custom_column():
         return jsonify({"status": communicator.del_custom_column(name)}), 200
 
 
-def config_to_columns(config: dict[str, any]) -> dict[str, str]:
+def config_to_columns(config: dict[str, any], size: str = "2048") -> dict[str, str]:
     """
     将配置文件转换为数据库的列名
     """
     columns = {"ID": "INT AUTO_INCREMENT PRIMARY KEY"}
     for key, _ in config.items():
-        columns[key] = "VARCHAR(4096)"
+        columns[key] = "VARCHAR(" + size + ")"
     return columns

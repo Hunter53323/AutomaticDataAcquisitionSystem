@@ -186,6 +186,7 @@ class MySQLDatabase:
             return True
         except mysql.connector.Error as e:  # 确保使用正确的异常类型‘
             self.logger.error(f"创建表失败: {e}")
+            self.logger.info(f"表结构：{self.table_columns}")
             return False
         finally:
             cursor.close()

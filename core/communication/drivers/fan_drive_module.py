@@ -117,7 +117,7 @@ class FanDriver(DriverBase):
             name="功率",
             type="int16",
             size=2,
-            formula=f"real_data=raw_data* {IB} * {VB} * {Cofe3} / {Cofe4} / {Cofe2} / {Cofe5}",
+            formula=f"real_data=raw_data* {IB} * {VB} * {Cofe3} / {Cofe4} / {Cofe2}",
             f_name="ack_query_f",
             init=init,
         )
