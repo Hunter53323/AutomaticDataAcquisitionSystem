@@ -1,6 +1,6 @@
 {
   "name": "vue",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "国创中心数据采集系统",
   "main": "electron/main.js",
   "author": "Xuxu",
@@ -9,9 +9,9 @@
     "dev": "vite",
     "build": "vite build",
     "serve": "vite preview",
-    "electron": "wait-on tcp:8889 && cross-env NODE_ENV=development electron .", 
+    "electron": "wait-on tcp:8889 && cross-env NODE_ENV=development electron .",
     "electron:serve": "concurrently -k \"npm run dev\" \"npm run electron\"",
-    "electron:build": "vite build && electron-builder" 
+    "electron:build": "vite build && electron-builder"
   },
   "dependencies": {
     "@antv/g2": "^5.2.1",
@@ -27,6 +27,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.5",
+    "@vue/runtime-core": "^3.4.38",
     "cross-env": "^7.0.3",
     "electron": "^32.0.0",
     "electron-builder": "^24.13.3",
@@ -34,23 +35,23 @@
     "vite": "^5.3.1"
   },
   "build": {
-     "appId": "com.dweb.demo", 
-     "productName": "ElectronApp",
-     "copyright": "Copyright © 2021 <your-name>",
-     "mac": {
-       "category": "public.app-category.utilities"
-     },
-     "nsis": {
-       "oneClick": false,
-       "allowToChangeInstallationDirectory": true
-     },
-     "files": [
-       "dist/**/*",
-       "electron/**/*"
-     ],
-     "directories": {
-       "buildResources": "assets", 
-       "output": "dist_electron"
-     }
-   }
+    "appId": "com.dweb.demo",
+    "productName": "ElectronApp",
+    "copyright": "Copyright © 2021 <your-name>",
+    "mac": {
+      "category": "public.app-category.utilities"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "directories": {
+      "buildResources": "assets",
+      "output": "dist_electron"
+    }
+  }
 }

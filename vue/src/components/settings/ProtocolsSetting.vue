@@ -8,6 +8,7 @@ import ProtocolSelectionBox from '@/components/settings/ProtocolSelectionBox.vue
 import DataAddBox from '@/components/settings/DataAddBox.vue';
 import BreakdownAddBox from '@/components/settings/BreakdownAddBox.vue';
 import BreakdownModifyBox from '@/components/settings/BreakdownModifyBox.vue';
+import ProtocolDelBox from '@/components/settings/ProtocolDelBox.vue';
 
 const settings = useSettingsStore()
 const global = useGlobalStore()
@@ -270,7 +271,39 @@ const loadConf = (driver, key) => {
     .catch((e) => {
       ElMessage.error("无法加载 " + (driver == 'FanDriver' ? '被测设备 的 ' : '测试设备 的 ') + formTitle[driver][key] + " 的配置")
     })
+}
 
+const delConfFromDB = (driver) => {
+  activeNames.value.push(driver == 'FanDriver' ? '1' : '2')
+  const choice = ref()
+  ElMessageBox({
+    title: "从数据库删除配置",
+    message: h(ProtocolDelBox, {
+      driver: driver, modelValue: choice, 'onUpdate:modelValue': (val) => choice.value = val
+    }),
+    showCancelButton: true,
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+  })
+    .then(({ value }) => {
+      fetch(global.url + '/control/configsave?driver_name=' + driver + '&config_id=' + choice.value, {
+        method: 'DELETE'
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.status != true) {
+            throw new Error(data.error)
+          }
+          settings.updateProtocol()
+          ElMessage.success("成功删除 " + (driver == 'FanDriver' ? '被测设备 ' : '测试设备 ') + "的配置")
+        })
+        .catch((e) => {
+          ElMessage.error("删除 " + (driver == 'FanDriver' ? '被测设备 ' : '测试设备 ') + "的配置失败")
+        })
+    })
+    .catch((e) => {
+      ElMessage.info('已取消对 ' + (driver == 'FanDriver' ? '被测设备 ' : '测试设备 ') + '配置的删除')
+    })
 }
 
 const modifyOthers = (driver, key, target) => {
@@ -414,11 +447,17 @@ watch(() => settings.protocol['TestDevice'], (newProtocal) => {
           <div>被测设备协议</div>
           <span v-show="activeNames.some(item => item === '1')">
             <el-divider direction="vertical" />
-            <el-button size="small" type="primary" @click="saveConfToDB('FanDriver')"
-              class="bntProtocol">保存配置至数据库</el-button>
+            <el-button size="small" type="primary" @click="saveConfToDB('FanDriver')" class="bntProtocol">
+              保存配置至数据库
+            </el-button>
             <el-divider direction="vertical" />
-            <el-button size="small" type="primary" @click="loadConfFromDB('FanDriver')"
-              class="bntProtocol">从数据库加载配置</el-button>
+            <el-button size="small" type="primary" @click="loadConfFromDB('FanDriver')" class="bntProtocol">
+              从数据库加载配置
+            </el-button>
+            <el-divider direction="vertical" />
+            <el-button size="small" type="primary" @click="delConfFromDB('FanDriver')" class="bntProtocol">
+              从数据库删除配置
+            </el-button>
           </span>
         </template>
         <div v-for="value, key in formFan" class="desc-div">
@@ -484,6 +523,10 @@ watch(() => settings.protocol['TestDevice'], (newProtocal) => {
             <el-divider direction="vertical" />
             <el-button size="small" type="primary" @click="loadConfFromDB('TestDevice')" class="bntProtocol">
               从数据库加载配置
+            </el-button>
+            <el-divider direction="vertical" />
+            <el-button size="small" type="primary" @click="delConfFromDB('FanDriver')" class="bntProtocol">
+              从数据库删除配置
             </el-button>
           </span>
         </template>

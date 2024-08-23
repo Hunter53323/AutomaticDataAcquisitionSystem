@@ -494,7 +494,7 @@ export const useSettingsStore = defineStore('settings', {
         })
     },
     async changeUser() {
-      const formUser = reactive({
+      let formUser = reactive({
         name: '',
         email: '',
       })
