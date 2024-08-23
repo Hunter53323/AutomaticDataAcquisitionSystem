@@ -310,13 +310,12 @@ export const useDashboardStore = defineStore('dashboard', {
       "电压": [],
       "功率": [],
     },
-  }), 
-  getters: {
-    isReady: () => {
+  }),
+  actions: {
+    isReady() {
+      console.log(this.isFanConnected, this.isTestConnected, this.isTestRunning)
       return this.isFanConnected && this.isTestConnected && this.isTestRunning
     },
-  },
-  actions: {
     async initList() {
       fetch(useGlobalStore().url + "/control/data", {
         method: 'GET'
@@ -408,9 +407,22 @@ export const useSettingsStore = defineStore('settings', {
     },
     definedColumns: {},
     protocol: {},
-    protocolChoice: {}
+    protocolChoice: {},
+    steadyConf: {    }
   }),
   actions: {
+    async updateSteady() {
+      fetch(useGlobalStore().url + '/collect/steady_state_determination', {
+        method: 'GET'
+      })
+        .then(data => data.json())
+        .then(data => {
+          this.steadyConf = data.value
+        })
+        .catch((e) => {
+          ElMessage.error("无法获取 稳态判定参数 ，请检查服务器是否正常运行！")
+        })
+    },
     async updateProtocol() {
       fetch(useGlobalStore().url + '/control/configsave?driver_name=FanDriver')
         .then(data => data.json())

@@ -127,13 +127,13 @@ const collectorContinue = () => {
     </template>
     <el-button type="success" @click="submitUpload" :disabled="!(dashboard.autoCollectStatus == 1)">上传</el-button>
     <el-button type="primary" @click="collectorStart"
-      :disabled="!(dashboard.autoCollectStatus == 2 && dashboard.isReady)">开始</el-button>
+      :disabled="!(dashboard.autoCollectStatus == 2 && dashboard.isReady())">开始</el-button>
     <el-button type="primary" @click="collectorPause"
-      :disabled="!(dashboard.autoCollectStatus == 3 && dashboard.isReady)">暂停</el-button>
+      :disabled="!(dashboard.autoCollectStatus == 3 && dashboard.isReady())">暂停</el-button>
     <el-button type="primary" @click="collectorStop"
-      :disabled="!(dashboard.autoCollectStatus == 3 && dashboard.isReady)">停止</el-button>
+      :disabled="!(dashboard.autoCollectStatus == 3 && dashboard.isReady())">停止</el-button>
     <el-button type="primary" @click="collectorContinue"
-      :disabled="!(dashboard.autoCollectStatus == 4 && dashboard.isReady)">继续</el-button>
+      :disabled="!(dashboard.autoCollectStatus == 4 && dashboard.isReady())">继续</el-button>
   </el-upload>
   <div>
     <el-text class="collectorCount" size="large" type="primary">

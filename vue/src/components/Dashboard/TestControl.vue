@@ -13,7 +13,7 @@ const global = useGlobalStore()
 const handleConnect = () => {
   var command = ""
   if (dashboard.isTestConnected) {
-    if (dashboard.isFanRunning || dashboard.isTestRunning || dashboard.isAutoCollecting) {
+    if (dashboard.isFanRunning || dashboard.isTestRunning || dashboard.autoCollectStatus == 3 || dashboard.autoCollectStatus == 4) {
       ElMessage.error('请先停止风机、测试设备或自动采集');
       return;
     }

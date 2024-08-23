@@ -1,13 +1,19 @@
 <script setup lang="js">
-import CollectorBox from '@/components/Dashboard/CollectorBox.vue';
 import { ref, watch, reactive } from 'vue';
-import { useGlobalStore, useDashboardStore } from '@/stores/global';
+import { useGlobalStore, useDashboardStore, useSettingsStore } from '@/stores/global';
 import { ElMessage } from 'element-plus';
 
 const form = reactive({})
 const global = useGlobalStore()
+const settings = useSettingsStore()
 const activeNames = ref(['1', '2'])
 const dashboard = useDashboardStore()
+
+const formSteady = reactive({
+  '实际值': '',
+  '设定值': '',
+})
+
 
 watch(() => dashboard.paraList, (value) => {
   value.forEach((item) => {
@@ -17,6 +23,12 @@ watch(() => dashboard.paraList, (value) => {
       step: 0,
     }
   })
+}, { deep: true })
+
+
+watch(() => settings.steadyConf, (value) => {
+  formSteady['实际值'] = value['实际值']
+  formSteady['设定值'] = value['设定值']
 }, { deep: true })
 
 
@@ -40,14 +52,54 @@ const updatePara = () => {
     });
 }
 
+const uploadStable = () => {
+  fetch(global.url + '/collect/steady_state_determination', {
+    body: JSON.stringify({ value: formSteady }),
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  })
+    .then((response) => response.json())
+    .then(data => {
+      ElMessage.success('稳态判定参数上传成功');
+    })
+    .catch((error) => {
+      ElMessage.error('稳态判定参数上传失败');
+    });
+}
+
 </script>
 
 <template>
   <el-collapse v-model="activeNames" class="collapse-son">
-    <el-collapse-item title="数采控制器" name="1">
-      <CollectorBox />
+    <el-collapse-item title="稳态判定" name="1">
+      <el-form label-position="left" label-width="auto">
+
+        <el-row :gutter="20">
+          <el-col :span="11">
+            <el-form-item label="实际值" style="width: 100%">
+              <el-select v-model="formSteady['实际值']">
+                <el-option v-for="item in [...dashboard.dataList, ...dashboard.paraList]" :key="item"
+                  :label="item" :value="item" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="11">
+            <el-form-item label="设定值" style="width: 100%">
+              <el-select v-model="formSteady['设定值']">
+                <el-option v-for="item in [...dashboard.dataList, ...dashboard.paraList]" :key="item"
+                  :label="item" :value="item" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="2">
+            <el-button type="success" @click="uploadStable">提交</el-button>
+          </el-col>
+        </el-row>
+      </el-form>
     </el-collapse-item>
-    <el-collapse-item title="参数设置" name="2">
+    <el-collapse-item name="2">
       <template #title>
         <div>参数设置</div>
 
@@ -64,12 +116,12 @@ const updatePara = () => {
           <el-row :gutter="20">
             <el-col :span="8">
               <el-form-item label="起始值" :key="key" style="width: 100%">
-                <el-input-number v-model="form[key].min" :min="0" :controls="false"  style="width: 90%"/>
+                <el-input-number v-model="form[key].min" :min="0" :controls="false" style="width: 90%" />
               </el-form-item>
             </el-col>
             <el-col :span="8">
               <el-form-item label="结束值" :key="key" style="width: 100%">
-                <el-input-number v-model="form[key].max" :min="0" :controls="false"  style="width: 90%" />
+                <el-input-number v-model="form[key].max" :min="0" :controls="false" style="width: 90%" />
               </el-form-item>
             </el-col>
             <el-col :span="8">

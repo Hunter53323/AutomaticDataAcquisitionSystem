@@ -40,6 +40,7 @@ settings.updateProtocol()
 settings.updateConf()
 settings.updateDefined()
 settings.updateUser()
+settings.updateSteady()
 db.updateMeta()
 db.dbDataUpdate()
 
