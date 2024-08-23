@@ -114,6 +114,7 @@ class AutoCollection:
         self.__auto_running = True
         self.__collect_count = [0, 0]
         # for item_para in self.__para_pool:
+        # try:
         while self.__para_queue:
             self.judge_pause_status()
             if self.__stop_flag:
@@ -130,8 +131,9 @@ class AutoCollection:
                 # 清障失败，需要人工干预
                 # TODO：多次出现过流情况，直接停止整个数采或者打乱数据顺序重新进行数采
                 self.wait_until_no_breakdown()
-            time.sleep(2)
-            # 顺利采集完成一条数据
+        # except Exception as e:
+        #     self.logger.error(f"自动采集出现异常,{e}")
+        # 顺利采集完成一条数据
         self.__auto_running: bool = False
         self.clear_para()
         self.logger.info("自动采集结束")
@@ -182,9 +184,20 @@ class AutoCollection:
         curr_time = time.time()
         time_count = 0
         steady_determination = self.steady_state_determination()
+        # 稳态计时的标志
+        steady_count = 0
         # avg_data = {key: [] for key in self.communication.get_data_map().keys()}
         while True:
             curr_data: dict[str, any] = self.communication.read()
+            if self.__stable_state:
+                # 稳态之后开始等待时间，一段时间后返回结果
+                steady_count += 1
+                time.sleep(0.05)
+                if steady_count > 40:
+                    final_data = self.calculate_result(curr_data, para_dict)
+                    self.logger.info(f"稳定后结果为{final_data}")
+                    return final_data, True, 0, ""
+
             # 有故障，进入故障处理模块
             if self.__stop_flag:
                 return {}, False, 0, ""
@@ -209,27 +222,23 @@ class AutoCollection:
                         pass
             # 故障处理完毕，正常运行
 
-            # for key, value in curr_data.items():
-            #     avg_data[key].append(value)
-            #     if len(avg_data[key]) > 10:
-            #         avg_data[key].pop(0)
-            # avg_data_calculated = {key: sum(value) / len(value) for key, value in avg_data.items()}
-
             time_count += 1
             # TODO: 开始前请启动机器
             # count的判断是避免当前的稳定状态影响稳态判断,
             if steady_determination(curr_data, para_dict) and time_count > 30:
                 # if self.steady_state_determination(avg_data_calculated, para_dict) and time_count > 10:
                 self.__stable_state = True
-                final_data = self.calculate_result(curr_data, para_dict)
-                self.logger.info(f"稳定后结果为{final_data}")
-                return final_data, True, 0, ""
+                # final_data = self.calculate_result(curr_data, para_dict)
+                # self.logger.info(f"稳定后结果为{final_data}")
+                # return final_data, True, 0, ""
             if time.time() - curr_time > 60:
                 # 超时退出，不需人工干预
                 return {}, True, 4, "超时"
             time.sleep(0.05)
 
     def save_data(self, data_dict: dict[str, any], para_dict: dict[str, any], err: str = "") -> None:
+        print(data_dict)
+        print(para_dict)
         self.db.change_current_table(DATA_TABLE_NAME)
         save_data_dict = {}
 
@@ -240,7 +249,6 @@ class AutoCollection:
                 # 数据库表中没有这一项数据
                 self.logger.error(f"非法数据:{key}")
 
-        save_data_dict["故障"] = err
         if err:
             return self.db.insert_data([save_data_dict])
 
@@ -255,12 +263,19 @@ class AutoCollection:
     def calculate_result(self, data_dict: dict[str, any], para_dict: dict[str, any]) -> dict[str, any]:
         # TODO: 后面需要加上真实的计算,应该需要在communication里面去做，这个计算如何和数据库结合
         custom_dict = {}
+        print(data_dict)
+        print(para_dict)
+        print(self.communication.custom_calculate_map)
         for col, expr in self.communication.custom_calculate_map.items():
+            expr_dict = {}
+            expr_name = re.findall(r"[^\s\+\-\*\/\(\)]+", expr)
             for col_name in data_dict.keys():
-                expr = expr.replace(col_name, str(data_dict[col_name]))
+                if col_name in expr_name:
+                    expr_dict[col_name] = data_dict[col_name]
             for col_name in para_dict.keys():
-                expr = expr.replace(col_name, str(para_dict[col_name]))
-            custom_dict[col] = eval(expr)
+                if col_name in expr_name:
+                    expr_dict[col_name] = para_dict[col_name]
+            custom_dict[col] = eval(expr, {"__builtins__": None}, expr_dict)
         data_dict.update(custom_dict)
         return data_dict
 

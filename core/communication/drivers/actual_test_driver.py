@@ -149,7 +149,6 @@ class TestDevice(DriverBase):
                 if not self.conn_state:
                     self.logger.error(f"服务器未连接! 非法读！")
                     return False
-
                 response = self.client.read_holding_registers(
                     address=self.rev_f.begin_byte, count=2 * len(self.rev_f.data), slave=self.rev_f.uid
                 )  # 一个寄存器2字节

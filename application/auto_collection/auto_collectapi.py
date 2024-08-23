@@ -1,18 +1,10 @@
 from io import StringIO
 from . import autocollect
 from flask import request, jsonify
-import csv
+import csv, time
 from werkzeug.datastructures import FileStorage
 from core.auto_collection import auto_collector
 from core.warningmessage import emailsender
-
-column_mapping = {
-    "转速": "set_speed",
-    "速度环补偿系数": "speed_loop_compensates_bandwidth",
-    "电流环带宽": "current_loop_compensates_bandwidth",
-    "观测器补偿系数": "observer_compensates_bandwidth",
-    "负载量": "load",
-}
 
 
 @autocollect.route("/csvupload", methods=["POST"])
@@ -102,6 +94,7 @@ def auto_collect_control():
     elif command == "stop":
         # 停止数采，是终止，无法再次启动
         auto_collector.stop_auto_collect()
+        time.sleep(1)
         if auto_collector.clear_para():
             return jsonify({"status": "True"}), 200
         else:
