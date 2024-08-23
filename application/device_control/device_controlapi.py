@@ -206,7 +206,7 @@ def config_save():
 
 
 @control.route("/configsavev2", methods=["GET", "POST", "PUT", "DELETE"])
-def config_save():
+def config_savev2():
     """
     配置的保存、加载等，读取当前具有的所有配置，保存当前配置，GET为读取配置，POST为保存配置，PUT为加载配置
     """
@@ -281,15 +281,6 @@ def config_save():
             return jsonify({"status": True}), 200
         else:
             return jsonify({"status": False}), 400
-
-
-@control.route("/configsaveother", methods=["GET", "POST", "PUT", "DELETE"])
-def config_save_other():
-    other_config_column = {"ID": "INT AUTO_INCREMENT PRIMARY KEY", "配置命名": "VARCHAR(2048)", "配置内容": "VARCHAR(2048)"}
-    if not outputdb.change_current_table("other_config"):
-        outputdb.change_current_table(driver_name, config_column)
-    communicator.export_custom_column()
-    communicator.load_custom_column()
 
 
 @control.route("/checkdata", methods=["GET"])
