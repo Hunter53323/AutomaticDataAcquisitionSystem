@@ -97,6 +97,7 @@ def handle_socketio_events(socketio: SocketIO):
 
     @socketio.on("connect")
     def connect():
+        global send_data_thread
         if send_data_thread == None:
             send_data_thread_running.clear()
             send_data_thread = socketio.start_background_task(target=send_data)
