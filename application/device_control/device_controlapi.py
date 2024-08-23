@@ -135,7 +135,6 @@ def config_save():
     """
     配置的保存、加载等，读取当前具有的所有配置，保存当前配置，GET为读取配置，POST为保存配置，PUT为加载配置
     """
-    # TODO:没有完全完成，需要测试
     driver_name = request.args.get("driver_name", None)
     driver = communicator.find_driver(driver_name)
     config_dict = driver.export_config()
@@ -206,8 +205,89 @@ def config_save():
             return jsonify({"status": False}), 400
 
 
+@control.route("/configsavev2", methods=["GET", "POST", "PUT", "DELETE"])
+def config_save():
+    """
+    配置的保存、加载等，读取当前具有的所有配置，保存当前配置，GET为读取配置，POST为保存配置，PUT为加载配置
+    """
+    TABLE_NAME = "config"
+    config_dict = {}
+    for driver in communicator.drivers:
+        config_dict[driver.device_name] = json.dumps(driver.export_config())
+    config_dict["other_cnfig"] = json.dumps(communicator.export_custom_column())
+    config_dict.update({"配置命名": "config_name"})
+    config_column = config_to_columns(config_dict)
+    if request.method == "GET":
+        """
+        curl http://127.0.0.1:5000/control/configsave?driver_name=FanDriver
+        """
+        if not outputdb.change_current_table(TABLE_NAME):
+            outputdb.change_current_table(TABLE_NAME, config_column)
+        driver_config = outputdb.select_data(columns=["ID", "配置命名"])
+        # 这里只显示配置名字和ID
+        return jsonify({"name": ["ID", "配置命名"], "value": driver_config}), 200
+    elif request.method == "POST":
+        """
+        curl -X POST http://127.0.0.1:5000/control/configsave?driver_name=FanDriver&config_name=测试配置
+        """
+        # POST方法，保存当前设备配置
+        config_name = request.args.get("config_name", None)
+        config_dict.update({"配置命名": config_name})
+        outputdb.change_current_table(TABLE_NAME, config_column)
+        driver_config = outputdb.select_data(columns=["ID", "配置命名"])
+        for config in driver_config:
+            if config[1] == config_name:
+                return jsonify({"status": False, "err": "配置名重复"}), 400
+        outputdb.insert_data([config_dict])
+
+        # 将配置文件保存到数据库中
+        return jsonify({"status": True, "error": ""}), 200
+    elif request.method == "PUT":
+        """
+        curl -X PUT http://127.0.0.1:5000/control/configsave?driver_name=FanDriver&config_id=1
+        """
+        # PUT方法，加载配置
+        config_id = request.args.get("config_id")
+        if not outputdb.change_current_table(TABLE_NAME):
+            outputdb.change_current_table(TABLE_NAME, config_column)
+        driver_config = outputdb.select_data(ids_input=[int(config_id)])
+        if len(driver_config) != 1:
+            return jsonify({"err": "查询错误"}), 400
+        load_config_dict = {}
+        count = 0
+        for key in config_column.keys():
+            if key == "ID" or key == "配置命名":
+                count += 1
+                continue
+            if key == "other_config":
+                communicator.load_custom_column(json.loads(driver_config[0][count]))
+                count += 1
+            target_driver = communicator.find_driver(key)
+            if target_driver:
+                target_driver.load_config(json.loads(driver_config[0][count]))
+                count += 1
+        status, err = communicator.update_map()
+        return jsonify({"status": status, "error": err}), 200
+    else:
+        # 删除配置
+        """
+        curl -X DELETE http://127.0.0.1:5000/control/configsave?driver_name=FanDriver&config_id=1
+        """
+        config_id = request.args.get("config_id")
+        if not outputdb.change_current_table(TABLE_NAME):
+            outputdb.change_current_table(TABLE_NAME, config_column)
+        if outputdb.delete_data_by_ids(ids_input=[int(config_id)]):
+            outputdb.rearrange_ids()
+            return jsonify({"status": True}), 200
+        else:
+            return jsonify({"status": False}), 400
+
+
 @control.route("/configsaveother", methods=["GET", "POST", "PUT", "DELETE"])
 def config_save_other():
+    other_config_column = {"ID": "INT AUTO_INCREMENT PRIMARY KEY", "配置命名": "VARCHAR(2048)", "配置内容": "VARCHAR(2048)"}
+    if not outputdb.change_current_table("other_config"):
+        outputdb.change_current_table(driver_name, config_column)
     communicator.export_custom_column()
     communicator.load_custom_column()
 
@@ -288,5 +368,5 @@ def config_to_columns(config: dict[str, any]) -> dict[str, str]:
     """
     columns = {"ID": "INT AUTO_INCREMENT PRIMARY KEY"}
     for key, _ in config.items():
-        columns[key] = "VARCHAR(2048)"
+        columns[key] = "VARCHAR(4096)"
     return columns

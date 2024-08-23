@@ -260,6 +260,7 @@ class TestDevice(DriverBase):
         return all_data
 
     def close_device(self):
+        self.write({"测试设备控制命令": "write", "测功机控制值": 0})
         return self.write({"测试设备控制命令": "停止"})
 
 

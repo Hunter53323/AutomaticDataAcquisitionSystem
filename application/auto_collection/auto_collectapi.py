@@ -85,7 +85,7 @@ def auto_collect_control():
     """
     处理采集数据的开始、停止等请求
     接收"command": "start", "stop", "pause", "continue"
-    返回{"status": "start", "stop", "pause", "continue", "complete":True or False}
+    返回{"status": "True", "error"}
     """
     command = request.form.get("command")
     if command == "start":
@@ -94,19 +94,16 @@ def auto_collect_control():
     elif command == "pause":
         # 暂停数采
         auto_collector.pause_auto_collect()
-        return jsonify({"status": "pause"}), 200
+        return jsonify({"status": "True"}), 200
     elif command == "continue":
         # 恢复数采
         auto_collector.continue_auto_collect()
-        return jsonify({"status": "continue"}), 200
+        return jsonify({"status": "True"}), 200
     elif command == "stop":
         # 停止数采，是终止，无法再次启动
         auto_collector.stop_auto_collect()
-        return jsonify({"status": "stop"}), 200
-    elif command == "clear":
-        # 清空当前的采集进度
         if auto_collector.clear_para():
-            return jsonify({"status": "clear"}), 200
+            return jsonify({"status": "True"}), 200
         else:
             return jsonify({"status": "error"}), 400
     else:
