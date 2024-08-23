@@ -6,14 +6,6 @@ import { useGlobalStore, useDashboardStore } from '@/stores/global'
 const upload = ref<UploadInstance>()
 const global = useGlobalStore()
 const dashboard = useDashboardStore()
-const uploadDisable = computed(() => {
-  return dashboard.isAutoCollecting
-})
-const startDisable = ref(true)
-const stopDisable = ref(true)
-const pauseDisable = ref(true)
-const clearDisable = ref(true)
-const continueDisable = ref(true)
 
 
 const handleExceed: UploadProps['onExceed'] = (files) => {
@@ -37,8 +29,6 @@ const uploadCSV = (param) => {
       }
       ElMessage.success('数采配置文件上传成功')
       dashboard.collectCount = data.line_count
-      dashboard.updateCollectState()
-      startDisable.value = false
     })
     .catch(err => {
       ElMessage.error('数采配置文件上传失败' + err)
@@ -62,13 +52,6 @@ const collectorStart = () => {
         throw new Error(data.message)
       }
       ElMessage.success('数采开始成功')
-      startDisable.value = true
-      stopDisable.value = false
-      pauseDisable.value = false
-      clearDisable.value = true
-      continueDisable.value = true
-      uploadDisable.value = true
-      dashboard.updateCollectState()
     })
     .catch(response => {
       ElMessage.error('数采开始失败')
@@ -88,12 +71,6 @@ const collectorPause = () => {
         throw new Error()
       }
       ElMessage.success('数采暂停成功')
-      startDisable.value = true
-      stopDisable.value = false
-      pauseDisable.value = true
-      clearDisable.value = true
-      continueDisable.value = false
-      uploadDisable.value = true
     })
     .catch(response => {
       ElMessage.error('数采暂停失败')
@@ -113,12 +90,6 @@ const collectorStop = () => {
         throw new Error()
       }
       ElMessage.success('数采停止成功')
-      startDisable.value = true
-      stopDisable.value = true
-      pauseDisable.value = true
-      clearDisable.value = false
-      continueDisable.value = true
-      uploadDisable.value = true
     })
     .catch(response => {
       ElMessage.error('数采停止失败')
@@ -138,42 +109,13 @@ const collectorContinue = () => {
         throw new Error()
       }
       ElMessage.success('数采继续成功')
-      startDisable.value = true
-      stopDisable.value = false
-      pauseDisable.value = false
-      clearDisable.value = true
-      continueDisable.value = true
-      uploadDisable.value = true
     })
     .catch(response => {
       ElMessage.error('数采继续失败')
     })
 }
 
-const collectorClear = () => {
-  const formData = new FormData();
-  formData.append('command', 'clear');
-  fetch(global.url + '/collect/control', {
-    method: 'POST',
-    body: formData
-  })
-    .then(response => response.json())
-    .then(data => {
-      if (data.status == 'error') {
-        throw new Error()
-      }
-      ElMessage.success('数采清空成功')
-      startDisable.value = true
-      stopDisable.value = true
-      pauseDisable.value = true
-      clearDisable.value = true
-      continueDisable.value = true
-      uploadDisable.value = false
-    })
-    .catch(response => {
-      ElMessage.error('数采清空失败')
-    })
-}
+
 
 </script>
 
@@ -181,14 +123,17 @@ const collectorClear = () => {
   <el-upload ref="upload" class="upload-demo" :limit="1" :on-exceed="handleExceed" :auto-upload="false"
     :http-request="uploadCSV">
     <template #trigger>
-      <el-button type="primary" :disabled="uploadDisable">选择</el-button>
+      <el-button type="primary" :disabled="!(dashboard.autoCollectStatus == 1)">选择</el-button>
     </template>
-    <el-button type="success" @click="submitUpload">上传</el-button>
-    <el-button type="primary" @click="collectorStart" :disabled="startDisable">开始</el-button>
-    <el-button type="primary" @click="collectorPause" :disabled="pauseDisable">暂停</el-button>
-    <el-button type="primary" @click="collectorStop" :disabled="stopDisable">停止</el-button>
-    <el-button type="primary" @click="collectorContinue" :disabled="continueDisable">继续</el-button>
-    <el-button type="primary" @click="collectorClear" :disabled="clearDisable">清空</el-button>
+    <el-button type="success" @click="submitUpload" :disabled="!(dashboard.autoCollectStatus == 1)">上传</el-button>
+    <el-button type="primary" @click="collectorStart"
+      :disabled="!(dashboard.autoCollectStatus == 2 && dashboard.isReady)">开始</el-button>
+    <el-button type="primary" @click="collectorPause"
+      :disabled="!(dashboard.autoCollectStatus == 3 && dashboard.isReady)">暂停</el-button>
+    <el-button type="primary" @click="collectorStop"
+      :disabled="!(dashboard.autoCollectStatus == 3 && dashboard.isReady)">停止</el-button>
+    <el-button type="primary" @click="collectorContinue"
+      :disabled="!(dashboard.autoCollectStatus == 4 && dashboard.isReady)">继续</el-button>
   </el-upload>
   <div>
     <el-text class="collectorCount" size="large" type="primary">

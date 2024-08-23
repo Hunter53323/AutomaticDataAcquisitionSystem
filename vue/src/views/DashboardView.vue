@@ -79,6 +79,14 @@ socket.on('data_from_device', data => {
   }
 })
 
+socket.on('auto_collect_status', data => {
+  dashboard.autoCollectStatus = data.status
+  dashboard.remainCount = data.remaining
+  dashboard.successCount = data.success
+  dashboard.failCount = data.fail
+  console.log(data.status)
+})
+
 dashboard.initList()
 dashboard.updateDeviceState()
 settings.updateProtocol()
