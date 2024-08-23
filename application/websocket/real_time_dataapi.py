@@ -84,7 +84,7 @@ def handle_socketio_events(socketio: SocketIO):
 
     def send_data():
         while True:
-            socketio.sleep(0.5)
+            socketio.sleep(0.2)
             if send_data_thread_running.is_set():
                 send_data_thread_running.clear()
                 break
@@ -104,6 +104,7 @@ def handle_socketio_events(socketio: SocketIO):
 
     @socketio.on("disconnect")
     def disconnect():
+        global send_data_thread
         send_data_thread_running.set()
         send_data_thread = None
 
