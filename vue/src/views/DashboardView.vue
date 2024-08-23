@@ -95,12 +95,12 @@ socket.on('device_status', data => {
   dashboard.isTestConnected = data.TestDevice['连接状态']
   dashboard.isTestRunning = data.TestDevice['运行状态']
   dashboard.isTestBreakDown = data.TestDevice['故障']
+  dashboard.autoCollectStatus = data.auto_collect_status.status
+  dashboard.remainCount = data.auto_collect_status.remaining
+  dashboard.successCount = data.auto_collect_status.success
+  dashboard.failCount = data.auto_collect_status.fail
 })
 
-
-// socket.on('connect', () => {
-//   console.log('socket connected')
-// })
 
 dashboard.initList()
 dashboard.updateDeviceState()
