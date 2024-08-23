@@ -29,7 +29,6 @@ const uploadCSV = (param) => {
         throw new Error(data.message)
       }
       ElMessage.success('数采配置文件上传成功')
-      dashboard.collectCount = data.line_count
     })
     .catch(err => {
       ElMessage.error('数采配置文件上传失败' + err)
@@ -123,9 +122,11 @@ const collectorContinue = () => {
   <el-upload ref="upload" class="upload-demo" :limit="1" :on-exceed="handleExceed" :auto-upload="false"
     :http-request="uploadCSV">
     <template #trigger>
-      <el-button type="primary" :disabled="!(dashboard.autoCollectStatus == 1)">选择</el-button>
+      <el-button type="primary"
+        :disabled="!(dashboard.autoCollectStatus == 1 || dashboard.autoCollectStatus == 2)">选择</el-button>
     </template>
-    <el-button type="success" @click="submitUpload" :disabled="!(dashboard.autoCollectStatus == 1)">上传</el-button>
+    <el-button type="success" @click="submitUpload"
+      :disabled="!(dashboard.autoCollectStatus == 1 || dashboard.autoCollectStatus == 2)">上传</el-button>
     <el-button type="primary" @click="collectorStart"
       :disabled="!(dashboard.autoCollectStatus == 2 && dashboard.isReady())">开始</el-button>
     <el-button type="primary" @click="collectorPause"

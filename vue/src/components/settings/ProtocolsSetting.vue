@@ -193,7 +193,7 @@ const addBreakdown = (driver, key) => {
   })
     .then(() => {
       if (tmp.length == 0) {
-        formAdd.index = 0
+        formAdd.index = 1
       } else {
         formAdd.index = tmp.at(-1).index + 1
       }
@@ -268,7 +268,7 @@ const loadConf = (driver, key) => {
       ElMessage.success("成功加载 " + (driver == 'FanDriver' ? '被测设备 的 ' : '测试设备 的 ') + formTitle[driver][key] + " 的配置")
     })
     .catch((e) => {
-      ElMessage.error("加载 " + (driver == 'FanDriver' ? '被测设备 的 ' : '测试设备 的 ') + formTitle[driver][key] + " 的配置")
+      ElMessage.error("无法加载 " + (driver == 'FanDriver' ? '被测设备 的 ' : '测试设备 的 ') + formTitle[driver][key] + " 的配置")
     })
 
 }
@@ -312,7 +312,11 @@ const modifyData = (driver, key, index) => {
   })
   ElMessageBox({
     title: '修改测试设备协议  ' + formTitle[driver][key] + ' 的 ' + tmp.name,
-    message: h(DataModifyBox, { modelValue: formModify, 'onUpdate:modelValue': (val) => formModify = val }),
+    message: h(DataModifyBox, {
+      modelValue: formModify,
+      'onUpdate:modelValue': (val) => formModify = val,
+      driver: driver
+    }),
     showCancelButton: true,
     confirmButtonText: '确定',
     cancelButtonText: '取消',
@@ -339,23 +343,27 @@ const addData = (driver, key) => {
   const formAdd = reactive({
     name: '',
     breakdown: [],
-    formula: '',
+    formula: '真实数据=原始数据',
     inv_formula: '',
     index: 0,
-    size: 1,
-    type: 'bit8',
+    size: (driver == 'FanDriver' ? 2 : 4),
+    type: (driver == 'FanDriver' ? 'int16' : 'float'),
     raw_data: 0,
     real_data: 0,
   })
   ElMessageBox({
     title: '向  ' + formTitle[driver][key] + ' 添加 新的数据',
-    message: h(DataAddBox, { modelValue: formAdd, 'onUpdate:modelValue': (val) => formAdd = val }),
+    message: h(DataAddBox, {
+      modelValue: formAdd,
+      'onUpdate:modelValue': (val) => formAdd = val,
+      driver: driver
+    }),
     showCancelButton: true,
     confirmButtonText: '确定',
     cancelButtonText: '取消',
   }).then(() => {
     if (tmp.length == 0) {
-      formAdd.index = 0
+      formAdd.index = 1
     } else {
       formAdd.index = tmp.at(-1).index + 1
     }
@@ -414,7 +422,7 @@ watch(() => settings.protocol['TestDevice'], (newProtocal) => {
           </span>
         </template>
         <div v-for="value, key in formFan" class="desc-div">
-          <el-descriptions direction="vertical" :column="20" border>
+          <el-descriptions direction="vertical" :column="12" border>
             <template #title>
               {{ formTitle.FanDriver[key] }}
               <el-divider direction="vertical" />
@@ -427,24 +435,24 @@ watch(() => settings.protocol['TestDevice'], (newProtocal) => {
               <el-button class="bntProtocol" size="small" type="primary" @click="addBreakdown('FanDriver', key)" text
                 bg>添加故障</el-button>
             </template>
-            <el-descriptions-item v-for="(value_col, key_col) in formColHeader['FanDriver']" :label="value_col"
-              label-align="center" width="100px">
+            <el-descriptions-item align="center" v-for="(value_col, key_col) in formColHeader['FanDriver']"
+              :label="value_col" label-align="center" width="100px">
               <el-button link class="bnt-item" @click="modifyOthers('FanDriver', key, key_col)">
                 {{ value[key_col] }}
               </el-button>
             </el-descriptions-item>
-            <el-descriptions-item label="数据" label-align="center" v-show="!value.data.length">
+            <el-descriptions-item align="center" label="数据" label-align="center" v-show="!value.data.length">
               <el-button link class="bnt-item">
                 无
               </el-button>
             </el-descriptions-item>
 
-            <el-descriptions-item v-for="dataItem, index in value.data" label-align="center">
+            <el-descriptions-item align="center" v-for="dataItem, index in value.data" label-align="center">
               <template #label>
-                {{ '数据' + index }}
+                {{ '数据' + (index + 1) }}
                 <el-button :icon="Close" link class="del-bnt" @click="delData('FanDriver', key, index)"></el-button>
               </template>
-              <el-popover placement="top" :title="dataItem.name" trigger="hover" width="450px">
+              <el-popover placement="bottom" :title="dataItem.name" trigger="hover" width="450px">
                 <template #reference>
                   <el-button link class="bnt-item" @click="dataItem.name.includes('故障') ? modifyBreakdown('FanDriver', key,
                     index) : modifyData('FanDriver', key, index)">
@@ -481,7 +489,7 @@ watch(() => settings.protocol['TestDevice'], (newProtocal) => {
         </template>
 
         <div v-for="value, key in formTest" class="desc-div">
-          <el-descriptions direction="vertical" :column="20" border>
+          <el-descriptions direction="vertical" :column="12" border>
             <template #title>
               {{ formTitle.TestDevice[key] }}
               <el-divider direction="vertical" />
@@ -494,18 +502,18 @@ watch(() => settings.protocol['TestDevice'], (newProtocal) => {
               </el-button>
             </template>
 
-            <el-descriptions-item label="数据" label-align="center" v-show="!value.data.length">
+            <el-descriptions-item align="center" label="数据" label-align="center" v-show="!value.data.length">
               <el-button link class="bnt-item">
                 无
               </el-button>
             </el-descriptions-item>
 
-            <el-descriptions-item v-for="dataItem, index in value.data" label-align="center">
+            <el-descriptions-item align="center" v-for="dataItem, index in value.data" label-align="center">
               <template #label>
-                {{ '数据' + index }}
+                {{ '数据' + (index + 1) }}
                 <el-button :icon="Close" link class="del-bnt" @click="delData('TestDevice', key, index)"></el-button>
               </template>
-              <el-popover placement="top" :title="dataItem.name" trigger="hover" width="450px">
+              <el-popover placement="bottom" :title="dataItem.name" trigger="hover" width="450px">
                 <template #reference>
                   <el-button link class="bnt-item" @click="modifyData('TestDevice', key, index)">
                     {{ dataItem.name }}
@@ -530,14 +538,9 @@ watch(() => settings.protocol['TestDevice'], (newProtocal) => {
 
 
 <style scoped>
-.bnt-item {
-  width: 100%;
-}
-
 .desc-div {
   margin: 10px 0;
 }
-
 
 .protocol-desc :deep(.el-descriptions__title) {
   font-weight: normal;

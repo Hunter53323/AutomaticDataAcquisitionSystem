@@ -20,20 +20,16 @@ const handleSelectionChange = (val) => {
   })
 }
 
-const handleDBEdit = () => {
-  const data = dbDataObjList.value.filter((element) => {
-    return element.ID == multipleSelection.value[0]
-  })[0]
-  fetch(global.url + "/db/data", {
-    method: 'PUT',
-    body: JSON.stringify({
-      ids_input: [], update_data: data
-    }),
-    headers: {
-      'Content-Type': 'application/json'
-    }
+const getWidth = (key) => {
+  let baseLength = key.length
+  db.dbDataObjList.forEach((element) => {
+    baseLength = Math.max((element[key] != null ? element[key] : 0).toString().length, baseLength)
   })
+  return baseLength * 16 + 20
 }
+
+
+
 dashboard.initList()
 dashboard.updateDeviceState()
 settings.updateProtocol()
@@ -56,17 +52,16 @@ db.dbDataUpdate()
     <el-button type="danger" @click="db.handleDBDelete(multipleSelection)">删除</el-button>
     <el-button type="danger" @click="db.handleDBClear">清空</el-button>
   </div>
-  <el-table :data="db.dbDataObjList" @selection-change="handleSelectionChange">
+  <el-table :data="db.dbDataObjList" @selection-change="handleSelectionChange" table-layout="auto">
     <el-table-column type="selection" width="55" fixed />
-    <el-table-column v-for="key in db.colunmsShowSelected" :prop="key" :label="key" show-overflow-tooltip
-      :width="key.length * 16 + 20">
+    <el-table-column v-for="key in db.colunmsShowSelected" :prop="key" :label="key" :width="getWidth(key)">
       <template #header>
         <span>{{ key }}</span>
       </template>
     </el-table-column>
     <el-table-column fixed="right" label="操作" width="120" header-align="center">
       <template #default="scope">
-        <el-button link type="danger" size="small" @click="handleDBEdit">编辑</el-button>
+        <el-button link type="danger" size="small" @click="db.handleDBEdit(scope.row['ID'])">编辑</el-button>
         <el-button link type="danger" size="small" @click.prevent="db.handleDBDelete([scope.row['ID']])">删除</el-button>
       </template>
     </el-table-column>

@@ -13,7 +13,7 @@ const fommatValue = (value) => {
   if (typeof value === 'string') {
     return value
   } else if (typeof value === 'number') {
-    return value.toFixed(2)
+    return value.toFixed(3)
   }
 }
 
@@ -25,7 +25,7 @@ const fommatValue = (value) => {
       <el-statistic v-if="index < row * props.count && index >= row * props.count - props.count" :title="key"
         :value="null" group-separator=" ">
         <template #suffix>
-          {{ global.getUnit(key) }}
+          {{ fommatValue(value) == 'NULL' ? '' : global.getUnit(key) }}
         </template>
         <template #prefix>
           <span>{{ fommatValue(value) }}</span>

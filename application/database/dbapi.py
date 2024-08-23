@@ -15,7 +15,7 @@ def sqldb():
     if request.method == "POST":
         # 处理数据插入
         data_list = request.get_json().get("data_list", [])
-        if outputdb.insert_data(data_list):
+        if outputdb.insert_data([data_list]):
             return jsonify({"status": "success", "message": "Data inserted successfully"})
         else:  # 数据插入失败
             return jsonify({"status": "error", "message": "Data insert failed"})
@@ -37,7 +37,6 @@ def sqldb():
         ids = data.get("ids")
         update_data = data.get("update_data")
         # 将ids字符串转换为整数列表
-        ids = [int(id_str) for id_str in ids.split(",") if id_str.isdigit()]
         outputdb.update_data(ids, update_data)
         return jsonify({"status": "success", "message": "Data updated successfully"})
     elif request.method == "DELETE":

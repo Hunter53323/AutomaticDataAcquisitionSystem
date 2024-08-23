@@ -102,7 +102,8 @@ onMounted(() => {
           </el-col>
           <el-col :span="11">
             <el-form-item label="端口配置" style="width:100%">
-              <el-input v-model="formTest.port" placeholder="输入被测设备端口"></el-input>
+              <el-input-number v-model="formTest.port" placeholder="输入被测设备端口" style="width:100%"
+                :controls="false"></el-input-number>
             </el-form-item>
           </el-col>
           <el-col :span="2">
@@ -135,7 +136,8 @@ onMounted(() => {
           <el-col :span="8">
             <el-form-item label="波特率配置" style="width:100%">
               <el-select v-model="formFan.baudrate" placeholder="选择测试设备波特率">
-                <el-option v-for="item in [300,600,1200,2400,4800,9600,19200,38400,57600,115200]" :key="item" :label="item" :value="item" />
+                <el-option v-for="item in [300, 600, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200]" :key="item"
+                  :label="item" :value="item" />
               </el-select>
             </el-form-item>
           </el-col>

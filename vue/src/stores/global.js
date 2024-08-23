@@ -3,6 +3,7 @@ import { ref, h, reactive } from 'vue'
 import { ElMessage, ElMessageBox, ElForm, ElFormItem, ElInput } from 'element-plus'
 import DBExportBox from '@/components/database/DBExportBox.vue'
 import StatementBox from '@/components/database/StatementBox.vue'
+import DBEditBox from '@/components/database/DBEditBox.vue'
 import DBAddBox from '@/components/database/DBAddBox.vue'
 import UserChangeBox from '@/components/UserChangeBox.vue'
 import { protocol } from 'socket.io-client'
@@ -17,6 +18,8 @@ export const useGlobalStore = defineStore('global', {
     getUnit(key) {
       if (key.includes('转速')) {
         return 'rpm'
+      } else if (key.includes('电流环')) {
+        return ''
       } else if (key.includes('电流')) {
         return 'A'
       } else if (key.includes('电压')) {
@@ -75,7 +78,6 @@ export const useDBStore = defineStore('database', {
         })
     },
     async handleDBDelete(ids) {
-      console.log(ids)
       if (ids.length == 0) {
         ElMessage.error('请选择要删除的数据')
         return
@@ -109,7 +111,7 @@ export const useDBStore = defineStore('database', {
               })
             })
             .catch(response => {
-              ElMessage.error('数据删除失败:' + response.message)
+              ElMessage.error('数据删除失败')
             })
         })
         .catch(() => {
@@ -149,7 +151,7 @@ export const useDBStore = defineStore('database', {
               })
             })
             .catch(response => {
-              ElMessage.error('数据清除失败:' + response.message)
+              ElMessage.error('数据清除失败')
             })
         })
         .catch(() => {
@@ -162,8 +164,8 @@ export const useDBStore = defineStore('database', {
     },
     async handleDBExport() {
       let form = reactive({
-        filepath: '',
         filename: '',
+        ids_input: '',
         conditions: ''
       })
       ElMessageBox({
@@ -175,29 +177,13 @@ export const useDBStore = defineStore('database', {
         cancelButtonText: '取消',
       })
         .then(() => {
-          fetch(useGlobalStore().url + "/db/export?filename=" + form.filename, {
-            method: 'GET',
-          }).then(response => response.json())
-            .then(data => {
-              if (data.status == 'error') {
-                throw new Error(data.message)
-              }
-              alert(data.message)
-              ElMessage({
-                message: '数据导出成功',
-                type: 'success'
-              })
-            })
-            .catch(response => {
-              ElMessage.error('数据导出失败:' + response.message)
-            })
+          window.location.href = useGlobalStore().url + "/db/export?filename=" + form.filename + "&ids_input=" + form.ids_input + "&conditions=" + form.conditions
         })
         .catch((e) => {
           ElMessage({
             type: 'info',
             message: '数据导出取消',
           })
-          console.log(e)
         })
 
     },
@@ -230,7 +216,7 @@ export const useDBStore = defineStore('database', {
               })
             })
             .catch(response => {
-              ElMessage.error('报表导出失败:' + response.message)
+              ElMessage.error('报表导出失败')
             })
         })
         .catch(() => {
@@ -256,7 +242,7 @@ export const useDBStore = defineStore('database', {
       }).then(() => {
         fetch(useGlobalStore().url + "/db/data", {
           method: 'POST',
-          body: JSON.stringify(form),
+          body: JSON.stringify({ data_list: form }),
           headers: {
             'Content-Type': 'application/json'
           }
@@ -273,7 +259,7 @@ export const useDBStore = defineStore('database', {
             })
           })
           .catch(response => {
-            ElMessage.error('数据添加失败:' + response.message)
+            ElMessage.error('数据添加失败')
           })
       })
         .catch(() => {
@@ -283,6 +269,43 @@ export const useDBStore = defineStore('database', {
           })
         })
     },
+    async handleDBEdit(id) {
+      let form = reactive({})
+      this.columnsToFill.forEach((column) => {
+        form[column] = this.dbDataObjList.find((item) => item['ID'] == id)[column]
+      })
+      ElMessageBox({
+        title: '编辑数据',
+        message: h(DBEditBox, { modelValue: form, 'onUpdate:modelValue': value => form = value }),
+        showCancelButton: true,
+        customClass: "db-operation-box",
+        confirmButtonText: '确认',
+        cancelButtonText: '取消',
+      }).then(() => {
+        fetch(useGlobalStore().url + "/db/data", {
+          method: 'PUT',
+          body: JSON.stringify({
+            ids: id, update_data: form
+          }),
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }).then(response => response.json())
+          .then(data => {
+            if (data.status == 'error') {
+              throw new Error(data.message)
+            }
+            this.dbDataUpdate()
+            ElMessage.success('数据编辑成功')
+          })
+          .catch(response => {
+            ElMessage.error('数据编辑失败')
+          })
+      })
+        .catch(() => {
+          ElMessage.info('数据编辑取消')
+        })
+    }
   }
 })
 
@@ -331,9 +354,12 @@ export const useDashboardStore = defineStore('dashboard', {
             "电压": [],
             "功率": [],
           }
-          this.dataList.forEach((item) => {
+          const tmpList = [...this.dataList, ...this.paraList]
+          tmpList.forEach((item) => {
             if (item.includes('功率')) {
               this.graphClass['功率'].push(item)
+            } else if (item.includes('电流环')) {
+
             } else if (item.includes('电流')) {
               this.graphClass['电流'].push(item)
             } else if (item.includes('电压')) {
@@ -408,7 +434,7 @@ export const useSettingsStore = defineStore('settings', {
     definedColumns: {},
     protocol: {},
     protocolChoice: {},
-    steadyConf: {    }
+    steadyConf: {}
   }),
   actions: {
     async updateSteady() {
