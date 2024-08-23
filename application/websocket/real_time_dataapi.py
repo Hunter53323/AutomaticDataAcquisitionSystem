@@ -13,6 +13,8 @@ from core.warningmessage import emailsender
 
 thread = None
 thread_running = threading.Event()
+send_data_thread = None
+send_data_thread_running = threading.Event()
 
 
 def handle_socketio_events(socketio: SocketIO):
@@ -55,7 +57,6 @@ def handle_socketio_events(socketio: SocketIO):
         else:
             return jsonify({"err": "未知命令"}), 400
 
-    @socketio.on("current_data")
     def get_data():
         """
         从数据采集模块获取数据，
@@ -81,12 +82,22 @@ def handle_socketio_events(socketio: SocketIO):
             #     total["故障"] = breakdown_list
             socketio.emit("data_from_device", total)
 
+    @socketio.on("connect")
+    def send_data():
+        while True:
+            if send_data_thread_running.is_set():
+                send_data_thread_running.clear()
+                break
             success, fail, remaining, status = auto_collector.get_current_progress()
             send_dict = {"auto_collect_status": {"success": success, "fail": fail, "remaining": remaining, "status": status}}
 
             for driver in communicator.drivers:
                 send_dict[driver.device_name] = driver.get_device_state()
             socketio.emit("device_status", send_dict)
+
+    @socketio.on("disconnect")
+    def stop_send():
+        send_data_thread_running.set()
 
 
 # def breakdown_replace(breakdown: list[str]) -> list[str]:
