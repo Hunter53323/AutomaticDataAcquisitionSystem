@@ -102,11 +102,15 @@ const db = useDBStore()
   margin: 0 0 0 10px;
 }
 
-.el-message-box__content .el-form-item{
+.el-message-box__content .el-form-item {
   margin-bottom: 12px;
 }
 
-.el-message-box__content .el-form-item:last-child{
+.el-message-box__content .el-form-item:last-child {
   margin-bottom: 0;
+}
+
+.el-input-number .el-input__inner {
+  text-align: left;
 }
 </style>

@@ -69,7 +69,7 @@ onMounted(() => {
       labelAutoRotate: true,
       grid: true,
       gridStrokeOpacity: 0.5,
-      labelAlign: 'parallel'
+      labelAlign: 'horizontal'
     })
 
   chart

@@ -32,7 +32,7 @@ const subObj = ((obj, arr) => {
       if (obj[key]) {
         res[key] = obj[key]
       } else {
-        res[key] = 0
+        res[key] = "NULL"
       }
     })
   } catch (error) {
@@ -80,6 +80,7 @@ socket.on('data_from_device', data => {
 })
 
 socket.on('auto_collect_status', data => {
+  dashboard.collectCount = data.remaining + data.success + data.fail 
   dashboard.autoCollectStatus = data.status
   dashboard.remainCount = data.remaining
   dashboard.successCount = data.success

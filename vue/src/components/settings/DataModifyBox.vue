@@ -1,14 +1,22 @@
 <script setup lang="js">
-import { ref } from 'vue';
+import { ref, reactive } from 'vue';
 
-const optionsType = ref(['int16', 'bit8'])
-// const optionsSize = ref([1, 2])
+const props = defineProps(['driver'])
+
+const optionsType = reactive({
+  FanDriver: ['int16', 'bit8'],
+  TestDevice: ['float']
+})
 const form = defineModel()
 const changeSize = (value) => {
-  if (value == "int16") {
-    form.value.size = 2
+  if (props.driver == "FanDriver") {
+    if (value == "int16") {
+      form.value.size = 2
+    } else {
+      form.value.size = 1
+    }
   } else {
-    form.value.size = 1
+    form.value.size = 4
   }
 }
 </script>
@@ -34,7 +42,7 @@ const changeSize = (value) => {
     </el-form-item> -->
     <el-form-item label="数据类型" required>
       <el-select v-model="form.type" placeholder="请选择数据类型" @change="changeSize">
-        <el-option v-for="item in optionsType" :key="item" :label="item" :value="item" />
+        <el-option v-for="item in optionsType[props.driver]" :key="item" :label="item" :value="item" />
       </el-select>
     </el-form-item>
   </el-form>
