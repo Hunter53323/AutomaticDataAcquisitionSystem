@@ -82,7 +82,11 @@ def handle_socketio_events(socketio: SocketIO):
             socketio.emit("data_from_device", total)
 
             success, fail, remaining, status = auto_collector.get_current_progress()
-            socketio.emit("auto_collect_status", {"success": success, "fail": fail, "remaining": remaining, "status": status})
+            send_dict = {"auto_collect_status": {"success": success, "fail": fail, "remaining": remaining, "status": status}}
+
+            for driver in communicator.drivers:
+                send_dict[driver.device_name] = driver.get_device_state()
+            socketio.emit("device_status", send_dict)
 
 
 # def breakdown_replace(breakdown: list[str]) -> list[str]:
