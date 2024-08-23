@@ -15,7 +15,7 @@ const db = useDBStore()
 const activeNames = ref(['1'])
 
 dashboard.initList()
-dashboard.initDeviceState()
+dashboard.updateDeviceState()
 settings.updateProtocol()
 settings.updateConf()
 settings.updateDefined()

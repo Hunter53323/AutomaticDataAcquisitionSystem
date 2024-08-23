@@ -2,24 +2,40 @@
 import { onMounted, watch, } from 'vue'
 import { Chart } from '@antv/g2'
 
-const props = defineProps(['data', 'unit', 'title'])
+const props = defineProps(['data', 'unit', 'title', 'index'])
 
 const chart = new Chart({
   autoFit: true,
   height: 300
 });
 
+// let time = Date.now();
+
 watch(() => props.data, (val) => {
+  // let time_now = Date.now();
+  // if (time_now - time < 1000) {
+  //   return;
+  // }
+  // time = Date.now();
   chart
     .scale('x', {
       domain: [val[0].time, val[0].time + 20000],
-      mask: 'HH:mm:ss.SSS ',
+      mask: 'mm:ss.SSS ',
       type: 'time',
       range: [0, 1],
     })
     .scale('y', {
-      domain: [0, Math.ceil(Math.max.apply(Math, val.map(item => { return item.val })) / 100 + 1) * 100],
+      domain: [0, Math.ceil(Math.max.apply(Math, val.map(item => { return item.val })) / 10 + 1) * 10],
       nice: true,
+    })
+    .axis('y', {
+      title: props.title + ' / ' + props.unit,
+      titleFontSize: 12,
+      labelOpacity: 0.8,
+      grid: true,
+      gridStrokeOpacity: 0.5,
+      labelFormatter: (d) => d,
+      labelAlign: 'parallel'
     })
     .changeData(val);
 }, { deep: true })
@@ -38,8 +54,8 @@ onMounted(() => {
       nice: true,
     })
     .axis('y', {
-      title: null,
-      titleFontSize: 14,
+      title: props.title + ' / ' + props.unit,
+      titleFontSize: 12,
       labelOpacity: 0.8,
       grid: true,
       gridStrokeOpacity: 0.5,
@@ -49,7 +65,8 @@ onMounted(() => {
     .axis('x', {
       title: null,
       labelOpacity: 0.8,
-      titleFontSize: 14,
+      titleFontSize: 12,
+      labelAutoRotate: true,
       grid: true,
       gridStrokeOpacity: 0.5,
       labelAlign: 'parallel'
@@ -60,12 +77,10 @@ onMounted(() => {
     .encode('size', 2)
     .encode('shape', 'smooth')
     .animate('update', { type: false })
-    .legend('color', {
-      position: 'right',
-    });
+    .legend('color');
   chart.render()
   const container = chart.getContainer(); // 获得挂载的容器
-  document.getElementById('container').appendChild(container);
+  document.getElementById('container' + props.index).appendChild(container);
 })
 
 </script>
@@ -73,6 +88,6 @@ onMounted(() => {
 
 <template>
   <div>
-    <div id="container"></div>
+    <div :id="'container' + props.index"></div>
   </div>
 </template>

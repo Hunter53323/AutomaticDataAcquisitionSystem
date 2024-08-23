@@ -35,12 +35,13 @@ const handleDBEdit = () => {
   })
 }
 dashboard.initList()
-dashboard.initDeviceState()
+dashboard.updateDeviceState()
 settings.updateProtocol()
 settings.updateConf()
 settings.updateDefined()
 settings.updateUser()
 db.updateMeta()
+db.dbDataUpdate()
 
 </script>
 

@@ -1,29 +1,13 @@
 <script lang="ts" setup>
-import { k } from 'vite/dist/node/types.d-aGj9QkWt';
 import { computed } from 'vue'
+import { useGlobalStore } from '@/stores/global';
 
+const global = useGlobalStore()
 const props = defineProps(['contentObj', 'count'])
 const contentLength = computed(() => Object.keys(props.contentObj).length)
 const rowCount = computed(() => Math.ceil(contentLength.value / props.count))
 const cowSpan = computed(() => 24 / props.count)
 
-const getUnit = (key) => {
-  if (key.includes('转速')) {
-    return 'rpm'
-  } else if (key.includes('电流')) {
-    return 'A'
-  } else if (key.includes('电压')) {
-    return 'V'
-  } else if (key.includes('功率')) {
-    return 'W'
-  } else if (key.includes('温度')) {
-    return '°C'
-  } else if (key.includes('湿度')) {
-    return '%'
-  } else {
-    return ''
-  }
-}
 
 const fommatValue = (value) => {
   if (typeof value === 'string') {
@@ -41,7 +25,7 @@ const fommatValue = (value) => {
       <el-statistic v-if="index < row * props.count && index >= row * props.count - props.count" :title="key"
         :value="null" group-separator=" ">
         <template #suffix>
-          {{ getUnit(key) }}
+          {{ global.getUnit(key) }}
         </template>
         <template #prefix>
           <span>{{ fommatValue(value) }}</span>

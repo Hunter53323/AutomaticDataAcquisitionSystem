@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { ElMessage, UploadInstance, UploadProps, UploadRawFile, genFileId } from 'element-plus'
 import { useGlobalStore, useDashboardStore } from '@/stores/global'
 
 const upload = ref<UploadInstance>()
 const global = useGlobalStore()
 const dashboard = useDashboardStore()
-const uploadDisable = ref(false)
+const uploadDisable = computed(() => {
+  return dashboard.isAutoCollecting
+})
 const startDisable = ref(true)
 const stopDisable = ref(true)
 const pauseDisable = ref(true)
@@ -63,9 +65,10 @@ const collectorStart = () => {
       startDisable.value = true
       stopDisable.value = false
       pauseDisable.value = false
-      clearDisable.value = false
+      clearDisable.value = true
       continueDisable.value = true
       uploadDisable.value = true
+      dashboard.updateCollectState()
     })
     .catch(response => {
       ElMessage.error('数采开始失败')
@@ -85,10 +88,10 @@ const collectorPause = () => {
         throw new Error()
       }
       ElMessage.success('数采暂停成功')
-      startDisable.value = false
+      startDisable.value = true
       stopDisable.value = false
       pauseDisable.value = true
-      clearDisable.value = false
+      clearDisable.value = true
       continueDisable.value = false
       uploadDisable.value = true
     })
@@ -114,7 +117,7 @@ const collectorStop = () => {
       stopDisable.value = true
       pauseDisable.value = true
       clearDisable.value = false
-      continueDisable.value = false
+      continueDisable.value = true
       uploadDisable.value = true
     })
     .catch(response => {
@@ -138,7 +141,7 @@ const collectorContinue = () => {
       startDisable.value = true
       stopDisable.value = false
       pauseDisable.value = false
-      clearDisable.value = false
+      clearDisable.value = true
       continueDisable.value = true
       uploadDisable.value = true
     })
@@ -160,12 +163,12 @@ const collectorClear = () => {
         throw new Error()
       }
       ElMessage.success('数采清空成功')
-      startDisable.value = false
+      startDisable.value = true
       stopDisable.value = true
       pauseDisable.value = true
       clearDisable.value = true
-      continueDisable.value = false
-      uploadDisable.value = true
+      continueDisable.value = true
+      uploadDisable.value = false
     })
     .catch(response => {
       ElMessage.error('数采清空失败')

@@ -95,12 +95,18 @@ const db = useDBStore()
 }
 
 .el-message-box__message {
-
-  margin-top: 10px;
-  width: 95%;
+  width: 100%;
 }
 
 .el-message-box__btns .el-button {
   margin: 0 0 0 10px;
+}
+
+.el-message-box__content .el-form-item{
+  margin-bottom: 12px;
+}
+
+.el-message-box__content .el-form-item:last-child{
+  margin-bottom: 0;
 }
 </style>

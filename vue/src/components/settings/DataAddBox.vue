@@ -3,7 +3,7 @@ import { ref } from 'vue';
 
 const optionsType = ref(['int16', 'bit8'])
 // const optionsSize = ref([1, 2])
-const form = defineModel()
+
 const changeSize = (value) => {
   if (value == "int16") {
     form.value.size = 2
@@ -11,6 +11,9 @@ const changeSize = (value) => {
     form.value.size = 1
   }
 }
+
+
+const form = defineModel()
 </script>
 
 <template>

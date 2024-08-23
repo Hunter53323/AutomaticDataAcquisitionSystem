@@ -5,11 +5,31 @@ import DBExportBox from '@/components/database/DBExportBox.vue'
 import StatementBox from '@/components/database/StatementBox.vue'
 import DBAddBox from '@/components/database/DBAddBox.vue'
 import UserChangeBox from '@/components/UserChangeBox.vue'
+import { protocol } from 'socket.io-client'
 
 export const useGlobalStore = defineStore('global', {
   state: () => {
     return {
       url: 'http://127.0.0.1:5000'
+    }
+  },
+  actions: {
+    getUnit(key) {
+      if (key.includes('转速')) {
+        return 'rpm'
+      } else if (key.includes('电流')) {
+        return 'A'
+      } else if (key.includes('电压')) {
+        return 'V'
+      } else if (key.includes('功率')) {
+        return 'W'
+      } else if (key.includes('温度')) {
+        return '°C'
+      } else if (key.includes('湿度')) {
+        return '%'
+      } else {
+        return ''
+      }
     }
   }
 })
@@ -37,6 +57,9 @@ export const useDBStore = defineStore('database', {
             this.colunmsShowSelected = data.columns
           }
           this.totalCount = data.total_count
+        })
+        .catch(response => {
+          ElMessage.error('无法获取数据库元数据，请检查数据库是否正常运行')
         })
     },
     async dbDataUpdate() {
@@ -152,7 +175,7 @@ export const useDBStore = defineStore('database', {
         cancelButtonText: '取消',
       })
         .then(() => {
-          fetch(useGlobalStore().url + "/db/export?filename=" + form.filename + "?filepath=" + form.filepath, {
+          fetch(useGlobalStore().url + "/db/export?filename=" + form.filename, {
             method: 'GET',
           }).then(response => response.json())
             .then(data => {
@@ -219,7 +242,7 @@ export const useDBStore = defineStore('database', {
 
     },
     async handleDBAdd() {
-      const form = reactive({})
+      let form = reactive({})
       this.columnsToFill.forEach((column) => {
         form[column] = ''
       })
@@ -280,7 +303,13 @@ export const useDashboardStore = defineStore('dashboard', {
     dataShowSelected: {},
     paraList: [],
     paraShowSelected: [],
-
+    dataList: [],
+    graphClass: {
+      "转速": [],
+      "电流": [],
+      "电压": [],
+      "功率": [],
+    },
   }),
   actions: {
     async initList() {
@@ -291,7 +320,25 @@ export const useDashboardStore = defineStore('dashboard', {
         .then(data => {
           this.dataObjList = Object.assign({}, data)
           this.dataShowSelected = Object.assign({}, this.dataObjList)
-          useSettingsStore().varChoice = [...data['FanDriver'], ...data['TestDevice']].filter((item) => item != "故障")
+          this.dataList = [...data['FanDriver'], ...data['TestDevice']].filter((item) => item != "故障")
+          this.graphClass = {
+            "转速": [],
+            "电流": [],
+            "电压": [],
+            "功率": [],
+          }
+          this.dataList.forEach((item) => {  
+            if (item.includes('功率')) {
+              this.graphClass['功率'].push(item)
+            } else if (item.includes('电流')) {
+              this.graphClass['电流'].push(item)
+            } else if (item.includes('电压')) {
+              this.graphClass['电压'].push(item)
+            } else if (item.includes('转速')) {
+              this.graphClass['转速'].push(item)
+            }
+          })
+          // console.log(this.graphClass)
         })
         .catch(error => {
           ElMessage({
@@ -314,7 +361,7 @@ export const useDashboardStore = defineStore('dashboard', {
           })
         })
     },
-    async initDeviceState() {
+    async updateDeviceState() {
       fetch(useGlobalStore().url + '/control/state', {
         method: 'GET',
       })
@@ -347,7 +394,7 @@ export const useDashboardStore = defineStore('dashboard', {
         .catch(error => {
           ElMessage.error('无法获取数采状态，请检查服务器是否正常运行')
         });
-    }
+    },
   }
 })
 export const useSettingsStore = defineStore('settings', {
@@ -358,7 +405,6 @@ export const useSettingsStore = defineStore('settings', {
       sender_email: '',
       lastTime: (new Date()).toLocaleString(),
     },
-    varChoice: [],
     operationChoice: ['+', '-', '*', '/', '(', ')'],
     testConf: {
       ip: '',
@@ -366,13 +412,31 @@ export const useSettingsStore = defineStore('settings', {
     },
     fanConf: {
       cpu: '',
-      port: ''
+      port: '',
+      baudrate: ''
     },
     definedColumns: {},
-    protocol: {}
+    protocol: {},
+    protocolChoice: {}
   }),
   actions: {
     async updateProtocol() {
+      fetch(useGlobalStore().url + '/control/configsave?driver_name=FanDriver')
+        .then(data => data.json())
+        .then(data => {
+          this.protocolChoice['FanDriver'] = data.value
+        })
+        .catch((e) => {
+          ElMessage.error("无法获取 被测设备 协议配置 ，请检查服务器是否正常运行！")
+        })
+      fetch(useGlobalStore().url + '/control/configsave?driver_name=TestDevice')
+        .then(data => data.json())
+        .then(data => {
+          this.protocolChoice['TestDevice'] = data.value
+        })
+        .catch((e) => {
+          ElMessage.error("无法获取 测试设备 协议配置 ，请检查服务器是否正常运行！")
+        })
       fetch(useGlobalStore().url + "/control/deviceset?config_item=config&driver_name=FanDriver", {
         method: 'GET'
       })
@@ -382,7 +446,7 @@ export const useSettingsStore = defineStore('settings', {
         })
         .catch(error => {
           ElMessage({
-            message: '无法获取被测设备协议配置，请检查服务器是否正常运行！',
+            message: '无法获取 被测设备 协议配置 ，请检查服务器是否正常运行！',
             type: 'error'
           })
         })
@@ -395,7 +459,7 @@ export const useSettingsStore = defineStore('settings', {
         })
         .catch(error => {
           ElMessage({
-            message: '无法获取测试设备协议配置，请检查服务器是否正常运行！',
+            message: '无法获取 测试设备 协议配置 ，请检查服务器是否正常运行！',
             type: 'error'
           })
         })
@@ -468,9 +532,10 @@ export const useSettingsStore = defineStore('settings', {
         .then(data => {
           this.fanConf.cpu = data.cpu
           this.fanConf.port = data.port
+          this.fanConf.baudrate = data.baudrate
         })
         .catch((e) => {
-          ElMessage.error("无法获取测试设备基本参数，请检查服务器是否正常运行！")
+          ElMessage.error("无法获取被测设备基本参数，请检查服务器是否正常运行！")
         })
     },
     async updateDefined() {

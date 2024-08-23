@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
-import { useSettingsStore, useGlobalStore } from '@/stores/global';
+import { useSettingsStore, useGlobalStore, useDashboardStore } from '@/stores/global';
 import { ElMessage } from 'element-plus';
 
 const settings = useSettingsStore()
+const dashboard = useDashboardStore()
 const global = useGlobalStore()
 const form = reactive({
   formula: '',
@@ -82,18 +83,18 @@ const handleTagClose = (item) =>{
       </el-tooltip>
     </el-row>
     <el-row class="choice" :gutter="20">
-      <el-col :span="16">
+      <el-col :span="18">
         <el-text class="tip-text">可选变量</el-text>
         <el-button-group>
-          <el-button v-for="item in settings.varChoice" type="success" @click="handleClick(item)">
+          <el-button v-for="item in dashboard.dataList" type="success" @click="handleClick(item)" size="small">
             {{ item }}
           </el-button>
         </el-button-group>
       </el-col>
-      <el-col :span="8">
+      <el-col :span="6">
         <el-text class="tip-text">可选算符</el-text>
         <el-button-group>
-          <el-button v-for="item in settings.operationChoice" type="success" @click="handleClick(item)">
+          <el-button v-for="item in settings.operationChoice" type="success" @click="handleClick(item)" size="small">
             {{ item }}
           </el-button>
         </el-button-group>

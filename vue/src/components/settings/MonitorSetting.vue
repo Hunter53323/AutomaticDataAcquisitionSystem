@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, reactive, watch } from 'vue'
-import SelectionBox from '@/components/settings/SelectionBox.vue'
+import SelectionBox from '@/components/SelectionBox.vue'
 import { useDashboardStore } from '@/stores/global';
 
 const dashboard = useDashboardStore()
