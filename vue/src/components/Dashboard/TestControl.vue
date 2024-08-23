@@ -37,13 +37,6 @@ const handleConnect = () => {
       }
     })
     .then(() => {
-      if (command == 'connect') {
-        dashboard.isTestConnected = true;
-      }
-      if (command == 'disconnect') {
-        dashboard.isTestConnected = false;
-      }
-      dashboard.updateDeviceState()
     })
     .catch(error => {
       ElMessage.error('测试设备' + (command == 'disconnect' ? '断连' : '连接') + '失败');
@@ -68,7 +61,6 @@ const handleStartDevice = () => {
       } else {
         throw new Error();
       }
-      dashboard.updateDeviceState()
     })
     .catch(error => {
       ElMessage.error('测试设备' + (command == 'stop' ? '停止' : '启动') + '失败')
@@ -91,7 +83,7 @@ const modeSelect = ref('1')
       :disabled="!dashboard.isTestConnected">
       {{ dashboard.isTestRunning ? '停止' : '启动' }}
     </el-button>
-    <el-button-group>
+    <!-- <el-button-group>
       <el-button type="primary" @click="handleStartDevice" :disabled="!dashboard.isTestConnected" class="selectWraper">
         <el-select v-model="modeSelect" placeholder="选择" style="width: 80px" class="innerSelect"
           :disable="!dashboard.isFanConnected">
@@ -103,7 +95,7 @@ const modeSelect = ref('1')
       <el-button type="primary" :disabled="!dashboard.isTestConnected">
         设置
       </el-button>
-    </el-button-group>
+    </el-button-group> -->
 
   </div>
 

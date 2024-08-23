@@ -87,6 +87,16 @@ socket.on('auto_collect_status', data => {
   console.log(data.status)
 })
 
+socket.on('device_status', data => {
+  console.log(data)
+  dashboard.isFanConnected = data.FanDriver['连接状态']
+  dashboard.isFanRunning = data.FanDriver['运行状态']
+  dashboard.isFanBreakDown = data.FanDriver['故障']
+  dashboard.isTestConnected = data.TestDevice['连接状态']
+  dashboard.isTestRunning = data.TestDevice['运行状态']
+  dashboard.isTestBreakDown = data.TestDevice['故障']
+})
+
 dashboard.initList()
 dashboard.updateDeviceState()
 settings.updateProtocol()
