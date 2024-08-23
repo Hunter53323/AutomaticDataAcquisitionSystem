@@ -130,7 +130,7 @@ def steady_state_determination():
         示例请求：curl -X POST http://127.0.0.1:5000/collect/steady_state_determination -d "value=输入功率-输出功率>1"
         """
         # 设置当前的稳态判断逻辑
-        value = request.form.get("value")
+        value = request.get_json().get("value")
         status = auto_collector.set_steady_state_determination(value)
         return jsonify({"status": status}), 200
     else:

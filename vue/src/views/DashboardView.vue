@@ -88,7 +88,7 @@ socket.on('auto_collect_status', data => {
 })
 
 socket.on('device_status', data => {
-  console.log(data)
+  // console.log(data)
   dashboard.isFanConnected = data.FanDriver['连接状态']
   dashboard.isFanRunning = data.FanDriver['运行状态']
   dashboard.isFanBreakDown = data.FanDriver['故障']
@@ -108,6 +108,7 @@ settings.updateProtocol()
 settings.updateConf()
 settings.updateDefined()
 settings.updateUser()
+settings.updateSteady()
 db.updateMeta()
 
 </script>
