@@ -97,6 +97,11 @@ socket.on('device_status', data => {
   dashboard.isTestBreakDown = data.TestDevice['故障']
 })
 
+
+// socket.on('connect', () => {
+//   console.log('socket connected')
+// })
+
 dashboard.initList()
 dashboard.updateDeviceState()
 settings.updateProtocol()
