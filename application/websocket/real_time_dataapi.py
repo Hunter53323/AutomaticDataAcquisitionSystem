@@ -82,10 +82,9 @@ def handle_socketio_events(socketio: SocketIO):
             #     total["故障"] = breakdown_list
             socketio.emit("data_from_device", total)
 
-    @socketio.on("connect")
     def send_data():
         while True:
-            time.sleep(0.2)
+            socketio.sleep(0.5)
             if send_data_thread_running.is_set():
                 send_data_thread_running.clear()
                 break
@@ -96,9 +95,16 @@ def handle_socketio_events(socketio: SocketIO):
                 send_dict[driver.device_name] = driver.get_device_state()
             socketio.emit("device_status", send_dict)
 
+    @socketio.on("connect")
+    def connect():
+        if send_data_thread == None:
+            send_data_thread_running.clear()
+            send_data_thread = socketio.start_background_task(target=send_data)
+
     @socketio.on("disconnect")
-    def stop_send():
+    def disconnect():
         send_data_thread_running.set()
+        send_data_thread = None
 
 
 # def breakdown_replace(breakdown: list[str]) -> list[str]:
