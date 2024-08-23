@@ -19,7 +19,7 @@ class AutoCollection:
         self.__auto_running: bool = False
         self.__pause_flag: bool = False
         self.__stop_flag: bool = False
-        self.__custom_steady_state_determination: str = "设定转速 - 实际转速 < 5"
+        self.__custom_steady_state_determination: dict[str, str] = {"设定值": "设定转速", "实际值": "实际转速"}
 
         self.__collect_count: list[int] = [0, 0]  # 第一位是成功数量，第二位是失败数量
 
@@ -43,7 +43,7 @@ class AutoCollection:
         return True
 
     def precheck(self) -> bool:
-        data_names = re.findall(r"[^\+\-\*/\(\) =><!~\d\.]+", self.__custom_steady_state_determination)
+        data_names = self.__custom_steady_state_determination.values()
         for name in data_names:
             if (
                 name not in self.communication.get_para_map().keys()
@@ -181,6 +181,7 @@ class AutoCollection:
         self.logger.info(f"当前测试的参数为{para_dict}")
         curr_time = time.time()
         time_count = 0
+        steady_determination = self.steady_state_determination()
         # avg_data = {key: [] for key in self.communication.get_data_map().keys()}
         while True:
             curr_data: dict[str, any] = self.communication.read()
@@ -217,7 +218,7 @@ class AutoCollection:
             time_count += 1
             # TODO: 开始前请启动机器
             # count的判断是避免当前的稳定状态影响稳态判断,
-            if self.steady_state_determination(curr_data, para_dict) and time_count > 30:
+            if steady_determination(curr_data, para_dict) and time_count > 30:
                 # if self.steady_state_determination(avg_data_calculated, para_dict) and time_count > 10:
                 self.__stable_state = True
                 final_data = self.calculate_result(curr_data, para_dict)
@@ -263,31 +264,72 @@ class AutoCollection:
         data_dict.update(custom_dict)
         return data_dict
 
-    def steady_state_determination(self, data_dict: dict[str, any], para_dict: dict[str, any]) -> bool:
+    def steady_state_determination(self, value_err: float = 5, epsilon_a: float = 2) -> bool:
+        history_n = []
 
-        # TODO：大于、小于某个值、参数之间的差值、默认判断标准
-        # 三大类的字符串解析可以统一起来，后面也用类似的方式去做
-        # 需要对前端的配置做一个解码，可能需要一个解码函数
-        solve_str = self.__custom_steady_state_determination
-        data_names = re.findall(r"[^\+\-\*/\(\) =><!~\d\.]+", solve_str)
-        for name in data_names:
-            if name in self.communication.get_para_map().keys():
-                solve_str = solve_str.replace(name, str(para_dict[name]))
-            elif name in self.communication.get_data_map().keys():
-                solve_str = solve_str.replace(name, str(data_dict[name]))
-            elif name in self.communication.custom_calculate_map.keys():
-                solve_str = solve_str.replace(name, str(self.communication.custom_calculate_map[name]))
+        def is_steady(data_dict: dict[str, any], para_dict: dict[str, any]) -> bool:
+            # TODO：大于、小于某个值、参数之间的差值、默认判断标准
+            # 三大类的字符串解析可以统一起来，后面也用类似的方式去做
+            # 需要对前端的配置做一个解码，可能需要一个解码函数
+            set_value_name = self.__custom_steady_state_determination["设定值"]
+            actual_value_name = self.__custom_steady_state_determination["实际值"]
+            if set_value_name in data_dict.keys():
+                set_value = data_dict[set_value_name]
+            elif set_value_name in para_dict.keys():
+                set_value = para_dict[set_value_name]
+            elif set_value_name in self.communication.custom_calculate_map.keys():
+                set_value = self.communication.custom_calculate_map[set_value_name]
             else:
-                raise ValueError(f"稳态判断条件中的数据项{name}不存在")
-        return eval(solve_str)
+                raise ValueError(f"稳态判断条件中的数据项{set_value_name}不存在")
+            if actual_value_name in data_dict.keys():
+                actual_value = data_dict[actual_value_name]
+            elif actual_value_name in para_dict.keys():
+                actual_value = para_dict[actual_value_name]
+            elif actual_value_name in self.communication.custom_calculate_map.keys():
+                actual_value = self.communication.custom_calculate_map[actual_value_name]
+            else:
+                raise ValueError(f"稳态判断条件中的数据项{actual_value_name}不存在")
+            if not history_n:
+                history_n.append(actual_value)
+                return False
+            if abs(actual_value - history_n[-1]) < epsilon_a and abs(actual_value - set_value) < value_err:
+                return True
+            else:
+                history_n.append(actual_value)
+                return False
 
-    def set_steady_state_determination(self, input_str: str) -> bool:
+        return is_steady
+
+    # def steady_state_determination(self, data_dict: dict[str, any], para_dict: dict[str, any]) -> bool:
+
+    #     # TODO：大于、小于某个值、参数之间的差值、默认判断标准
+    #     # 三大类的字符串解析可以统一起来，后面也用类似的方式去做
+    #     # 需要对前端的配置做一个解码，可能需要一个解码函数
+    #     set_value_name = self.__custom_steady_state_determination["设定值"]
+    #     actual_value_name = self.__custom_steady_state_determination["实际值"]
+    #     if set_value_name in data_dict.keys():
+    #         set_value = data_dict[set_value_name]
+    #     elif set_value_name in para_dict.keys():
+    #         set_value = para_dict[set_value_name]
+    #     elif set_value_name in self.communication.custom_calculate_map.keys():
+    #         set_value = self.communication.custom_calculate_map[set_value_name]
+    #     else:
+    #         raise ValueError(f"稳态判断条件中的数据项{set_value_name}不存在")
+    #     if actual_value_name in data_dict.keys():
+    #         actual_value = data_dict[actual_value_name]
+    #     elif actual_value_name in para_dict.keys():
+    #         actual_value = para_dict[actual_value_name]
+    #     elif actual_value_name in self.communication.custom_calculate_map.keys():
+    #         actual_value = self.communication.custom_calculate_map[actual_value_name]
+    #     else:
+    #         raise ValueError(f"稳态判断条件中的数据项{actual_value_name}不存在")
+
+    #     return eval(solve_str)
+
+    def set_steady_state_determination(self, value_dict: dict) -> bool:
         # 示例：目标转速 - 实际转速 < 1
         # TODO
-        if not any(op in input_str for op in [">", "<", ">=", "<=", "==", "!="]):
-            self.logger.error("稳态判断条件不合法")
-            return False
-        data_names = re.findall(r"[^\+\-\*/\(\) =><!~\d\.]+", input_str)
+        data_names = value_dict.values()
         for name in data_names:
             if (
                 name not in self.communication.get_para_map().keys()
@@ -298,7 +340,7 @@ class AutoCollection:
                 self.logger.error(f"稳态判断条件中的数据项{name}不存在")
                 return False
 
-        self.__custom_steady_state_determination = input_str
+        self.__custom_steady_state_determination = value_dict
         return True
 
     def get_steady_state_determination(self) -> str:
