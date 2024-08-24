@@ -106,7 +106,10 @@ class Communication:
         if not device_name:
             flag = True
             for driver in self.drivers:
-                flag = flag & driver.connect()
+                try:
+                    flag = flag & driver.connect()
+                except Exception as e:
+                    self.logger.error(f"连接设备{driver.device_name}失败,{e}")
             self.conn_state = [driver.device_name for driver in self.drivers]
             return flag
         if device_name in self.conn_state:
@@ -124,7 +127,10 @@ class Communication:
         if not device_name:
             flag = True
             for driver in self.drivers:
-                flag = flag & driver.disconnect()
+                try:
+                    flag = flag & driver.disconnect()
+                except Exception as e:
+                    self.logger.error(f"关闭设备{driver.device_name}失败,{e}")
             self.conn_state = []
             return flag
         if device_name not in self.conn_state:
@@ -149,7 +155,10 @@ class Communication:
         if not device_name:
             flag = True
             for driver in self.drivers:
-                flag = flag & driver.start_read_all()
+                try:
+                    flag = flag & driver.start_read_all()
+                except Exception as e:
+                    self.logger.error(f"启动设备{driver.device_name}读取数据失败,{e}")
             self.__is_read_all = [driver.device_name for driver in self.drivers]
             return flag
         for driver in self.drivers:
@@ -165,7 +174,10 @@ class Communication:
         if not device_name:
             flag = True
             for driver in self.drivers:
-                flag = flag & driver.stop_read_all()
+                try:
+                    flag = flag & driver.stop_read_all()
+                except Exception as e:
+                    self.logger.error(f"停止设备{driver.device_name}读取数据失败,{e}")
             self.__is_read_all = []
             return flag
         for driver in self.drivers:

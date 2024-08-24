@@ -116,7 +116,7 @@ class TestDevice(DriverBase):
 
     def connect(self) -> bool:
         try:
-            self.reset_error()
+            self.reset_status()
             if self.client.is_socket_open():
                 self.conn_state = True
                 return True

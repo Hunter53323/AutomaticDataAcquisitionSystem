@@ -228,7 +228,7 @@ class FanDriver(DriverBase):
             return False, e
 
     def connect(self) -> bool:
-        self.reset_error()
+        self.reset_status()
         if self.cpu is None:
             self.logger.error("self.cpu is None")
             return False

@@ -64,9 +64,12 @@ def handle_socketio_events(socketio: SocketIO):
         while True:
             global thread
             if communicator.check_error():
-                communicator.close_all_device()
-                communicator.stop_read_all()
-                communicator.disconnect()
+                try:
+                    communicator.close_all_device()
+                    communicator.stop_read_all()
+                    communicator.disconnect()
+                except Exception as e:
+                    communicator.logger.error(f"关闭设备失败，{e}")
                 thread_running.set()
                 thread = None
                 emailsender.send_email("读写故障", "数据采集模块出现读写故障，请检查")

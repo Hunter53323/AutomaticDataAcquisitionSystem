@@ -123,7 +123,8 @@ class AutoCollection:
             self.__stable_state = False
             tmp_para_dict = dict(zip(self.__para_vals.keys(), item_para))
             collect_data, err_handle_status, code, err = self.signal_progress(tmp_para_dict)
-            if self.__stop_flag:
+            # 检测到按下了停止或者出现通讯错误，那么跳出循环，以免卡在数采里面
+            if self.__stop_flag or self.communication.check_error():
                 break
             self.save_data(data_dict=collect_data, para_dict=tmp_para_dict, err=err)
             self.__collect_count[0 if collect_data else 1] += 1
@@ -164,8 +165,11 @@ class AutoCollection:
     def wait_until_no_breakdown(self):
         # 等待函数，直到读取到的数据中没有故障了才会继续向下运行
         while True:
+            # 清障失败后，可以手动尝试清障，或点击停止数采按钮来停止数采
             if self.communication.find_driver("FanDriver").breakdown == False:
                 self.logger.info("故障已清除，继续自动采集")
+                break
+            elif self.__stop_flag:
                 break
             else:
                 time.sleep(0.1)
@@ -181,17 +185,6 @@ class AutoCollection:
         last = int(self.communication.find_driver("TestDevice").curr_para["测功机控制值"])
         now = int(para_dict["测功机控制值"])
         copy_para_dict = para_dict.copy()
-        # print(last)
-        # print(now)
-        # while last != now:
-        #     if last > now:
-        #         para_dict["测功机控制值"] = last - 1
-        #         last = last - 1
-        #     elif last < now:
-        #         para_dict["测功机控制值"] = last + 1
-        #         last = last + 1
-        #     self.communication.write(para_dict)
-        # time.sleep(1)
 
         self.logger.info(f"当前测试的参数为{para_dict}")
         curr_time = time.time()
@@ -201,6 +194,7 @@ class AutoCollection:
         steady_count = 0
         # avg_data = {key: [] for key in self.communication.get_data_map().keys()}
         while True:
+            # 对于测功机控制数值变化过大的情况，逐步调整避免出现电机失速或者带不起来等问题
             if last > now:
                 copy_para_dict["测功机控制值"] = last - 1
                 last = last - 1
@@ -302,6 +296,7 @@ class AutoCollection:
 
     def steady_state_determination(self, value_err: float = 5, epsilon_a: float = 2) -> bool:
         history_n = []
+        # TODO：这里确认一下稳态判断的逻辑，是使用百分比的形式还是说直接使用绝对值的形式
 
         def is_steady(data_dict: dict[str, any], para_dict: dict[str, any]) -> bool:
             # 三大类的字符串解析可以统一起来，后面也用类似的方式去做

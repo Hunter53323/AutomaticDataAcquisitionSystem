@@ -195,9 +195,17 @@ class DriverBase(ABC):
     def clear_curr_data(self):
         self.curr_data = {key: 0 for key in self.curr_data.keys()}
 
-    def reset_error(self):
-        self.read_error = False
-        self.write_error = False
-
     def check_error(self):
         return self.read_error or self.write_error
+
+    def reset_status(self):
+        if self.__read_all_running:
+            self.stop_read_all()
+            self.__read_all_running: bool = False
+        self.conn_state = False
+        self.run_state = False
+        self.breakdown = False
+        self.__iswriting = False
+        self.__isreading = False
+        self.read_error = False
+        self.write_error = False

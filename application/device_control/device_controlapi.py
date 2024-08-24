@@ -3,6 +3,7 @@ from core.communication import communicator
 from flask import request, jsonify
 from core.database import outputdb
 import json
+from core.auto_collection import auto_collector
 
 
 @control.route("/testdevice", methods=["GET", "POST"])
@@ -214,9 +215,10 @@ def config_savev2():
     config_dict = {}
     for driver in communicator.drivers:
         config_dict[driver.device_name] = json.dumps(driver.export_config())
-    config_dict["other_cnfig"] = json.dumps(communicator.export_custom_column())
+    config_dict["自定义列"] = json.dumps(communicator.export_custom_column())
+    config_dict["稳态判断"] = json.dumps(auto_collector.get_steady_state_determination())
     config_dict.update({"配置命名": "config_name"})
-    config_column = config_to_columns(config_dict, size="4096")
+    config_column = config_to_columns_v2(config_dict)
     if request.method == "GET":
         """
         curl http://127.0.0.1:5000/control/configsave?driver_name=FanDriver
@@ -257,15 +259,16 @@ def config_savev2():
         count = 0
         for key in config_column.keys():
             if key == "ID" or key == "配置命名":
-                count += 1
                 continue
-            if key == "other_config":
+            elif key == "自定义列":
                 communicator.load_custom_column(json.loads(driver_config[0][count]))
-                count += 1
-            target_driver = communicator.find_driver(key)
-            if target_driver:
-                target_driver.load_config(json.loads(driver_config[0][count]))
-                count += 1
+            elif key == "稳态判断":
+                auto_collector.set_steady_state_determination(json.loads(driver_config[0][count]))
+            else:
+                target_driver = communicator.find_driver(key)
+                if target_driver:
+                    target_driver.load_config(json.loads(driver_config[0][count]))
+            count += 1
         status, err = communicator.update_map()
         return jsonify({"status": status, "error": err}), 200
     else:
@@ -364,4 +367,19 @@ def config_to_columns(config: dict[str, any], size: str = "2048") -> dict[str, s
             columns[key] = "VARCHAR(4096)"
         else:
             columns[key] = "VARCHAR(255)"
+    return columns
+
+
+def config_to_columns_v2(config: dict[str, any], size: str = "2048") -> dict[str, str]:
+    """
+    将配置文件转换为数据库的列名
+    """
+    columns = {"ID": "INT AUTO_INCREMENT PRIMARY KEY"}
+    for key, _ in config.items():
+        if key == "FanDriver":
+            columns[key] = "VARCHAR(30000)"
+        elif key == "TestDevice":
+            columns[key] = "VARCHAR(10000)"
+        else:
+            columns[key] = "VARCHAR(2048)"
     return columns
