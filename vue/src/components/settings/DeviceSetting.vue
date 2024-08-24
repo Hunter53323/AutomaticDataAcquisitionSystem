@@ -102,8 +102,8 @@ onMounted(() => {
           </el-col>
           <el-col :span="11">
             <el-form-item label="端口配置" style="width:100%">
-              <el-input-number v-model="formTest.port" placeholder="输入被测设备端口" style="width:100%"
-                :controls="false"></el-input-number>
+              <el-input v-model="formTest.port" placeholder="输入被测设备端口" style="width:100%"
+                :controls="false"></el-input>
             </el-form-item>
           </el-col>
           <el-col :span="2">

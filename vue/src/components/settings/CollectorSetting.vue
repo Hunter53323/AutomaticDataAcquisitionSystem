@@ -97,7 +97,7 @@ const uploadStable = () => {
         </el-row>
       </el-form>
     </el-collapse-item>
-    <el-collapse-item name="2">
+    <!-- <el-collapse-item name="2">
       <template #title>
         <div>参数设置</div>
 
@@ -130,7 +130,7 @@ const uploadStable = () => {
           </el-row>
         </el-form>
       </div>
-    </el-collapse-item>
+    </el-collapse-item> -->
   </el-collapse>
 </template>
 

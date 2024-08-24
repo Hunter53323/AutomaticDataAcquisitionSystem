@@ -22,7 +22,7 @@ const timeData2 = ref([])
 const graphClass1 = ref("转速")
 const graphClass2 = ref("功率")
 const graphSelected1 = ref(["实际转速", "目标转速"])
-const graphSelected2 = ref(["功率"])
+const graphSelected2 = ref([""])
 
 
 const subObj = ((obj, arr) => {

@@ -38,14 +38,14 @@ data.value = generateData(db.columns)
 
 <template>
   <el-collapse v-model="activeNames" class="collapse-son">
-    <el-collapse-item title="数据库显示" name="1" >
+    <!-- <el-collapse-item title="数据库显示" name="1" >
       <div class="transfer-item"> 
         <el-transfer class="selector" v-model="db.colunmsShowSelected" :button-texts="['隐藏', '显示']" :data="data"
           :titles="['隐藏数据', '显示数据']" />
-        <!-- <SelectionBox class="selector" :ref-list="db.columns" :selected-list="db.colunmsShowSelected"
-        @selectedChange="(selectedList) => db.colunmsShowSelected = selectedList" size="small" /> -->
+        <SelectionBox class="selector" :ref-list="db.columns" :selected-list="db.colunmsShowSelected"
+        @selectedChange="(selectedList) => db.colunmsShowSelected = selectedList" size="small" />
       </div>
-    </el-collapse-item>
+    </el-collapse-item> -->
     <el-collapse-item title="自定义存储" name="2">
       <DBItemConf />
     </el-collapse-item>
@@ -66,4 +66,5 @@ data.value = generateData(db.columns)
 .selector :deep(.el-transfer-panel) {
   width: 450px;
 }
+
 </style>

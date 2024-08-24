@@ -1,6 +1,6 @@
 <script setup lang="js">
 import { ref, onMounted, reactive, watch, computed, unref, toRaw, h } from 'vue'
-import { useGlobalStore, useSettingsStore } from '@/stores/global';
+import { useDashboardStore, useGlobalStore, useSettingsStore } from '@/stores/global';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Close } from '@element-plus/icons-vue'
 import DataModifyBox from '@/components/settings/DataModifyBox.vue'
@@ -12,6 +12,7 @@ import ProtocolDelBox from '@/components/settings/ProtocolDelBox.vue';
 
 const settings = useSettingsStore()
 const global = useGlobalStore()
+const dashboard = useDashboardStore()
 
 const loadConfFromDB = (driver) => {
   activeNames.value.push(driver == 'FanDriver' ? '1' : '2')
@@ -35,6 +36,7 @@ const loadConfFromDB = (driver) => {
             throw new Error(data.error)
           }
           settings.updateProtocol()
+          dashboard.initList()
           ElMessage.success("成功加载 " + (driver == 'FanDriver' ? '被测设备 ' : '测试设备 ') + "的配置")
         })
         .catch((e) => {
@@ -445,7 +447,7 @@ watch(() => settings.protocol['TestDevice'], (newProtocal) => {
       <el-collapse-item name="1" class="collapse-son">
         <template #title>
           <div>被测设备协议</div>
-          <span v-show="activeNames.some(item => item === '1')">
+          <!-- <span v-show="activeNames.some(item => item === '1')">
             <el-divider direction="vertical" />
             <el-button size="small" type="primary" @click="saveConfToDB('FanDriver')" class="bntProtocol">
               保存配置至数据库
@@ -458,7 +460,7 @@ watch(() => settings.protocol['TestDevice'], (newProtocal) => {
             <el-button size="small" type="primary" @click="delConfFromDB('FanDriver')" class="bntProtocol">
               从数据库删除配置
             </el-button>
-          </span>
+          </span> -->
         </template>
         <div v-for="value, key in formFan" class="desc-div">
           <el-descriptions direction="vertical" :column="12" border>
@@ -515,7 +517,7 @@ watch(() => settings.protocol['TestDevice'], (newProtocal) => {
       <el-collapse-item name="2" class="collapse-son">
         <template #title>
           <div>测试设备协议</div>
-          <span v-show="activeNames.some(item => item === '2')">
+          <!-- <span v-show="activeNames.some(item => item === '2')">
             <el-divider direction="vertical" />
             <el-button size="small" type="primary" @click="saveConfToDB('TestDevice')" class="bntProtocol">
               保存配置至数据库
@@ -528,7 +530,7 @@ watch(() => settings.protocol['TestDevice'], (newProtocal) => {
             <el-button size="small" type="primary" @click="delConfFromDB('FanDriver')" class="bntProtocol">
               从数据库删除配置
             </el-button>
-          </span>
+          </span> -->
         </template>
 
         <div v-for="value, key in formTest" class="desc-div">

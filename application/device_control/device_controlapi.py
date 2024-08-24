@@ -259,7 +259,7 @@ def config_savev2():
         count = 0
         for key in config_column.keys():
             if key == "ID" or key == "配置命名":
-                continue
+                pass
             elif key == "自定义列":
                 communicator.load_custom_column(json.loads(driver_config[0][count]))
             elif key == "稳态判断":
@@ -377,9 +377,9 @@ def config_to_columns_v2(config: dict[str, any], size: str = "2048") -> dict[str
     columns = {"ID": "INT AUTO_INCREMENT PRIMARY KEY"}
     for key, _ in config.items():
         if key == "FanDriver":
-            columns[key] = "VARCHAR(30000)"
+            columns[key] = "TEXT"
         elif key == "TestDevice":
-            columns[key] = "VARCHAR(10000)"
+            columns[key] = "TEXT"
         else:
-            columns[key] = "VARCHAR(2048)"
+            columns[key] = "TEXT"
     return columns

@@ -450,21 +450,30 @@ export const useSettingsStore = defineStore('settings', {
         })
     },
     async updateProtocol() {
-      fetch(useGlobalStore().url + '/control/configsave?driver_name=FanDriver')
+      // fetch(useGlobalStore().url + '/control/configsave?driver_name=FanDriver')
+      //   .then(data => data.json())
+      //   .then(data => {
+      //     this.protocolChoice['FanDriver'] = data.value
+      //   })
+      //   .catch((e) => {
+      //     ElMessage.error("无法获取 被测设备 协议配置 ，请检查服务器是否正常运行！")
+      //   })
+      // fetch(useGlobalStore().url + '/control/configsave?driver_name=TestDevice')
+      //   .then(data => data.json())
+      //   .then(data => {
+      //     this.protocolChoice['TestDevice'] = data.value
+      //   })
+      //   .catch((e) => {
+      //     ElMessage.error("无法获取 测试设备 协议配置 ，请检查服务器是否正常运行！")
+      //   })
+
+      fetch(useGlobalStore().url + '/control/configsavev2')
         .then(data => data.json())
         .then(data => {
-          this.protocolChoice['FanDriver'] = data.value
+          this.protocolChoice = data.value
         })
         .catch((e) => {
-          ElMessage.error("无法获取 被测设备 协议配置 ，请检查服务器是否正常运行！")
-        })
-      fetch(useGlobalStore().url + '/control/configsave?driver_name=TestDevice')
-        .then(data => data.json())
-        .then(data => {
-          this.protocolChoice['TestDevice'] = data.value
-        })
-        .catch((e) => {
-          ElMessage.error("无法获取 测试设备 协议配置 ，请检查服务器是否正常运行！")
+          ElMessage.error("无法获取配置 ，请检查服务器是否正常运行！")
         })
       fetch(useGlobalStore().url + "/control/deviceset?config_item=config&driver_name=FanDriver", {
         method: 'GET'
