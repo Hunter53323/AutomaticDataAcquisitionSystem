@@ -5,7 +5,7 @@ import { ref, reactive } from 'vue';
 const props = defineProps(['driver'])
 
 const optionsType = reactive({
-  FanDriver: ['int16', 'bit8'],
+  FanDriver: ['int16', 'int8'],
   TestDevice: ['float']
 })
 const form = defineModel()

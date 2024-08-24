@@ -110,7 +110,7 @@ const uploadStable = () => {
       </template>
       <div v-for="(value, key) in form">
         <el-text size="large">{{ key }}</el-text>
-        <el-form :model="form[key]" labelPosition="left" labelWidth="60px" inline class="collector-form">
+        <el-form :model="form[key]" labelPosition="left" labelWidth="100px" inline class="collector-form">
           <el-row :gutter="20">
             <el-col :span="8">
               <el-form-item label="起始值" :key="key" style="width: 100%">

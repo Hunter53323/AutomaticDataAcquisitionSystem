@@ -1,7 +1,7 @@
 <script setup lang="js">
 import { onMounted, reactive, ref, watch } from 'vue';
 import { useGlobalStore, useSettingsStore } from '@/stores/global';
-import { ElMessage, segmentedEmits } from 'element-plus';
+import { ElMessage, } from 'element-plus';
 
 const global = useGlobalStore()
 const settings = useSettingsStore()

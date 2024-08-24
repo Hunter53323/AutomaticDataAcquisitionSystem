@@ -106,7 +106,7 @@ const handleClearBreakdown = () => {
       :disabled="!dashboard.isFanConnected">
       {{ dashboard.isFanRunning ? '停止' : '启动' }}
     </el-button>
-    <el-button :type="dashboard.isFanBreakdown ? 'danger' : 'primary'" @click="handleClearBreakdown"
+    <el-button :type="dashboard.isFanBreakDown ? 'danger' : 'primary'" @click="handleClearBreakdown"
       :disabled="(!dashboard.isFanConnected)">
       清障
     </el-button>
