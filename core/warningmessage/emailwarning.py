@@ -46,27 +46,28 @@ class EmailWarning:
         :param subject: 邮件主题
         :param message: 邮件正文内容
         """
-        if not self.check():
-            return False
-        # 创建一个MIMEText邮件对象，设置邮件内容和格式
-        msg = MIMEText(message, "plain", "utf-8")
-        msg["From"] = Header(self.sender_mail)
-        msg["To"] = Header(self.receiver_email)
-        msg["Subject"] = Header(subject)
+        pass
+        # if not self.check():
+        #     return False
+        # # 创建一个MIMEText邮件对象，设置邮件内容和格式
+        # msg = MIMEText(message, "plain", "utf-8")
+        # msg["From"] = Header(self.sender_mail)
+        # msg["To"] = Header(self.receiver_email)
+        # msg["Subject"] = Header(subject)
 
-        # 根据接收者的邮箱域名获取SMTP服务器和端口
-        smtp_server, port = self.get_smtp_server(self.receiver_email)
+        # # 根据接收者的邮箱域名获取SMTP服务器和端口
+        # smtp_server, port = self.get_smtp_server(self.receiver_email)
 
-        # 连接到SMTP服务器并发送邮件
-        try:
-            server = smtplib.SMTP_SSL(smtp_server, port)
-            server.login(self.sender_mail, self.sender_passwd)  # 登录验证
-            server.sendmail(self.sender_mail, [self.receiver_email], msg.as_string())  # 发送邮件
-            return True
-        except smtplib.SMTPException as e:
-            return False
-        finally:
-            server.quit()
+        # # 连接到SMTP服务器并发送邮件
+        # try:
+        #     server = smtplib.SMTP_SSL(smtp_server, port)
+        #     server.login(self.sender_mail, self.sender_passwd)  # 登录验证
+        #     server.sendmail(self.sender_mail, [self.receiver_email], msg.as_string())  # 发送邮件
+        #     return True
+        # except smtplib.SMTPException as e:
+        #     return False
+        # finally:
+        #     server.quit()
 
     def check(self) -> bool:
         if self.sender_mail and self.sender_passwd and self.receiver_email and self.receiver_name:

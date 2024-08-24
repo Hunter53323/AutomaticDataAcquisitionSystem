@@ -321,6 +321,7 @@ class FanDriver(DriverBase):
         for key in breakdown_list:
             if self.curr_data[key] != "":
                 pass  # 故障处理未写
+                self.logger.info(f"查询回复:{response.hex()}")
                 self.logger.info(f"查询到故障! 故障码:{self.curr_data[key]}")
                 self.run_state = False
                 self.breakdown = True
@@ -363,7 +364,9 @@ class FanDriver(DriverBase):
             if self.write(para_dict):
                 self.breakdown = False
                 self.logger.info(f"故障清除成功!")
+                time.sleep(1)
             else:
+                self.logger.error(f"故障清除失败！")
                 raise Exception(f"故障清除失败！")
             return True
         except Exception as e:

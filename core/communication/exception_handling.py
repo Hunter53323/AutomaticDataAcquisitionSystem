@@ -43,19 +43,23 @@ class BreakdownHanding:
             return True
         if self.breakdown_type == 1:
             # 过流故障，测试设备空载
-            status = self.test_device.handle_breakdown(1)
-            if not status:
-                # 测试设备空载失败,可加日志
-                emailsender.send_email("数采系统故障通知", "发生过流故障，自动处理失败，请立即查看")
-                return False
+            pass
+        status = self.test_device.handle_breakdown(1)
+        if not status:
+            # 测试设备空载失败,可加日志
+            emailsender.send_email("数采系统故障通知", "发生过流故障，自动处理失败，请立即查看")
+            return False
         # 风机驱动清障
+        print("风机驱动清障")
+        print(type(self.breakdown_type))
+        print(self.breakdown_type)
         status = self.fan_driver.handle_breakdown(self.breakdown_type)
         if not status:
             # 风机空载失败,可加日志
             emailsender.send_email("数采系统故障通知", f"发生{breakdown_description[self.breakdown_type]}，风机空载失败，请立即查看")
             return False
 
-        emailsender.send_email("数采系统故障通知", f"发生{breakdown_description[self.breakdown_type]}，自动清障成功")
+        # emailsender.send_email("数采系统故障通知", f"发生{breakdown_description[self.breakdown_type]}，自动清障成功")
         self.breakdown_type = 0
         return True
 

@@ -164,13 +164,11 @@ class AutoCollection:
     def wait_until_no_breakdown(self):
         # 等待函数，直到读取到的数据中没有故障了才会继续向下运行
         while True:
-            curr_data: dict[str, any] = self.communication.read()
-            if curr_data["breakdown"] != []:
-                time.sleep(0.1)
-                continue
-            else:
+            if self.communication.find_driver("FanDriver").breakdown == False:
                 self.logger.info("故障已清除，继续自动采集")
                 break
+            else:
+                time.sleep(0.1)
 
     def signal_progress(self, para_dict: dict[str, any], count: int = 0) -> tuple[dict, bool, int, str]:
         """
@@ -179,7 +177,22 @@ class AutoCollection:
         :return int 失败原因，0表示无，1表示过流故障，2表示普通故障，3表示未知,4表示超时
         :return str 故障描述
         """
-        self.communication.write(para_dict)
+        # self.communication.write(para_dict)
+        last = int(self.communication.find_driver("TestDevice").curr_para["测功机控制值"])
+        now = int(para_dict["测功机控制值"])
+        copy_para_dict = para_dict.copy()
+        # print(last)
+        # print(now)
+        # while last != now:
+        #     if last > now:
+        #         para_dict["测功机控制值"] = last - 1
+        #         last = last - 1
+        #     elif last < now:
+        #         para_dict["测功机控制值"] = last + 1
+        #         last = last + 1
+        #     self.communication.write(para_dict)
+        # time.sleep(1)
+
         self.logger.info(f"当前测试的参数为{para_dict}")
         curr_time = time.time()
         time_count = 0
@@ -188,6 +201,19 @@ class AutoCollection:
         steady_count = 0
         # avg_data = {key: [] for key in self.communication.get_data_map().keys()}
         while True:
+            if last > now:
+                copy_para_dict["测功机控制值"] = last - 1
+                last = last - 1
+                self.communication.write(copy_para_dict)
+                time.sleep(1)
+            elif last < now:
+                copy_para_dict["测功机控制值"] = last + 1
+                last = last + 1
+                self.communication.write(copy_para_dict)
+                time.sleep(4)
+            else:
+                pass
+
             curr_data: dict[str, any] = self.communication.read()
             if self.__stable_state:
                 # 稳态之后开始等待时间，一段时间后返回结果
@@ -261,9 +287,6 @@ class AutoCollection:
 
     def calculate_result(self, data_dict: dict[str, any], para_dict: dict[str, any]) -> dict[str, any]:
         custom_dict = {}
-        print(data_dict)
-        print(para_dict)
-        print(self.communication.custom_calculate_map)
         for col, expr in self.communication.custom_calculate_map.items():
             expr_dict = {}
             expr_name = re.findall(r"[^\s\+\-\*\/\(\)]+", expr)

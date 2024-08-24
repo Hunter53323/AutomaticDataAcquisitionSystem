@@ -173,14 +173,14 @@ class TestDevice(DriverBase):
     def handle_breakdown(self, breakdown: int) -> bool:
         try:
             if breakdown != 0:
-                parameters = {"测试设备控制命令": "切换P模式"}
-                if not testdevice.write(parameters):
-                    raise Exception(f"{parameters}")
+                # parameters = {"测试设备控制命令": "切换P模式"}
+                # if not testdevice.write(parameters):
+                #     raise Exception(f"{parameters}")
                 parameters = {"测试设备控制命令": "write", "load": float(0) / 10}  # 假设空载为0
-                if not testdevice.write(parameters):
+                if not self.write(parameters):
                     raise Exception(f"{parameters}")
                 parameters = {"测试设备控制命令": "启动"}
-                if not testdevice.write(parameters):
+                if not self.write(parameters):
                     raise Exception(f"{parameters}")
             else:
                 self.logger.error(f"未收到故障码！")
@@ -188,14 +188,16 @@ class TestDevice(DriverBase):
         except Exception as e:
             self.logger.error(f"故障处理模块报错！ error:{e}")
             self.logger.error(f"再次尝试空载！")
-            parameters = {"测试设备控制命令": "切换P模式"}
-            testdevice.write(parameters)
+            # parameters = {"测试设备控制命令": "切换P模式"}
+            # testdevice.write(parameters)
             parameters = {"测试设备控制命令": "write", "load": float(0) / 10}  # 假设空载为0
-            testdevice.write(parameters)
+            if not self.write(parameters):
+                return False
             parameters = {"测试设备控制命令": "启动"}
-            testdevice.write(parameters)
-        finally:
-            return False
+            if self.write(parameters):
+                return True
+            else:
+                return False
 
     def update_hardware_parameter(self, para_dict: dict[str, any]) -> bool:
         selfip = self.ip
