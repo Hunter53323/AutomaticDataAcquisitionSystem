@@ -1,7 +1,7 @@
 from .drivers.driver_base import DriverBase
 from .exception_handling import BreakdownHanding
 import logging
-from logging.handlers import RotatingFileHandler
+from concurrent_log_handler import ConcurrentRotatingFileHandler
 import re
 import copy
 
@@ -18,13 +18,16 @@ class Communication:
         self.logger = self.set_logger()
         self.conn_state: list = []
 
-    def set_logger(self) -> logging.Logger:
+    def set_logger(self):
         # 创建一个日志记录器
-        logger = logging.getLogger("communication")
+        logger = logging.getLogger(self.device_name)
         logger.setLevel(logging.DEBUG)  # 设置日志级别
-        formatter = logging.Formatter("%(asctime)s-%(module)s-%(funcName)s-%(lineno)d-%(name)s-%(message)s")  # 其中name为getlogger指定的名字
-
-        rHandler = RotatingFileHandler(filename="./log/" + "communication" + ".log", backupCount=1)
+        formatter = logging.Formatter("%(asctime)s-%(module)s-%(funcName)s-%(lineno)d-%(name)s-%(message)s")
+        rHandler = ConcurrentRotatingFileHandler(
+            filename="./log/" + self.device_name + ".log",
+            maxBytes=10*1024*1024,  # 设置每个日志文件的最大大小（例如10MB）
+            backupCount=1  # 设置保留的日志文件数量
+        )
         rHandler.setLevel(logging.DEBUG)
         rHandler.setFormatter(formatter)
 

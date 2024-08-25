@@ -1,3 +1,4 @@
+from concurrent_log_handler import ConcurrentRotatingFileHandler
 import mysql.connector
 from mysql.connector import Error, MySQLConnection
 import csv
@@ -5,7 +6,6 @@ import re
 import os
 from datetime import datetime
 import logging
-from logging.handlers import RotatingFileHandler
 
 
 class MySQLDatabase:
@@ -132,13 +132,16 @@ class MySQLDatabase:
         finally:
             cursor.close()
 
-    def set_logger(self) -> logging.Logger:
+    def set_logger(self):
         # 创建一个日志记录器
-        logger = logging.getLogger(self.__db_name)
+        logger = logging.getLogger(self.device_name)
         logger.setLevel(logging.DEBUG)  # 设置日志级别
-        formatter = logging.Formatter("%(asctime)s-%(module)s-%(funcName)s-%(lineno)d-%(name)s-%(message)s")  # 其中name为getlogger指定的名字
-
-        rHandler = RotatingFileHandler(filename="./log/" + self.__db_name + ".log", backupCount=1)
+        formatter = logging.Formatter("%(asctime)s-%(module)s-%(funcName)s-%(lineno)d-%(name)s-%(message)s")
+        rHandler = ConcurrentRotatingFileHandler(
+            filename="./log/" + self.device_name + ".log",
+            maxBytes=10*1024*1024,  # 设置每个日志文件的最大大小（例如10MB）
+            backupCount=1  # 设置保留的日志文件数量
+        )
         rHandler.setLevel(logging.DEBUG)
         rHandler.setFormatter(formatter)
 
