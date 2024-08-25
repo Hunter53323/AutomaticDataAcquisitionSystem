@@ -36,7 +36,7 @@ class MySQLDatabase:
             return False
         if table_name not in self.table_name_list:
             if not table_columns:
-                self.logger.error(f"表'{table_name}'不存在，且未提供列定义。")
+                # self.logger.error(f"表'{table_name}'不存在，且未提供列定义。")
                 return False
             self.table_name_list.append(table_name)
             self.table_columns_list.append(table_columns)
@@ -75,7 +75,7 @@ class MySQLDatabase:
             self.table_name = table_name
             self.table_columns = self.get_columns_from_table(table_name)
             self.columns = {col_name: dtype for col_name, dtype in self.table_columns.items() if col_name != "ID"}
-            self.logger.info(f"已切换到历史表 '{table_name}'")
+            # self.logger.info(f"已切换到历史表 '{table_name}'")
             return True
         except Error as e:
             self.logger.error(f"切换历史表时发生错误: {e}")
@@ -233,17 +233,18 @@ class MySQLDatabase:
             ids = self.parse_ids_input(ids_input) if ids_input else None
 
             # 准备基本查询语句
-            query = "SELECT "
+            query = "SELECT `"
 
             # 如果指定了列名，则加入列名列表，否则查询所有列
             if columns:
                 # 确保ID列总是被查询，除非用户明确指定不查询ID
                 selected_columns = ["ID"] + columns if "ID" in columns else columns
-                query += ", ".join(selected_columns)
+                query += "`, `".join(selected_columns)
             else:
                 # 查询所有定义的列以及ID列
                 all_columns = ["ID"] + list(self.columns.keys())
-                query += ", ".join(all_columns)
+                query += "`, `".join(all_columns)
+            query += "`"
 
             # 添加FROM子句
             query += f" FROM {self.table_name}"
@@ -504,7 +505,16 @@ class MySQLDatabase:
             try:
                 ids = []
                 if ids_input:
-                    ids = [int(id_str.strip()) for id_str in ids_input.split(",") if id_str.strip().isdigit()]
+                    parts = ids_input.split(",")
+
+                    for part in parts:
+                        if "-" in part:
+                            range_parts = part.split("-")
+                            start = int(range_parts[0])
+                            end = int(range_parts[1])
+                            ids.extend(range(start, end + 1))
+                        else:
+                            ids.append(int(part))
 
                 query = f"SELECT * FROM {self.table_name}"  # 使用动态表名
                 where_clauses = []
