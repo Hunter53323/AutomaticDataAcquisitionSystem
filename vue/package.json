@@ -1,5 +1,5 @@
 {
-  "name": "vue",
+  "name": "ADAS",
   "version": "1.0.0",
   "description": "国创中心数据采集系统",
   "main": "electron/main.js",

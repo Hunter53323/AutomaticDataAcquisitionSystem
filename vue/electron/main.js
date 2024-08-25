@@ -5,7 +5,6 @@ const path = require('path')
 function createWindow() {
   // 创建浏览器窗口
   const mainWindow = new BrowserWindow({
-    fullscreen: true,
     icon: path.join(__dirname, 'logo.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js')

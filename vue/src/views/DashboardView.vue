@@ -115,7 +115,7 @@ db.updateMeta()
 </script>
 
 <template>
-  <el-row :gutter="20">
+  <el-row :gutter="10">
     <el-col :span="6">
       <el-card shadow="hover">
         <template #header>
@@ -152,11 +152,11 @@ db.updateMeta()
     </el-col>
   </el-row>
 
-  <el-row :gutter="20">
+  <el-row :gutter="10">
     <el-col :span="12">
       <el-card shadow="hover">
         <DataGraph :data="timeData1" :unit="global.getUnit(graphSelected1[0])" :title="graphSelected1" index="1" />
-        <el-row class="graph-choice" :gutter="20">
+        <el-row class="graph-choice" :gutter="10">
           <el-col :span="8">
             <el-select v-model="graphClass1" placeholder="选择显示种类" style="width: 100%" size="small">
               <el-option v-for="value, key in dashboard.graphClass" :key="key" :label="key" :value="key" />
@@ -172,7 +172,7 @@ db.updateMeta()
     <el-col :span="12">
       <el-card shadow="hover">
         <DataGraph :data="timeData2" :unit="global.getUnit(graphSelected2[0])" :title="graphSelected2" index="2" />
-        <el-row class="graph-choice" :gutter="20">
+        <el-row class="graph-choice" :gutter="10">
           <el-col :span="8">
             <el-select v-model="graphClass2" placeholder="选择显示种类" style="width: 100%" size="small">
               <el-option v-for="value, key in dashboard.graphClass" :key="key" :label="key" :value="key" />
@@ -188,7 +188,7 @@ db.updateMeta()
   </el-row>
 
 
-  <el-row :gutter="20">
+  <el-row :gutter="10">
     <el-col :span="16">
       <el-row>
         <el-col :span="24">

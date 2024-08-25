@@ -93,7 +93,7 @@ onMounted(() => {
         <div>测试设备配置</div>
       </template>
       <el-form :model="formTest" label-width="90px" inline label-position="left">
-        <el-row :gutter="20">
+        <el-row :gutter="10">
           <el-col :span="11">
             <el-form-item label="IP 地址配置" style="width:100%">
               <el-input v-model="formTest.ip" placeholder="输入被测设备IP地址">
@@ -118,7 +118,7 @@ onMounted(() => {
         <div>被测设备配置</div>
       </template>
       <el-form :model="formTest" label-width="90px" inline label-position="left">
-        <el-row :gutter="20">
+        <el-row :gutter="10">
           <el-col :span="7">
             <el-form-item label="MCU 配置" style="width:100%">
               <el-select v-model="formFan.cpu" placeholder="选择测试设备CPU">

@@ -78,7 +78,7 @@ const uploadStable = () => {
     <el-collapse-item title="稳态判定" name="1">
       <el-form label-position="left" label-width="auto">
 
-        <el-row :gutter="20">
+        <el-row :gutter="10">
           <el-col :span="6">
             <el-form-item label="设备数据" style="width: 100%">
               <el-select v-model="formSteady['实际值']">
@@ -126,7 +126,7 @@ const uploadStable = () => {
       <div v-for="(value, key) in form">
         <el-text size="large">{{ key }}</el-text>
         <el-form :model="form[key]" labelPosition="left" labelWidth="100px" inline class="collector-form">
-          <el-row :gutter="20">
+          <el-row :gutter="10">
             <el-col :span="8">
               <el-form-item label="起始值" :key="key" style="width: 100%">
                 <el-input-number v-model="form[key].min" :min="0" :controls="false" style="width: 90%" />

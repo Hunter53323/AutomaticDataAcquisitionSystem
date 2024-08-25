@@ -103,17 +103,16 @@ def table_pdf(data):
     headers = [key for key in data[0].keys()]
 
     # 创建表格数据和样式
-    table_style = TableStyle(
-        [
-            ("BACKGROUND", (0, 0), (-1, 0), Color(163 / 255, 190 / 255, 219 / 255)),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-            ("FONTNAME", (0, 0), (-1, -1), "SimHei"),
-            ("FONTSIZE", (0, 0), (-1, -1), 12),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
-            ("GRID", (0, 0), (-1, -1), 1, colors.black),
-        ]
-    )
+    table_style = TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), Color(163 / 255, 190 / 255, 219 / 255)),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("FONTNAME", (0, 0), (-1, -1), "SimHei"),
+        ("FONTSIZE", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ("GRID", (0, 0), (-1, -1), 1, colors.black),
+    ])
 
     # 初始化表格列表
     tables = []
