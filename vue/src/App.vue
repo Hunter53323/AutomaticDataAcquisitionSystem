@@ -2,13 +2,70 @@
 import { RouterView } from 'vue-router'
 import AsideMenu from './components/AsideMenu.vue'
 import { useDashboardStore, useSettingsStore, useDBStore, useGlobalStore } from '@/stores/global'
+import { onMounted, reactive, h } from '@vue/runtime-core';
+import { ElMessageBox, ElMessage } from 'element-plus';
+import UserChangeBox from './components/UserChangeBox.vue';
+import { useRouter } from 'vue-router';
 
 
+const router = useRouter()
 const global = useGlobalStore()
 const dashboard = useDashboardStore()
 const settings = useSettingsStore()
 const db = useDBStore()
 
+const changeUser = () => {
+  let formUser = reactive({
+    name: '',
+    email: '',
+  })
+  ElMessageBox({
+    title: '请输入您的信息',
+    customClass: "user-change-form",
+    message:
+      h(UserChangeBox, { modelValue: formUser, 'onUpdate:modelValue': value => formUser = value }),
+    showCancelButton: true,
+    confirmButtonText: '确认',
+    cancelButtonText: '取消',
+  }).then(() => {
+    const formData = new FormData()
+    formData.append('receiver_email', formUser.email)
+    formData.append('receiver_name', formUser.name)
+    fetch(global.url + '/collect/emailset', {
+      method: 'POST',
+      body: formData,
+    })
+      .then((data) => data.json())
+      .then((data) => {
+        if (data.status != true) {
+          throw new Error()
+        }
+        settings.user = {
+          name: formUser.name,
+          email: formUser.email,
+          lastTime: new Date().toLocaleString()
+        }
+        settings.updateUser()
+        ElMessage.success('用户更改成功')
+      })
+      .catch(() => {
+        settings.updateUser()
+        ElMessage.error('用户更改失败')
+      })
+  })
+    .catch(() => {
+      ElMessage.info('用户更改取消')
+    })
+  router.push({
+    name: 'dashboard'
+  })
+}
+
+
+
+onMounted(() => {
+  changeUser()
+})
 
 
 </script>

@@ -120,7 +120,7 @@ onMounted(() => {
       <el-form :model="formTest" label-width="90px" inline label-position="left">
         <el-row :gutter="20">
           <el-col :span="7">
-            <el-form-item label="CPU 配置" style="width:100%">
+            <el-form-item label="MCU 配置" style="width:100%">
               <el-select v-model="formFan.cpu" placeholder="选择测试设备CPU">
                 <el-option v-for="item in ['M0', 'M4']" :key="item" :label="item" :value="item" />
               </el-select>

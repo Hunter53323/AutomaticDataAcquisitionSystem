@@ -11,7 +11,7 @@ import { useDashboardStore } from '@/stores/global';
 const dashboard = useDashboardStore()
 
 const judgeShow = () => {
-  return dashboard.isFanRunning || dashboard.isTestRunning || dashboard.isAutoCollecting || dashboard.isFanConnected || dashboard.isTestConnected
+  return dashboard.isFanRunning || dashboard.isTestRunning || dashboard.autoCollectStatus == 3 || dashboard.autoCollectStatus == 4 || dashboard.isFanConnected || dashboard.isTestConnected
 }
 
 </script>
