@@ -50,15 +50,16 @@ class MySQLDatabase:
                 # 如果表不存在，则创建新表
                 self.create_table()
             else:
-                self.logger.info(f"已切换到表 '{table_name}'")
+                pass
+                # self.logger.info(f"已切换到表 '{table_name}'")
                 # self.logger.info(f"表结构：{self.table_columns}")
         else:
             table_name_index = self.table_name_list.index(table_name)
             self.table_name = table_name
             self.table_columns = self.table_columns_list[table_name_index]
             self.columns = self.columns_list[table_name_index]
-            self.logger.info(f"已切换到表 '{table_name}'")
-            self.logger.info(f"表结构：{self.table_columns}")
+            # self.logger.info(f"已切换到表 '{table_name}'")
+            # self.logger.info(f"表结构：{self.table_columns}")
         return True
 
     def change_history_table(self, table_name: str) -> bool:
@@ -137,7 +138,7 @@ class MySQLDatabase:
         logger.setLevel(logging.DEBUG)  # 设置日志级别
         formatter = logging.Formatter("%(asctime)s-%(module)s-%(funcName)s-%(lineno)d-%(name)s-%(message)s")  # 其中name为getlogger指定的名字
 
-        rHandler = RotatingFileHandler(filename="./log/" + self.__db_name + ".log", maxBytes=1024 * 1024, backupCount=1)
+        rHandler = RotatingFileHandler(filename="./log/" + self.__db_name + ".log", backupCount=1)
         rHandler.setLevel(logging.DEBUG)
         rHandler.setFormatter(formatter)
 
@@ -169,7 +170,7 @@ class MySQLDatabase:
         if not self.check_connection():
             return False
         # 动态创建表结构，确保列定义格式正确
-        column_definitions = ",\n                ".join([f"{name} {data_type}" for name, data_type in self.table_columns.items()])
+        column_definitions = ",\n                ".join([f"`{name}` {data_type}" for name, data_type in self.table_columns.items()])
         # 确保列定义后没有多余的逗号
         create_table_sql = f"""
         CREATE TABLE `{self.table_name}` (
@@ -380,7 +381,7 @@ class MySQLDatabase:
             placeholders = ", ".join(["%s"] * len(columns))
 
             # 构造插入语句
-            query = f"INSERT INTO {self.table_name} ({', '.join(columns)}) VALUES ({placeholders})"
+            query = f"INSERT INTO {self.table_name} (`{'`, `'.join(columns)}`) VALUES ({placeholders})"
 
             # 准备数据元组列表，每个元组对应一个INSERT语句的参数
             data_tuples = [tuple(data[column] for column in columns)]
