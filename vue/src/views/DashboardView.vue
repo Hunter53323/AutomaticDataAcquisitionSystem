@@ -80,7 +80,7 @@ socket.on('data_from_device', data => {
 })
 
 socket.on('auto_collect_status', data => {
-  dashboard.collectCount = data.remaining + data.success + data.fail 
+  dashboard.collectCount = data.remaining + data.success + data.fail
   dashboard.autoCollectStatus = data.status
   dashboard.remainCount = data.remaining
   dashboard.successCount = data.success
@@ -116,7 +116,7 @@ db.updateMeta()
 
 <template>
   <el-row :gutter="20">
-    <el-col :span="12">
+    <el-col :span="6">
       <el-card shadow="hover">
         <template #header>
           <div class="card-header">
@@ -126,7 +126,7 @@ db.updateMeta()
         <FanControl :socket="socket" />
       </el-card>
     </el-col>
-    <el-col :span="12">
+    <el-col :span="6">
       <el-card shadow="hover">
         <template #header>
           <div class="card-header">
@@ -134,6 +134,20 @@ db.updateMeta()
           </div>
         </template>
         <TestControl :socket="socket" />
+      </el-card>
+    </el-col>
+    <el-col :span="12">
+      <el-card shadow="hover">
+        <template #header>
+          <div class="card-header">
+            <span style="margin-right: 10px;">采集配置</span>
+            <el-text class="collectorCount" type="primary">
+              共{{ dashboard.collectCount }}条，剩余{{ dashboard.remainCount }}条，成功{{ dashboard.successCount }}条，
+              失败{{ dashboard.failCount }}条
+            </el-text>
+          </div>
+        </template>
+        <collectorBox />
       </el-card>
     </el-col>
   </el-row>
@@ -188,7 +202,7 @@ db.updateMeta()
               </div>
             </template>
             <div class="statisticBox">
-              <StatisticBox :contentObj="dataShow.TestDevice" :count="3" />
+              <StatisticBox :contentObj="dataShow.TestDevice" :count="6" />
             </div>
           </el-card>
         </el-col>
@@ -230,31 +244,16 @@ db.updateMeta()
 
 
 
-  <el-row :gutter="20">
-    <el-col :span="24">
-      <el-card shadow="hover">
-        <template #header>
-          <div class="card-header">
-            <span>采集配置</span>
-          </div>
-        </template>
-        <collectorBox />
-      </el-card>
-    </el-col>
-  </el-row>
-
-
-
 </template>
 
 
 <style scoped>
 .el-card :deep(.el-card__header) {
-  padding: 10px 20px;
+  padding: 10px 15px;
 }
 
 .el-card :deep(.el-card__body) {
-  padding: 10px 20px;
+  padding: 10px 15px 0;
 }
 
 .el-card {

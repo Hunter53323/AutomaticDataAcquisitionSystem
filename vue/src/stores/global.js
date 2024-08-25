@@ -179,7 +179,7 @@ export const useDBStore = defineStore('database', {
         cancelButtonText: '取消',
       })
         .then(() => {
-          form.filename += '.csv' 
+          form.filename += '.csv'
           fetch(useGlobalStore().url + "/db/export", {
             method: 'POST',
             body: JSON.stringify(form),
@@ -559,48 +559,15 @@ export const useSettingsStore = defineStore('settings', {
         customClass: "user-change-form",
         message:
           h(UserChangeBox, { modelValue: formUser, 'onUpdate:modelValue': value => formUser = value }),
-        showCancelButton: true,
         confirmButtonText: '确认',
-        cancelButtonText: '取消',
-      }).then(() => {
-        const formData = new FormData()
-        formData.append('receiver_email', formUser.email)
-        formData.append('receiver_name', formUser.name)
-        fetch(useGlobalStore().url + '/collect/emailset', {
-          method: 'POST',
-          body: formData,
-        })
-          .then((data) => data.json())
-          .then((data) => {
-            if (data.status != true) {
-              throw new Error()
-            }
-            this.user = {
-              name: formUser.name,
-              email: formUser.email,
-              lastTime: new Date().toLocaleString()
-            }
-            this.updateUser()
-            ElMessage({
-              type: 'success',
-              message: '用户更改成功',
-            })
-          })
-          .catch(() => {
-
-            this.updateUser()
-            ElMessage({
-              type: 'error',
-              message: '用户更改失败',
-            })
-          })
+        showConfirmButton: false,
+        closeOnClickModal: false,
+        closeOnPressEscape: false,
+        "show-close": false
       })
-        .catch(() => {
-          ElMessage({
-            type: 'info',
-            message: '用户更改取消',
-          })
-        })
+      router.push({
+        name: 'dashboard'
+      })
     },
     async updateConf() {
       fetch(useGlobalStore().url + '/control/deviceset?config_item=normal&driver_name=TestDevice')

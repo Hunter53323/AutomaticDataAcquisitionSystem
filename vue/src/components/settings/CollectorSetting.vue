@@ -112,7 +112,7 @@ const uploadStable = () => {
         </el-row>
       </el-form>
     </el-collapse-item>
-    <!-- <el-collapse-item name="2">
+    <el-collapse-item name="2">
       <template #title>
         <div>参数设置</div>
 
@@ -123,29 +123,29 @@ const uploadStable = () => {
           </el-button>
         </span>
       </template>
-<div v-for="(value, key) in form">
-  <el-text size="large">{{ key }}</el-text>
-  <el-form :model="form[key]" labelPosition="left" labelWidth="100px" inline class="collector-form">
-    <el-row :gutter="20">
-      <el-col :span="8">
-        <el-form-item label="起始值" :key="key" style="width: 100%">
-          <el-input-number v-model="form[key].min" :min="0" :controls="false" style="width: 90%" />
-        </el-form-item>
-      </el-col>
-      <el-col :span="8">
-        <el-form-item label="结束值" :key="key" style="width: 100%">
-          <el-input-number v-model="form[key].max" :min="0" :controls="false" style="width: 90%" />
-        </el-form-item>
-      </el-col>
-      <el-col :span="8">
-        <el-form-item label="步长" :key="key" style="width: 100%">
-          <el-input-number v-model="form[key].step" :min="0" :controls="false" style="width: 90%" />
-        </el-form-item>
-      </el-col>
-    </el-row>
-  </el-form>
-</div>
-</el-collapse-item> -->
+      <div v-for="(value, key) in form">
+        <el-text size="large">{{ key }}</el-text>
+        <el-form :model="form[key]" labelPosition="left" labelWidth="100px" inline class="collector-form">
+          <el-row :gutter="20">
+            <el-col :span="8">
+              <el-form-item label="起始值" :key="key" style="width: 100%">
+                <el-input-number v-model="form[key].min" :min="0" :controls="false" style="width: 90%" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="结束值" :key="key" style="width: 100%">
+                <el-input-number v-model="form[key].max" :min="0" :controls="false" style="width: 90%" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="步长" :key="key" style="width: 100%">
+                <el-input-number v-model="form[key].step" :min="0" :controls="false" style="width: 90%" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </el-form>
+      </div>
+    </el-collapse-item>
   </el-collapse>
 </template>
 

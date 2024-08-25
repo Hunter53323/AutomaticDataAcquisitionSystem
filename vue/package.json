@@ -1,6 +1,6 @@
 {
   "name": "vue",
-  "version": "1.1.1",
+  "version": "1.0.0",
   "description": "国创中心数据采集系统",
   "main": "electron/main.js",
   "author": "Xuxu",
@@ -35,17 +35,17 @@
     "vite": "^5.3.1"
   },
   "build": {
-    "appId": "",
+    "appId": "com.sjtu.vue",
     "productName": "国创中心数据采集系统",
-
     "win": {
-      "icon": "__dirname + 'favicon.ico'"
+      "icon": "./electron/favicon.ico"
     },
     "nsis": {
       "oneClick": false,
+      "artifactName": "国创中心数据采集系统-安装.exe",
       "allowToChangeInstallationDirectory": true,
-      "installerIcon": "__dirname + 'favicon.ico'",
-      "uninstallerIcon": "__dirname + 'favicon.ico'"
+      "installerIcon": "./electron/favicon.ico",
+      "uninstallerIcon": "./electron/favicon.ico"
     },
     "files": [
       "dist/**/*",
@@ -55,5 +55,5 @@
       "buildResources": "assets",
       "output": "dist_electron"
     }
-  },
+  }
 }

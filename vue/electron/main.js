@@ -11,6 +11,8 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js')
     }
   })
+  mainWindow.maximize()
+  mainWindow.setMenu(null)
 
   // 加载 index.html
   mainWindow.loadFile('dist/index.html') // 此处跟electron官网路径不同，需要注意
