@@ -80,7 +80,7 @@ socket.on('data_from_device', data => {
 })
 
 socket.on('auto_collect_status', data => {
-  dashboard.collectCount = data.remaining + data.success + data.fail 
+  dashboard.collectCount = data.remaining + data.success + data.fail
   dashboard.autoCollectStatus = data.status
   dashboard.remainCount = data.remaining
   dashboard.successCount = data.success
@@ -115,8 +115,8 @@ db.updateMeta()
 </script>
 
 <template>
-  <el-row :gutter="20">
-    <el-col :span="12">
+  <el-row :gutter="10">
+    <el-col :span="6">
       <el-card shadow="hover">
         <template #header>
           <div class="card-header">
@@ -126,7 +126,7 @@ db.updateMeta()
         <FanControl :socket="socket" />
       </el-card>
     </el-col>
-    <el-col :span="12">
+    <el-col :span="6">
       <el-card shadow="hover">
         <template #header>
           <div class="card-header">
@@ -136,13 +136,27 @@ db.updateMeta()
         <TestControl :socket="socket" />
       </el-card>
     </el-col>
+    <el-col :span="12">
+      <el-card shadow="hover">
+        <template #header>
+          <div class="card-header">
+            <span style="margin-right: 10px;">采集配置</span>
+            <el-text class="collectorCount" type="primary">
+              共{{ dashboard.collectCount }}条，剩余{{ dashboard.remainCount }}条，成功{{ dashboard.successCount }}条，
+              失败{{ dashboard.failCount }}条
+            </el-text>
+          </div>
+        </template>
+        <collectorBox />
+      </el-card>
+    </el-col>
   </el-row>
 
-  <el-row :gutter="20">
+  <el-row :gutter="10">
     <el-col :span="12">
       <el-card shadow="hover">
         <DataGraph :data="timeData1" :unit="global.getUnit(graphSelected1[0])" :title="graphSelected1" index="1" />
-        <el-row class="graph-choice" :gutter="20">
+        <el-row class="graph-choice" :gutter="10">
           <el-col :span="8">
             <el-select v-model="graphClass1" placeholder="选择显示种类" style="width: 100%" size="small">
               <el-option v-for="value, key in dashboard.graphClass" :key="key" :label="key" :value="key" />
@@ -158,7 +172,7 @@ db.updateMeta()
     <el-col :span="12">
       <el-card shadow="hover">
         <DataGraph :data="timeData2" :unit="global.getUnit(graphSelected2[0])" :title="graphSelected2" index="2" />
-        <el-row class="graph-choice" :gutter="20">
+        <el-row class="graph-choice" :gutter="10">
           <el-col :span="8">
             <el-select v-model="graphClass2" placeholder="选择显示种类" style="width: 100%" size="small">
               <el-option v-for="value, key in dashboard.graphClass" :key="key" :label="key" :value="key" />
@@ -174,7 +188,7 @@ db.updateMeta()
   </el-row>
 
 
-  <el-row :gutter="20">
+  <el-row :gutter="10">
     <el-col :span="16">
       <el-row>
         <el-col :span="24">
@@ -188,7 +202,7 @@ db.updateMeta()
               </div>
             </template>
             <div class="statisticBox">
-              <StatisticBox :contentObj="dataShow.TestDevice" :count="3" />
+              <StatisticBox :contentObj="dataShow.TestDevice" :count="6" />
             </div>
           </el-card>
         </el-col>
@@ -230,31 +244,16 @@ db.updateMeta()
 
 
 
-  <el-row :gutter="20">
-    <el-col :span="24">
-      <el-card shadow="hover">
-        <template #header>
-          <div class="card-header">
-            <span>采集配置</span>
-          </div>
-        </template>
-        <collectorBox />
-      </el-card>
-    </el-col>
-  </el-row>
-
-
-
 </template>
 
 
 <style scoped>
 .el-card :deep(.el-card__header) {
-  padding: 10px 20px;
+  padding: 10px 15px;
 }
 
 .el-card :deep(.el-card__body) {
-  padding: 10px 20px;
+  padding: 10px 15px 0;
 }
 
 .el-card {

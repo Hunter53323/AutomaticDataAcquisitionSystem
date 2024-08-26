@@ -2,13 +2,44 @@
 import { RouterView } from 'vue-router'
 import AsideMenu from './components/AsideMenu.vue'
 import { useDashboardStore, useSettingsStore, useDBStore, useGlobalStore } from '@/stores/global'
+import { onMounted, reactive, h } from '@vue/runtime-core';
+import { ElMessageBox, ElMessage } from 'element-plus';
+import UserChangeBox from './components/UserChangeBox.vue';
+import { useRouter } from 'vue-router';
 
 
+const router = useRouter()
 const global = useGlobalStore()
 const dashboard = useDashboardStore()
 const settings = useSettingsStore()
 const db = useDBStore()
 
+const changeUser = () => {
+  let formUser = reactive({
+    name: '',
+    email: '',
+  })
+  ElMessageBox({
+    title: '请输入您的信息',
+    customClass: "user-change-form",
+    message:
+      h(UserChangeBox, { modelValue: formUser, 'onUpdate:modelValue': value => formUser = value }),
+    confirmButtonText: '确认',
+    showConfirmButton: false,
+    closeOnClickModal: false,
+    closeOnPressEscape: false,
+    "show-close": false
+  })
+  router.push({
+    name: 'dashboard'
+  })
+}
+
+
+
+onMounted(() => {
+  changeUser()
+})
 
 
 </script>
@@ -112,5 +143,9 @@ const db = useDBStore()
 
 .el-input-number .el-input__inner {
   text-align: left;
+}
+
+.user-change-form .el-message-box__btns {
+  padding: 0;
 }
 </style>
