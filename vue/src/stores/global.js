@@ -261,12 +261,10 @@ export const useDBStore = defineStore('database', {
               link.click();
             })
             .catch((e) => {
-              console.log(e)
               ElMessage.error('报表导出失败')
             })
         })
         .catch((e) => {
-          console.log(e)
           ElMessage({
             type: 'info',
             message: '报表导出取消',

@@ -56,7 +56,7 @@ watch(() => [dashboard.dataShowSelected, dashboard.paraShowSelected, dataAll.val
 
 socket.on('data_from_device', data => {
   const timeRecv = Date.now()
-  dataAll.value = data
+  dataAll.value = Object.assign(data)
   graphSelected1.value.forEach(element => {
     timeData1.value.push({
       time: timeRecv,
@@ -73,9 +73,9 @@ socket.on('data_from_device', data => {
   })
   let timeMin = timeData1.value.at(0).time
   let timeMax = timeData1.value.at(-1).time
-  if (timeMax - timeMin > 2000) {
-    timeData1.value = timeData1.value.filter((val, index, arr) => val.time > timeMax - 1000);
-    timeData2.value = timeData2.value.filter((val, index, arr) => val.time > timeMax - 1000);
+  if (timeMax - timeMin > 20000) {
+    timeData1.value = timeData1.value.filter((val, index, arr) => val.time > timeMax - 10000);
+    timeData2.value = timeData2.value.filter((val, index, arr) => val.time > timeMax - 10000);
   }
 })
 
@@ -172,7 +172,7 @@ db.updateMeta()
     </el-col>
     <el-col :span="12">
       <el-card shadow="hover">
-        <DataGraph :data="timeData2" :unit="global.getUnit(graphSelected2[0])" :title="graphSelected2" index="2" />
+        <!-- <DataGraph :data="timeData2" :unit="global.getUnit(graphSelected2[0])" :title="graphSelected2" index="2" /> -->
         <el-row class="graph-choice" :gutter="10">
           <el-col :span="8">
             <el-select v-model="graphClass2" placeholder="选择显示种类" style="width: 100%" size="small">
