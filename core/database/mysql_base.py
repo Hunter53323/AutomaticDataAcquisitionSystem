@@ -139,8 +139,8 @@ class MySQLDatabase:
         formatter = logging.Formatter("%(asctime)s-%(module)s-%(funcName)s-%(lineno)d-%(name)s-%(message)s")
         rHandler = ConcurrentRotatingFileHandler(
             filename="./log/" + self.__db_name + ".log",
-            maxBytes=10*1024*1024,  # 设置每个日志文件的最大大小（例如10MB）
-            backupCount=1  # 设置保留的日志文件数量
+            maxBytes=10 * 1024 * 1024,  # 设置每个日志文件的最大大小（例如10MB）
+            backupCount=1,  # 设置保留的日志文件数量
         )
         rHandler.setLevel(logging.DEBUG)
         rHandler.setFormatter(formatter)
