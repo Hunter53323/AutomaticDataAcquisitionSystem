@@ -318,9 +318,11 @@ class Communication:
         return False
 
     def close_all_device(self):
-        for driver in self.drivers:
-            driver.close_device()
-            time.sleep(1)
+        # for driver in self.drivers:
+        #     driver.close_device()
+        self.find_driver("FanDriver").close_device()
+        time.sleep(1)
+        self.find_driver("TestDevice").close_device()
 
     def check_error(self):
         for driver in self.drivers:

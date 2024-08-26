@@ -122,7 +122,6 @@ def set():
             return jsonify({"status": False, "error": "请先关闭所有设备连接"}), 400
         config = request.json
         driver = communicator.find_driver(driver_name)
-        print(config)
         if driver.load_config(config):
             # 更新通讯模块的参数匹配
             status, err = communicator.update_map()
