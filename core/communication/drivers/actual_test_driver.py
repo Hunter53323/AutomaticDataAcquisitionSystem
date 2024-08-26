@@ -46,7 +46,7 @@ class TestDevice(DriverBase):
         self.port = port
         self.client = ModbusTcpClient(host=ip, port=port)
 
-    def write_execute(self, para_dict: dict[str, any], write_count: int = 1) -> bool:
+    def write_execute(self, para_dict: dict[str, any], write_count: int = 3) -> bool:
         """
         para_dict示例{"测试设备控制命令":"command", "负载量":float}
         command:"start_device","stop_device","P_mode","N_mode","N1_mode","write"
@@ -67,52 +67,53 @@ class TestDevice(DriverBase):
         if "测功机控制值" not in para_dict:
             para_dict["测功机控制值"] = 0
 
-        if para_dict[self.command] == "启动":
-            address = 0 + (self.axis - 1) * 3
-            value = 1
-            result = self.client.write_register(address, value, slave=1)
-        elif para_dict[self.command] == "停止":
-            address = 0 + (self.axis - 1) * 3
-            value = 0
-            result = self.client.write_register(address, value, slave=1)
-        elif para_dict[self.command] == "切换P模式":
-            address = 1 + (self.axis - 1) * 3
-            value = 1
-            result = self.client.write_register(address, value, slave=1)
-        elif para_dict[self.command] == "切换M模式":
-            address = 1 + (self.axis - 1) * 3
-            value = 2
-            result = self.client.write_register(address, value, slave=1)
-        elif para_dict[self.command] == "切换N1模式":
-            address = 1 + (self.axis - 1) * 3
-            value = 4
-            result = self.client.write_register(address, value, slave=1)
-        elif para_dict[self.command] == "write":
-            address = 2 + (self.axis - 1) * 3
-            data_value = float(para_dict["测功机控制值"])
-            # 将浮点数打包为四个字节
-            packed_value = struct.pack(">f", data_value)
-            # 将四个字节解包为两个16位的整数
-            registers = struct.unpack(">HH", packed_value)
-            # 将两个整数写入到两个连续的寄存器中
-            value = list(registers)
-            result = self.client.write_registers(address, value, slave=1)
-        else:
-            self.logger.error(f"发送指令错误：{para_dict[self.command]}")
-            return False
-        self.logger.info(f"发送指令：{para_dict[self.command], value}")
-        if result.isError():
-            self.logger.error(f"发送失败！")
-            return False
-        else:
-            # 确认写正确后，更改状态值
+        for i in range(write_count):
             if para_dict[self.command] == "启动":
-                self.run_state = True
+                address = 0 + (self.axis - 1) * 3
+                value = 1
+                result = self.client.write_register(address, value, slave=1)
             elif para_dict[self.command] == "停止":
-                self.run_state = False
-            for key in self.curr_para:
-                self.curr_para[key] = para_dict[key]
-            return True
+                address = 0 + (self.axis - 1) * 3
+                value = 0
+                result = self.client.write_register(address, value, slave=1)
+            elif para_dict[self.command] == "切换P模式":
+                address = 1 + (self.axis - 1) * 3
+                value = 1
+                result = self.client.write_register(address, value, slave=1)
+            elif para_dict[self.command] == "切换M模式":
+                address = 1 + (self.axis - 1) * 3
+                value = 2
+                result = self.client.write_register(address, value, slave=1)
+            elif para_dict[self.command] == "切换N1模式":
+                address = 1 + (self.axis - 1) * 3
+                value = 4
+                result = self.client.write_register(address, value, slave=1)
+            elif para_dict[self.command] == "write":
+                address = 2 + (self.axis - 1) * 3
+                data_value = float(para_dict["测功机控制值"])
+                # 将浮点数打包为四个字节
+                packed_value = struct.pack(">f", data_value)
+                # 将四个字节解包为两个16位的整数
+                registers = struct.unpack(">HH", packed_value)
+                # 将两个整数写入到两个连续的寄存器中
+                value = list(registers)
+                result = self.client.write_registers(address, value, slave=1)
+            else:
+                self.logger.error(f"发送指令错误：{para_dict[self.command]}")
+                return False
+            self.logger.info(f"发送指令：{para_dict[self.command], value}")
+            if result.isError():
+                self.logger.error(f"发送失败！")
+            else:
+                # 确认写正确后，更改状态值
+                if para_dict[self.command] == "启动":
+                    self.run_state = True
+                elif para_dict[self.command] == "停止":
+                    self.run_state = False
+                for key in self.curr_para:
+                    self.curr_para[key] = para_dict[key]
+                return True
+        return False
 
     def connect(self) -> bool:
         try:
