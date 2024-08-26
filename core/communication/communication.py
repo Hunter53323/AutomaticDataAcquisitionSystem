@@ -289,7 +289,13 @@ class Communication:
 
     def get_custom_column(self) -> dict[str, any]:
         # 获取用户自定义的运算的列名,用于构造数据库表
-        return {key: "FLOAT" for key in self.custom_calculate_map.keys()}
+        thedict = {}
+        for key in self.custom_calculate_map.keys():
+            if "名称" in key or "型号" in key:
+                thedict[key] = "VARCHAR(255)"
+            else:
+                thedict[key] = "FLOAT"
+        return thedict
 
     def export_custom_column(self) -> dict:
         return self.custom_calculate_map
@@ -302,6 +308,9 @@ class Communication:
         for expression in user_input:
             column_name, expr = expression.split("=", 1)
             column_name = column_name.strip()
+            if "名称" in column_name or "型号" in column_name:
+                self.custom_calculate_map.update({column_name: expr})
+                continue
             data_names = re.findall(r"[^\+\-\*/\(\) 0-9]+", expr)
             for data_name in data_names:
                 if data_name not in self.__para_map.keys() and data_name not in self.__data_map.keys():
