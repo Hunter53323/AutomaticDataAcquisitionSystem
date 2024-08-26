@@ -2,15 +2,15 @@ from . import db
 from core.database import outputdb
 from flask import request, jsonify
 from core.statement.statement import generate_pdf
-from core.auto_collection.auto_collection import DATA_TABLE_NAME
+from core.database import table_name
 from flask import send_file
 
 
 @db.route("/data", methods=["GET", "POST", "PUT", "DELETE"])
 # 数据库的展示操作，数据的获取，增删改查
 def sqldb():
-    if not outputdb.change_current_table(DATA_TABLE_NAME):
-        if not outputdb.change_history_table(DATA_TABLE_NAME):
+    if not outputdb.change_current_table(table_name.get_table_name()):
+        if not outputdb.change_history_table(table_name.get_table_name()):
             return jsonify({"status": "error", "message": "表不存在"}), 404
     if request.method == "POST":
         # 处理数据插入
@@ -48,8 +48,8 @@ def sqldb():
 
 @db.route("/data/page", methods=["GET"])
 def api_showall():
-    if not outputdb.change_current_table(DATA_TABLE_NAME):
-        if not outputdb.change_history_table(DATA_TABLE_NAME):
+    if not outputdb.change_current_table(table_name.get_table_name()):
+        if not outputdb.change_history_table(table_name.get_table_name()):
             return jsonify({"status": "error", "message": "表不存在"}), 404
     page = int(request.args.get("page", 1))
     per_page = int(request.args.get("per_page", 10))
@@ -86,8 +86,8 @@ def api_showall():
 
 @db.route("/data/meta", methods=["GET"])
 def api_show_meta():
-    if not outputdb.change_current_table(DATA_TABLE_NAME):
-        if not outputdb.change_history_table(DATA_TABLE_NAME):
+    if not outputdb.change_current_table(table_name.get_table_name()):
+        if not outputdb.change_history_table(table_name.get_table_name()):
             return jsonify({"status": "error", "message": "表不存在"}), 404
     cursor = outputdb.connection.cursor()
     try:
@@ -110,8 +110,8 @@ def api_show_meta():
 
 @db.route("/data/pagev2", methods=["GET"])
 def api_showall_v2():
-    if not outputdb.change_current_table(DATA_TABLE_NAME):
-        if not outputdb.change_history_table(DATA_TABLE_NAME):
+    if not outputdb.change_current_table(table_name.get_table_name()):
+        if not outputdb.change_history_table(table_name.get_table_name()):
             return jsonify({"status": "error", "message": "表不存在"}), 404
     page = int(request.args.get("page", 1))
     per_page = int(request.args.get("per_page", 10))
@@ -154,8 +154,8 @@ def export():
     ids_input = request.get_json().get("ids_input", "")
     additional_conditions = request.get_json().get("additional_conditions", "")
     try:
-        if not outputdb.change_current_table(DATA_TABLE_NAME):
-            if not outputdb.change_history_table(DATA_TABLE_NAME):
+        if not outputdb.change_current_table(table_name.get_table_name()):
+            if not outputdb.change_history_table(table_name.get_table_name()):
                 return jsonify({"status": "error", "message": "表不存在"}), 404
         status, err, export_filepath = outputdb.export_data_with_conditions_to_csv(
             filename=filename,
@@ -185,8 +185,8 @@ def statement():
     draw_parameters: list[str] = request.get_json().get("draw_parameters", "")
     data_column: list[str] = request.get_json().get("data_column", "")
     try:
-        if not outputdb.change_current_table(DATA_TABLE_NAME):
-            if not outputdb.change_history_table(DATA_TABLE_NAME):
+        if not outputdb.change_current_table(table_name.get_table_name()):
+            if not outputdb.change_history_table(table_name.get_table_name()):
                 return jsonify({"status": "error", "message": "表不存在"}), 404
         data = outputdb.select_data(ids_input=ids_input, columns=data_column)
         if "ID" not in data_column:

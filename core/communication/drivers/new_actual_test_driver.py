@@ -265,8 +265,8 @@ if __name__ == "__main__":
     # testdevice.update_hardware_parameter(para_dict={"ip": "120.76.28.211", "port": 80})
     # parameters = {"test_device_command": "start_device"}
     # testdevice.write(parameters)
-    parameters = {"测试设备控制命令": "停止"}
-    testdevice.write(parameters)
+    # parameters = {"测试设备控制命令": "停止"}
+    # testdevice.write(parameters)
     # parameters = {"测试设备控制命令": "启动"}
     # testdevice.write(parameters)
     # parameters = {"测试设备控制命令": "切换P模式"}
@@ -278,8 +278,8 @@ if __name__ == "__main__":
     # parameters = {"测试设备控制命令": "write", "测功机控制值": 11.21}
     # testdevice.write(parameters)
     # parameters = {"test_device_command": "write", "load": 200}
-    # while 1:
-    #     if testdevice.read_all():
-    #         print(testdevice.curr_data)
-    #     # testdevice.write(parameters)
-    #     time.sleep(0.1)
+    while 1:
+        if testdevice.read_all():
+            print(testdevice.curr_data)
+        # testdevice.write(parameters)
+        time.sleep(0.1)

@@ -1,8 +1,8 @@
 from . import control
 from core.communication import communicator
 from flask import request, jsonify
-from core.database import outputdb
-import json
+from core.database import outputdb, table_name
+import json, time
 from core.auto_collection import auto_collector
 
 
@@ -217,6 +217,7 @@ def config_savev2():
         config_dict[driver.device_name] = json.dumps(driver.export_config())
     config_dict["自定义列"] = json.dumps(communicator.export_custom_column())
     config_dict["稳态判断"] = json.dumps(auto_collector.get_steady_state_determination())
+    config_dict["表名"] = "风机数据" + str(int(time.time()))
     config_dict.update({"配置命名": "config_name"})
     config_column = config_to_columns_v2(config_dict)
     if request.method == "GET":
@@ -241,6 +242,8 @@ def config_savev2():
             if config[1] == config_name:
                 return jsonify({"status": False, "err": "配置名重复"}), 400
         outputdb.insert_data([config_dict])
+        # TODO:权宜之计，需要优化
+        table_name.set_table_name(config_dict["表名"])
 
         # 将配置文件保存到数据库中
         return jsonify({"status": True, "error": ""}), 200
@@ -255,20 +258,30 @@ def config_savev2():
         driver_config = outputdb.select_data(ids_input=[int(config_id)])
         if len(driver_config) != 1:
             return jsonify({"err": "查询错误"}), 400
-        load_config_dict = {}
         count = 0
+        custom_column = None
+        steady_state_determination = None
         for key in config_column.keys():
             if key == "ID" or key == "配置命名":
                 pass
             elif key == "自定义列":
-                communicator.load_custom_column(json.loads(driver_config[0][count]))
+                custom_column = json.loads(driver_config[0][count])
             elif key == "稳态判断":
-                auto_collector.set_steady_state_determination(json.loads(driver_config[0][count]))
+                steady_state_determination = json.loads(driver_config[0][count])
+            elif key == "表名":
+                # TODO:权宜之计，需要优化
+                table_name.set_table_name(driver_config[0][count])
             else:
                 target_driver = communicator.find_driver(key)
                 if target_driver:
                     target_driver.load_config(json.loads(driver_config[0][count]))
             count += 1
+        # 需要先更新一下配置再把自定义列加载进去
+        status, err = communicator.update_map()
+        if custom_column:
+            communicator.load_custom_column(custom_column)
+        if steady_state_determination:
+            auto_collector.set_steady_state_determination(steady_state_determination)
         status, err = communicator.update_map()
         return jsonify({"status": status, "error": err}), 200
     else:

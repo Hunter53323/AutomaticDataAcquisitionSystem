@@ -1,10 +1,12 @@
 from io import StringIO
 from . import autocollect
 from flask import request, jsonify
-import csv, time
+import csv, time, threading
 from werkzeug.datastructures import FileStorage
 from core.auto_collection import auto_collector
 from core.warningmessage import emailsender
+
+autocollect_thread: threading.Thread = None
 
 
 @autocollect.route("/csvupload", methods=["POST"])
@@ -80,9 +82,11 @@ def auto_collect_control():
     返回{"status": "True", "error"}
     """
     command = request.form.get("command")
+    global autocollect_thread
     if command == "start":
         # 启动数据采集，（所有前期基本参数已经设置好）
-        return jsonify({"status": auto_collector.start_auto_collect()}), 200
+        status, autocollect_thread = auto_collector.start_auto_collect()
+        return jsonify({"status": status}), 200
     elif command == "pause":
         # 暂停数采
         auto_collector.pause_auto_collect()
@@ -94,7 +98,7 @@ def auto_collect_control():
     elif command == "stop":
         # 停止数采，是终止，无法再次启动
         auto_collector.stop_auto_collect()
-        time.sleep(1)
+        autocollect_thread.join()
         if auto_collector.clear_para():
             return jsonify({"status": "True"}), 200
         else:
@@ -144,12 +148,19 @@ def email_set():
             200,
         )
     else:
-        sender_mail = request.form.get("sender_mail")
-        sender_passwd = request.form.get("sender_passwd")
+        # sender_mail = request.form.get("sender_mail")
+        # sender_passwd = request.form.get("sender_passwd")
         receiver_name = request.form.get("receiver_name")
         receiver_email = request.form.get("receiver_email")
-        if sender_mail and sender_passwd:
-            emailsender.set_sender_mail(sender_mail, sender_passwd)
-        if receiver_name and receiver_email:
-            emailsender.set_receiver(receiver_name, receiver_email)
-        return jsonify({"status": True}), 200
+        # if sender_mail and sender_passwd:
+        #     emailsender.set_sender_mail(sender_mail, sender_passwd)
+        status = False
+        if receiver_name:
+            if receiver_email:
+                status = emailsender.set_receiver(receiver_name, receiver_email)
+            else:
+                status = emailsender.set_receiver(receiver_name, "")
+        if status:
+            return jsonify({"status": True}), 200
+        else:
+            return jsonify({"status": False}), 400

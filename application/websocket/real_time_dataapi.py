@@ -68,6 +68,7 @@ def handle_socketio_events(socketio: SocketIO):
                     communicator.close_all_device()
                     communicator.stop_read_all()
                     communicator.disconnect()
+                    communicator.reset_status()
                 except Exception as e:
                     communicator.logger.error(f"关闭设备失败，{e}")
                 thread_running.set()
