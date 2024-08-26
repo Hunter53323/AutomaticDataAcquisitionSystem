@@ -1,6 +1,7 @@
 from .drivers.fan_drive_module import FanDriver
 from .drivers.actual_test_driver import TestDevice
-from core.warningmessage import emailsender
+
+# from core.warningmessage import emailsender
 
 
 class BreakdownHanding:

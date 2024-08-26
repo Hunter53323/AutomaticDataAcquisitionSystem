@@ -17,9 +17,10 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.pagesizes import letter, landscape
 from PyPDF2 import PdfReader, PdfWriter
-from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, PageTemplate, Frame
 from reportlab.lib.units import inch
+
 
 try:
     pdfmetrics.registerFont(TTFont("SimHei", "SimHei.ttf"))
@@ -27,41 +28,47 @@ except IOError:
     print("字体 'SimHei' 无法加载，请确保字体文件存在。")
 
 
-# 连接数据库
-def connect_database():
-    db_config = {
-        "host": os.getenv("DB_HOST", "localhost"),
-        "user": os.getenv("DB_USER", "liuqi"),
-        "password": os.getenv("DB_PASSWORD", "liuqi9713"),
-        "database": os.getenv("DB_NAME", "world"),
-    }
-    try:
-        connection = mysql.connector.connect(**db_config)
+def table_pdf(data):
+    # 提取键名作为列名
+    headers = [key for key in data[0].keys()]
 
-        if connection.is_connected():
-            print("Successfully connected to the database.")
-            # 创建游标对象
-            cursor = connection.cursor()
+    # 创建表格数据和样式
+    table_style = TableStyle(
+        [
+            ("BACKGROUND", (0, 0), (-1, 0), Color(163 / 255, 190 / 255, 219 / 255)),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("FONTNAME", (0, 0), (-1, -1), "SimHei"),
+            ("FONTSIZE", (0, 0), (-1, -1), 6),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ("GRID", (0, 0), (-1, -1), 1, colors.black),
+        ]
+    )
 
-            # 执行SQL查询
-            query = "SELECT * FROM 风机数据;"  # 替换为你的表名
-            cursor.execute(query)
+    # 初始化表格列表
+    tables = []
+    table_data = [headers]
+    max_rows_per_page = 15  # 每页最多15条数据
 
-            # 获取所有查询结果
-            records = cursor.fetchall()
+    # 填充表格数据，如果超过15条则创建新的表格
+    for row in data:
+        table_row = [row[key] for key in headers]
+        table_data.append(table_row)
+        if len(table_data) - 1 == max_rows_per_page:
+            tables.append((table_data, table_style))
+            table_data = [headers]  # 重置表格数据，保留表头
 
-            # 打印结果
-            for row in records:
-                print(row)
-            return connection
-    except mysql.connector.Error as e:
-        print("Error connecting to MySQL Platform:", e)
-        sys.exit(0)
+    # 添加最后一页的数据（如果有的话）
+    if len(table_data) > 1:
+        tables.append((table_data, table_style))
+
+    return [(table_data, table_style) for table_data, table_style in tables]
 
 
-def table_para(para_inform):
+def table_para(para_inform, headers):
     # 提取键名作为表头的第一列
-    headers = ["参数名称", "数值"]
+    headers = headers
     # 创建一个列表来存储表格的每一行数据
     all_tables = []  # 存储所有表格数据
     current_table_data = []  # 当前表格数据
@@ -96,42 +103,6 @@ def table_para(para_inform):
 
     # 返回所有表格数据和样式
     return all_tables
-
-
-def table_pdf(data):
-    # 提取键名作为列名
-    headers = [key for key in data[0].keys()]
-
-    # 创建表格数据和样式
-    table_style = TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), Color(163 / 255, 190 / 255, 219 / 255)),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("FONTNAME", (0, 0), (-1, -1), "SimHei"),
-        ("FONTSIZE", (0, 0), (-1, -1), 6),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-        ("GRID", (0, 0), (-1, -1), 1, colors.black),
-    ])
-
-    # 初始化表格列表
-    tables = []
-    table_data = [headers]
-    max_rows_per_page = 15  # 每页最多15条数据
-
-    # 填充表格数据，如果超过15条则创建新的表格
-    for row in data:
-        table_row = [row[key] for key in headers]
-        table_data.append(table_row)
-        if len(table_data) - 1 == max_rows_per_page:
-            tables.append((table_data, table_style))
-            table_data = [headers]  # 重置表格数据，保留表头
-
-    # 添加最后一页的数据（如果有的话）
-    if len(table_data) > 1:
-        tables.append((table_data, table_style))
-
-    return [(table_data, table_style) for table_data, table_style in tables]
 
 
 # 定义函数来绘制折线图并将其保存为图片
@@ -186,7 +157,7 @@ def merge_pdfs(paths: list[str], output_path: str):
         os.remove(path)
 
 
-def generate_pdf(parameters: list, input_inform: dict, data: list[dict[str, str]], direction_vertical: bool = False) -> str:
+def generate_pdf(parameters: list, input_inform: dict, input_range: dict, data: list[dict[str, str]], direction_vertical: bool = False) -> str:
     """
     :param parameters: 要绘图的参数列表
     :param input_inform: 包含输入信息的字典，例如{'实验员姓名': '张三', '公司名称': 'XX公司'}
@@ -196,11 +167,12 @@ def generate_pdf(parameters: list, input_inform: dict, data: list[dict[str, str]
     # 从input_inform中获取公司名称和实验员姓名，如果不存在则使用默认值
     company_name = input_inform.get("公司名称", "未知公司名称")
     experimenter = input_inform.get("实验员姓名", "未知实验员")
+
     # 指定要剔除的键
     keys_to_remove = ["风机名称", "风机型号", "公司名称", "实验员姓名"]
     # 使用字典推导式创建新字典，构建参数信息
     paras_inform = {key: value for key, value in input_inform.items() if key not in keys_to_remove}
-
+    paras_range = input_range
     export_folder = os.path.join(os.getcwd(), "export")
     if not os.path.exists(export_folder):
         os.makedirs(export_folder)
@@ -210,12 +182,12 @@ def generate_pdf(parameters: list, input_inform: dict, data: list[dict[str, str]
     # 首页内容样式
     first_page_style = ParagraphStyle("FirstPage", fontName="SimHei", fontSize=14, alignment=TA_CENTER, fontWeight="bold")
 
+    title_style = ParagraphStyle("Title", fontName="SimHei", fontSize=36, alignment=TA_CENTER, spaceBefore=10, spaceAfter=18, fontWeight="bold")
+
     # 参数信息展示样式
     para_title_style = ParagraphStyle(
         "para_Title", fontName="SimHei", fontSize=24, alignment=TA_CENTER, spaceBefore=10, spaceAfter=15, fontWeight="bold"
     )
-
-    title_style = ParagraphStyle("Title", fontName="SimHei", fontSize=36, alignment=TA_CENTER, spaceBefore=10, spaceAfter=18, fontWeight="bold")
 
     # 创建一个Frame专门用于放置图片，位于页面的左上角
     logo_frame = Frame(
@@ -252,17 +224,29 @@ def generate_pdf(parameters: list, input_inform: dict, data: list[dict[str, str]
     ]
 
     # 添加图片到story中，确保它位于logo_frame中
+    # TODO: 修改图片路径
     logo_path = "images/logo.png"  # 替换为您的图片路径
     logo = Image(logo_path, width=inch * 2, height=inch * 2)  # 设置图片宽高
     story.insert(0, logo)  # 将图片插入到故事列表的开始位置
 
     if not direction_vertical:
         # 横板PDF
-        # 横板PDF
         # 在第二页开始处添加参数信息
         story.append(Paragraph("参数信息", para_title_style))
         story.append(Spacer(1, 15))  # 调整间距
-        tables_para = table_para(paras_inform)
+        tables_para = table_para(paras_inform, ["参数名称", "数值"])
+        for table_data, table_style in tables_para:
+            table = Table(table_data, colWidths=[200, 100])
+            table.setStyle(table_style)
+            story.append(table)
+            if table_data != tables_para[-1][0]:  # 如果不是最后一个表格，则添加分页
+                story.append(PageBreak())
+
+        story.append(PageBreak())
+
+        story.append(Paragraph("参数范围", para_title_style))
+        story.append(Spacer(1, 15))  # 调整间距
+        tables_para = table_para(paras_range, ["参数名称", "数值范围"])
         for table_data, table_style in tables_para:
             table = Table(table_data, colWidths=[200, 100])
             table.setStyle(table_style)
@@ -273,20 +257,20 @@ def generate_pdf(parameters: list, input_inform: dict, data: list[dict[str, str]
         story.append(PageBreak())
         doc.build(story)
 
-        # 第二页和第三页需要横向排布，创建一个新的PDF文档
-        landscape_doc = SimpleDocTemplate(os.path.join(export_folder, "report_landscape.pdf"), pagesize=landscape(letter))
-        landscape_story = []
+        # # 第二页和第三页需要横向排布，创建一个新的PDF文档
+        # landscape_doc = SimpleDocTemplate(os.path.join(report_path, "report_landscape.pdf"), pagesize=landscape(letter))
+        # landscape_story = []
 
-        # 第二页展示所有数据，分页处理
-        tables = table_pdf(data)
-        for table_data, table_style in tables:
-            table = Table(table_data)
-            table.setStyle(table_style)
-            landscape_story.append(table)
-            landscape_story.append(PageBreak())
+        # # 第三页展示所有数据，分页处理
+        # tables = table_pdf(data)
+        # for table_data, table_style in tables:
+        #     table = Table(table_data)
+        #     table.setStyle(table_style)
+        #     landscape_story.append(table)
+        #     landscape_story.append(PageBreak())
 
-        # 构建第二页和第三页的PDF
-        landscape_doc.build(landscape_story)
+        # # 构建第二页和第三页的PDF
+        # landscape_doc.build(landscape_story)
 
         # 第四页需要纵向排布，创建另一个新的PDF文档
         if parameters:
@@ -302,22 +286,22 @@ def generate_pdf(parameters: list, input_inform: dict, data: list[dict[str, str]
             # 构建第四页的PDF
             portrait_doc.build(portrait_story)
 
-            paths_to_merge = [
-                os.path.join(export_folder, "report.pdf"),
-                os.path.join(export_folder, "report_landscape.pdf"),
-                os.path.join(export_folder, "report_portrait.pdf"),
-            ]
+            #     paths_to_merge = [os.path.join(report_path, "report.pdf"), os.path.join(report_path, "report_landscape.pdf"), os.path.join(report_path, "report_portrait.pdf")]
+            # else:
+            #     paths_to_merge = [os.path.join(report_path, "report.pdf"), os.path.join(report_path, "report_landscape.pdf")]
+            paths_to_merge = [os.path.join(export_folder, "report.pdf"), os.path.join(export_folder, "report_portrait.pdf")]
         else:
-            paths_to_merge = [os.path.join(export_folder, "report.pdf"), os.path.join(export_folder, "report_landscape.pdf")]
+            paths_to_merge = [os.path.join(export_folder, "report.pdf")]
         output_file = os.path.join(export_folder, "merged_report.pdf")
         merge_pdfs(paths_to_merge, output_file)
         # 最后，将三个PDF合并为一个PDF（这一步需要额外的处理）
         return output_file
+
     else:
         # 在第二页开始处添加参数信息
         story.append(Paragraph("参数信息", para_title_style))
         story.append(Spacer(1, 15))  # 调整间距
-        tables_para = table_para(paras_inform)
+        tables_para = table_para(paras_range, ["参数名称", "数值"])
         for table_data, table_style in tables_para:
             table = Table(table_data, colWidths=[200, 100])
             table.setStyle(table_style)
@@ -327,13 +311,13 @@ def generate_pdf(parameters: list, input_inform: dict, data: list[dict[str, str]
 
         story.append(PageBreak())
 
-        # 第二页展示所有数据，分页处理
-        tables = table_pdf(data)
-        for table_data, table_style in tables:
-            table = Table(table_data)
-            table.setStyle(table_style)
-            story.append(table)
-            story.append(PageBreak())
+        # # 第三页展示所有数据，分页处理
+        # tables = table_pdf(data)
+        # for table_data, table_style in tables:
+        #     table = Table(table_data)
+        #     table.setStyle(table_style)
+        #     story.append(table)
+        #     story.append(PageBreak())
 
         # 第四页对选择的参数依次开始画图
         if parameters:
@@ -344,7 +328,7 @@ def generate_pdf(parameters: list, input_inform: dict, data: list[dict[str, str]
 
         # 构建并保存文档
         doc.build(story)
-        return os.path.join(export_folder, "report.pdf")
+        print(f"PDF report generated successfully at: {os.path.join(export_folder, 'report.pdf')}")
 
 
 def main():
@@ -358,23 +342,28 @@ def main():
         "风机型号": "型号X",
         "实验次数": "100",
         "采集次数": "100",
-        "负载量范围": "800~1500",
-        "负载量步长": "100",
-        "速度环补偿系数范围": "0~2",
-        "速度环补偿系数步长": "0.1",
-        "实验次数1": "100",
-        "采集次数1": "100",
-        "负载量范围1": "800~1500",
-        "负载量步长1": "100",
-        "速度环补偿系数范围1": "0~2",
-        "速度环补偿系数步长1": "0.1",
-        "实验次数2": "100",
-        "采集次数2": "100",
-        "负载量范围2": "800~1500",
-        "负载量步长2": "100",
-        "速度环补偿系数范围2": "0~2",
-        "速度环补偿系数步长2": "0.1",
+        "速度环补偿系数": 2.0,
+        "电流环带宽": 300.0,
+        "观测器补偿系数": 1.6,
+        "负载量": 900,
+        "功率": 3.0,
+        "目标转速": 1200,
+        "实际转速": 1000,
+        "直流母线电压": 300.0,
+        "U相电流有效值": 1.6,
+        "故障1": 900,
+        "故障2": 3.0,
+        "测功机控制值": 900,
+        "电机输出功率": 3.0,
     }
+    input_range = {
+        "负载量": "800~1500",
+        "速度环补偿系数": "0~2",
+        "功率": "1000~1200",
+        "转速": "50~100",
+        "电流环带宽": "0~2",
+    }
+    report_path = "core/statement"
 
     data = [
         {
@@ -387,6 +376,14 @@ def main():
             "观测器补偿系数": 1.6,
             "负载量": 900,
             "功率": 3.0,
+            "目标转速": 1200,
+            "实际转速": 1000,
+            "直流母线电压": 300.0,
+            "U相电流有效值": 1.6,
+            "故障1": 900,
+            "故障2": 3.0,
+            "测功机控制值": 900,
+            "电机输出功率": 3.0,
             "时间戳": datetime(2024, 7, 13, 10, 1, 23),
         },
         {
@@ -396,10 +393,18 @@ def main():
             "转速": 1200,
             "速度环补偿系数": 2.0,
             "电流环带宽": 300.0,
-            "观测器补偿系数": 1.2,
+            "观测器补偿系数": 1.6,
             "负载量": 900,
             "功率": 3.0,
-            "时间戳": datetime(2024, 7, 13, 10, 1, 25),
+            "目标转速": 1200,
+            "实际转速": 1000,
+            "直流母线电压": 300.0,
+            "U相电流有效值": 1.6,
+            "故障1": 900,
+            "故障2": 3.0,
+            "测功机控制值": 900,
+            "电机输出功率": 3.0,
+            "时间戳": datetime(2024, 7, 13, 10, 1, 23),
         },
         {
             "ID": 3,
@@ -408,70 +413,118 @@ def main():
             "转速": 1200,
             "速度环补偿系数": 2.0,
             "电流环带宽": 300.0,
-            "观测器补偿系数": 1.2,
+            "观测器补偿系数": 1.6,
             "负载量": 900,
             "功率": 3.0,
-            "时间戳": datetime(2024, 7, 13, 10, 1, 27),
+            "目标转速": 1200,
+            "实际转速": 1000,
+            "直流母线电压": 300.0,
+            "U相电流有效值": 1.6,
+            "故障1": 900,
+            "故障2": 3.0,
+            "测功机控制值": 900,
+            "电机输出功率": 3.0,
+            "时间戳": datetime(2024, 7, 13, 10, 1, 23),
         },
         {
             "ID": 4,
-            "风机名称": "示例风机2",
+            "风机名称": "示例风机1",
             "风机型号": "型号X",
-            "转速": 1000,
-            "速度环补偿系数": 3.0,
-            "电流环带宽": 400.0,
-            "观测器补偿系数": 1.5,
-            "负载量": 800,
-            "功率": 2.0,
-            "时间戳": datetime(2024, 7, 13, 10, 1, 51),
+            "转速": 1200,
+            "速度环补偿系数": 2.0,
+            "电流环带宽": 300.0,
+            "观测器补偿系数": 1.6,
+            "负载量": 900,
+            "功率": 3.0,
+            "目标转速": 1200,
+            "实际转速": 1000,
+            "直流母线电压": 300.0,
+            "U相电流有效值": 1.6,
+            "故障1": 900,
+            "故障2": 3.0,
+            "测功机控制值": 900,
+            "电机输出功率": 3.0,
+            "时间戳": datetime(2024, 7, 13, 10, 1, 23),
         },
         {
             "ID": 5,
-            "风机名称": "示例风机2",
-            "风机型号": "型号B",
-            "转速": 1000,
-            "速度环补偿系数": 3.0,
-            "电流环带宽": 400.0,
-            "观测器补偿系数": 1.5,
-            "负载量": 800,
-            "功率": 2.0,
-            "时间戳": datetime(2024, 7, 13, 10, 1, 53),
+            "风机名称": "示例风机1",
+            "风机型号": "型号X",
+            "转速": 1200,
+            "速度环补偿系数": 2.0,
+            "电流环带宽": 300.0,
+            "观测器补偿系数": 1.6,
+            "负载量": 900,
+            "功率": 3.0,
+            "目标转速": 1200,
+            "实际转速": 1000,
+            "直流母线电压": 300.0,
+            "U相电流有效值": 1.6,
+            "故障1": 900,
+            "故障2": 3.0,
+            "测功机控制值": 900,
+            "电机输出功率": 3.0,
+            "时间戳": datetime(2024, 7, 13, 10, 1, 23),
         },
         {
             "ID": 6,
-            "风机名称": "示例风机2",
-            "风机型号": "型号B",
-            "转速": 1000,
-            "速度环补偿系数": 3.0,
-            "电流环带宽": 400.0,
-            "观测器补偿系数": 1.5,
-            "负载量": 800,
-            "功率": 2.0,
-            "时间戳": datetime(2024, 7, 13, 10, 1, 55),
+            "风机名称": "示例风机1",
+            "风机型号": "型号X",
+            "转速": 1200,
+            "速度环补偿系数": 2.0,
+            "电流环带宽": 300.0,
+            "观测器补偿系数": 1.6,
+            "负载量": 900,
+            "功率": 3.0,
+            "目标转速": 1200,
+            "实际转速": 1000,
+            "直流母线电压": 300.0,
+            "U相电流有效值": 1.6,
+            "故障1": 900,
+            "故障2": 3.0,
+            "测功机控制值": 900,
+            "电机输出功率": 3.0,
+            "时间戳": datetime(2024, 7, 13, 10, 1, 23),
         },
         {
             "ID": 7,
-            "风机名称": "风机示例3",
-            "风机型号": "-1",
-            "转速": None,
-            "速度环补偿系数": None,
-            "电流环带宽": None,
-            "观测器补偿系数": None,
-            "负载量": None,
-            "功率": None,
-            "时间戳": datetime(2024, 7, 13, 10, 17, 31),
+            "风机名称": "示例风机1",
+            "风机型号": "型号X",
+            "转速": 1200,
+            "速度环补偿系数": 2.0,
+            "电流环带宽": 300.0,
+            "观测器补偿系数": 1.6,
+            "负载量": 900,
+            "功率": 3.0,
+            "目标转速": 1200,
+            "实际转速": 1000,
+            "直流母线电压": 300.0,
+            "U相电流有效值": 1.6,
+            "故障1": 900,
+            "故障2": 3.0,
+            "测功机控制值": 900,
+            "电机输出功率": 3.0,
+            "时间戳": datetime(2024, 7, 13, 10, 1, 23),
         },
         {
             "ID": 8,
             "风机名称": "示例风机1",
-            "风机型号": "型号A",
+            "风机型号": "型号X",
             "转速": 1200,
             "速度环补偿系数": 2.0,
             "电流环带宽": 300.0,
-            "观测器补偿系数": 1.2,
+            "观测器补偿系数": 1.6,
             "负载量": 900,
             "功率": 3.0,
-            "时间戳": datetime(2024, 7, 14, 8, 56, 23),
+            "目标转速": 1200,
+            "实际转速": 1000,
+            "直流母线电压": 300.0,
+            "U相电流有效值": 1.6,
+            "故障1": 900,
+            "故障2": 3.0,
+            "测功机控制值": 900,
+            "电机输出功率": 3.0,
+            "时间戳": datetime(2024, 7, 13, 10, 1, 23),
         },
         {
             "ID": 9,
@@ -483,6 +536,14 @@ def main():
             "观测器补偿系数": 1.6,
             "负载量": 900,
             "功率": 3.0,
+            "目标转速": 1200,
+            "实际转速": 1000,
+            "直流母线电压": 300.0,
+            "U相电流有效值": 1.6,
+            "故障1": 900,
+            "故障2": 3.0,
+            "测功机控制值": 900,
+            "电机输出功率": 3.0,
             "时间戳": datetime(2024, 7, 13, 10, 1, 23),
         },
         {
@@ -492,10 +553,18 @@ def main():
             "转速": 1200,
             "速度环补偿系数": 2.0,
             "电流环带宽": 300.0,
-            "观测器补偿系数": 1.2,
+            "观测器补偿系数": 1.6,
             "负载量": 900,
             "功率": 3.0,
-            "时间戳": datetime(2024, 7, 13, 10, 1, 25),
+            "目标转速": 1200,
+            "实际转速": 1000,
+            "直流母线电压": 300.0,
+            "U相电流有效值": 1.6,
+            "故障1": 900,
+            "故障2": 3.0,
+            "测功机控制值": 900,
+            "电机输出功率": 3.0,
+            "时间戳": datetime(2024, 7, 13, 10, 1, 23),
         },
         {
             "ID": 11,
@@ -504,123 +573,203 @@ def main():
             "转速": 1200,
             "速度环补偿系数": 2.0,
             "电流环带宽": 300.0,
-            "观测器补偿系数": 1.2,
+            "观测器补偿系数": 1.6,
             "负载量": 900,
             "功率": 3.0,
-            "时间戳": datetime(2024, 7, 13, 10, 1, 27),
+            "目标转速": 1200,
+            "实际转速": 1000,
+            "直流母线电压": 300.0,
+            "U相电流有效值": 1.6,
+            "故障1": 900,
+            "故障2": 3.0,
+            "测功机控制值": 900,
+            "电机输出功率": 3.0,
+            "时间戳": datetime(2024, 7, 13, 10, 1, 23),
         },
         {
             "ID": 12,
-            "风机名称": "示例风机2",
+            "风机名称": "示例风机1",
             "风机型号": "型号X",
-            "转速": 1000,
-            "速度环补偿系数": 3.0,
-            "电流环带宽": 400.0,
-            "观测器补偿系数": 1.5,
-            "负载量": 800,
-            "功率": 2.0,
-            "时间戳": datetime(2024, 7, 13, 10, 1, 51),
+            "转速": 1200,
+            "速度环补偿系数": 2.0,
+            "电流环带宽": 300.0,
+            "观测器补偿系数": 1.6,
+            "负载量": 900,
+            "功率": 3.0,
+            "目标转速": 1200,
+            "实际转速": 1000,
+            "直流母线电压": 300.0,
+            "U相电流有效值": 1.6,
+            "故障1": 900,
+            "故障2": 3.0,
+            "测功机控制值": 900,
+            "电机输出功率": 3.0,
+            "时间戳": datetime(2024, 7, 13, 10, 1, 23),
         },
         {
             "ID": 13,
-            "风机名称": "示例风机2",
-            "风机型号": "型号B",
-            "转速": 1000,
-            "速度环补偿系数": 3.0,
-            "电流环带宽": 400.0,
-            "观测器补偿系数": 1.5,
-            "负载量": 800,
-            "功率": 2.0,
-            "时间戳": datetime(2024, 7, 13, 10, 1, 53),
+            "风机名称": "示例风机1",
+            "风机型号": "型号X",
+            "转速": 1200,
+            "速度环补偿系数": 2.0,
+            "电流环带宽": 300.0,
+            "观测器补偿系数": 1.6,
+            "负载量": 900,
+            "功率": 3.0,
+            "目标转速": 1200,
+            "实际转速": 1000,
+            "直流母线电压": 300.0,
+            "U相电流有效值": 1.6,
+            "故障1": 900,
+            "故障2": 3.0,
+            "测功机控制值": 900,
+            "电机输出功率": 3.0,
+            "时间戳": datetime(2024, 7, 13, 10, 1, 23),
         },
         {
             "ID": 14,
-            "风机名称": "示例风机2",
-            "风机型号": "型号B",
-            "转速": 1000,
-            "速度环补偿系数": 3.0,
-            "电流环带宽": 400.0,
-            "观测器补偿系数": 1.5,
-            "负载量": 800,
-            "功率": 2.0,
-            "时间戳": datetime(2024, 7, 13, 10, 1, 55),
+            "风机名称": "示例风机1",
+            "风机型号": "型号X",
+            "转速": 1200,
+            "速度环补偿系数": 2.0,
+            "电流环带宽": 300.0,
+            "观测器补偿系数": 1.6,
+            "负载量": 900,
+            "功率": 3.0,
+            "目标转速": 1200,
+            "实际转速": 1000,
+            "直流母线电压": 300.0,
+            "U相电流有效值": 1.6,
+            "故障1": 900,
+            "故障2": 3.0,
+            "测功机控制值": 900,
+            "电机输出功率": 3.0,
+            "时间戳": datetime(2024, 7, 13, 10, 1, 23),
         },
         {
             "ID": 15,
-            "风机名称": "风机示例3",
-            "风机型号": "-1",
-            "转速": None,
-            "速度环补偿系数": None,
-            "电流环带宽": None,
-            "观测器补偿系数": None,
-            "负载量": None,
-            "功率": None,
-            "时间戳": datetime(2024, 7, 13, 10, 17, 31),
+            "风机名称": "示例风机1",
+            "风机型号": "型号X",
+            "转速": 1200,
+            "速度环补偿系数": 2.0,
+            "电流环带宽": 300.0,
+            "观测器补偿系数": 1.6,
+            "负载量": 900,
+            "功率": 3.0,
+            "目标转速": 1200,
+            "实际转速": 1000,
+            "直流母线电压": 300.0,
+            "U相电流有效值": 1.6,
+            "故障1": 900,
+            "故障2": 3.0,
+            "测功机控制值": 900,
+            "电机输出功率": 3.0,
+            "时间戳": datetime(2024, 7, 13, 10, 1, 23),
         },
         {
             "ID": 16,
             "风机名称": "示例风机1",
-            "风机型号": "型号A",
+            "风机型号": "型号X",
             "转速": 1200,
             "速度环补偿系数": 2.0,
             "电流环带宽": 300.0,
-            "观测器补偿系数": 1.2,
+            "观测器补偿系数": 1.6,
             "负载量": 900,
             "功率": 3.0,
-            "时间戳": datetime(2024, 7, 14, 8, 56, 23),
+            "目标转速": 1200,
+            "实际转速": 1000,
+            "直流母线电压": 300.0,
+            "U相电流有效值": 1.6,
+            "故障1": 900,
+            "故障2": 3.0,
+            "测功机控制值": 900,
+            "电机输出功率": 3.0,
+            "时间戳": datetime(2024, 7, 13, 10, 1, 23),
         },
         {
             "ID": 17,
             "风机名称": "示例风机1",
-            "风机型号": "型号A",
+            "风机型号": "型号X",
             "转速": 1200,
             "速度环补偿系数": 2.0,
             "电流环带宽": 300.0,
-            "观测器补偿系数": 1.2,
+            "观测器补偿系数": 1.6,
             "负载量": 900,
             "功率": 3.0,
-            "时间戳": datetime(2024, 7, 14, 8, 56, 23),
+            "目标转速": 1200,
+            "实际转速": 1000,
+            "直流母线电压": 300.0,
+            "U相电流有效值": 1.6,
+            "故障1": 900,
+            "故障2": 3.0,
+            "测功机控制值": 900,
+            "电机输出功率": 3.0,
+            "时间戳": datetime(2024, 7, 13, 10, 1, 23),
         },
         {
             "ID": 18,
-            "风机名称": "示例风机2",
-            "风机型号": "型号B",
-            "转速": 1000,
-            "速度环补偿系数": 3.0,
-            "电流环带宽": 400.0,
-            "观测器补偿系数": 1.5,
-            "负载量": 800,
-            "功率": 2.0,
-            "时间戳": datetime(2024, 7, 13, 10, 1, 55),
+            "风机名称": "示例风机1",
+            "风机型号": "型号X",
+            "转速": 1200,
+            "速度环补偿系数": 2.0,
+            "电流环带宽": 300.0,
+            "观测器补偿系数": 1.6,
+            "负载量": 900,
+            "功率": 3.0,
+            "目标转速": 1200,
+            "实际转速": 1000,
+            "直流母线电压": 300.0,
+            "U相电流有效值": 1.6,
+            "故障1": 900,
+            "故障2": 3.0,
+            "测功机控制值": 900,
+            "电机输出功率": 3.0,
+            "时间戳": datetime(2024, 7, 13, 10, 1, 23),
         },
         {
             "ID": 19,
-            "风机名称": "风机示例3",
-            "风机型号": "-1",
-            "转速": None,
-            "速度环补偿系数": None,
-            "电流环带宽": None,
-            "观测器补偿系数": None,
-            "负载量": None,
-            "功率": None,
-            "时间戳": datetime(2024, 7, 13, 10, 17, 31),
+            "风机名称": "示例风机1",
+            "风机型号": "型号X",
+            "转速": 1200,
+            "速度环补偿系数": 2.0,
+            "电流环带宽": 300.0,
+            "观测器补偿系数": 1.6,
+            "负载量": 900,
+            "功率": 3.0,
+            "目标转速": 1200,
+            "实际转速": 1000,
+            "直流母线电压": 300.0,
+            "U相电流有效值": 1.6,
+            "故障1": 900,
+            "故障2": 3.0,
+            "测功机控制值": 900,
+            "电机输出功率": 3.0,
+            "时间戳": datetime(2024, 7, 13, 10, 1, 23),
         },
         {
             "ID": 20,
             "风机名称": "示例风机1",
-            "风机型号": "型号A",
+            "风机型号": "型号X",
             "转速": 1200,
             "速度环补偿系数": 2.0,
             "电流环带宽": 300.0,
-            "观测器补偿系数": 1.2,
+            "观测器补偿系数": 1.6,
             "负载量": 900,
             "功率": 3.0,
-            "时间戳": datetime(2024, 7, 14, 8, 56, 23),
+            "目标转速": 1200,
+            "实际转速": 1000,
+            "直流母线电压": 300.0,
+            "U相电流有效值": 1.6,
+            "故障1": 900,
+            "故障2": 3.0,
+            "测功机控制值": 900,
+            "电机输出功率": 3.0,
+            "时间戳": datetime(2024, 7, 13, 10, 1, 23),
         },
     ]
 
     # 生成PDF报告
-    generate_pdf(parameters, input_inform, data, direction_vertical=False)
+    generate_pdf(parameters, input_inform, input_range, data, report_path, direction_vertical=False)
 
     print("Report generated successfully.")
 

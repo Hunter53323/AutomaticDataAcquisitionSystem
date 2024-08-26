@@ -2,7 +2,7 @@ from .drivers.driver_base import DriverBase
 from .exception_handling import BreakdownHanding
 import logging
 from concurrent_log_handler import ConcurrentRotatingFileHandler
-import re
+import re, time
 import copy
 
 
@@ -320,6 +320,7 @@ class Communication:
     def close_all_device(self):
         for driver in self.drivers:
             driver.close_device()
+            time.sleep(1)
 
     def check_error(self):
         for driver in self.drivers:

@@ -133,9 +133,8 @@ class AutoCollection:
                 self.__collect_count[0 if collect_data else 1] += 1
                 if not err_handle_status or overcurrent_count > 10:
                     # 清障失败，直接停止整个数采系统
+                    self.logger.error("清障失败或多次过流，停止自动采集")
                     emailsender.send_email("电机数采系统故障通知", "发生系统故障，自动处理失败，请立即查看")
-                    self.communication.close_all_device()
-                    self.communication.disconnect()
                     break
                     # 清障失败，需要人工干预
                     # TODO：多次出现过流情况，直接停止整个数采或者打乱数据顺序重新进行数采
@@ -283,6 +282,7 @@ class AutoCollection:
 
     def save_data(self, data_dict: dict[str, any], para_dict: dict[str, any], err: str = "", breakdown_dict: dict = {}) -> None:
         self.db.change_current_table(table_name.get_table_name())
+        print(para_dict)
         save_data_dict = {}
 
         for key in para_dict.keys():
