@@ -113,6 +113,11 @@ const loadConfFromDB = () => {
           }
           settings.updateProtocol()
           dashboard.initList()
+          settings.updateConf()
+          settings.updateDefined()
+          settings.updateUser()
+          settings.updateSteady()
+          db.updateMeta()
           ElMessage.success("成功加载配置 " + choice.value)
         })
         .catch((e) => {

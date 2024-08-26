@@ -136,12 +136,7 @@ const collectorContinue = () => {
     <el-button type="primary" @click="collectorContinue"
       :disabled="!(dashboard.autoCollectStatus == 4 && dashboard.isReady())">继续</el-button>
   </el-upload>
-  <div>
-    <el-text class="collectorCount" size="large" type="primary">
-      共{{ dashboard.collectCount }}条，剩余{{ dashboard.remainCount }}条，成功{{ dashboard.successCount }}条，
-      失败{{ dashboard.failCount }}条
-    </el-text>
-  </div>
+  
 
 </template>
 

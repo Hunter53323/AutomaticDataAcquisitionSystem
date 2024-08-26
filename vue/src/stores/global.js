@@ -16,6 +16,7 @@ export const useGlobalStore = defineStore('global', {
   },
   actions: {
     getUnit(key) {
+      return ''
       if (key.includes('转速')) {
         return 'rpm'
       } else if (key.includes('电流环')) {
@@ -139,7 +140,8 @@ export const useDBStore = defineStore('database', {
             headers: {
               'Content-Type': 'application/json'
             }
-          }).then(response => response.json())
+          })
+            .then(response => response.json())
             .then(data => {
               if (data.status == 'error') {
                 throw new Error(data.message)
@@ -177,9 +179,30 @@ export const useDBStore = defineStore('database', {
         cancelButtonText: '取消',
       })
         .then(() => {
-          window.location.href = useGlobalStore().url + "/db/export?filename=" + form.filename + "&ids_input=" + form.ids_input + "&conditions=" + form.conditions
+          form.filename += '.csv'
+          fetch(useGlobalStore().url + "/db/export", {
+            method: 'POST',
+            body: JSON.stringify(form),
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          })
+            .then(response => response.blob())
+            .then(blob => {
+              const url = window.URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.setAttribute('download', form.filename);
+              document.body.appendChild(link);
+              link.click();
+            })
+            .catch((e) => {
+              console.log(e)
+              ElMessage.error('数据导出失败')
+            })
         })
         .catch((e) => {
+          console.log(e)
           ElMessage({
             type: 'info',
             message: '数据导出取消',
@@ -189,37 +212,61 @@ export const useDBStore = defineStore('database', {
     },
     async handleStatementExport() {
       let form = reactive({
-        filepath: '',
         filename: '',
-        conditions: ''
+        ids_input: '',
+        draw_parameters: [],
+        data_column: [],
+        input_form: {
+          "实验员姓名": "",
+          "公司名称": ""
+        }
+      })
+      this.columns.forEach((item) => {
+        form.data_column.push([item])
       })
       ElMessageBox({
         title: '报表导出',
-        message: h(StatementBox, { modelValue: form, 'onUpdate:modelValue': value => form = value }),
+        message: h(StatementBox, { modelValue: form, 'onUpdate:modelValue': value => form = value, columns: this.columnsToFill }),
         customClass: "db-operation-box",
         showCancelButton: true,
         confirmButtonText: '确认',
         cancelButtonText: '取消',
       })
         .then(() => {
-          fetch(global.url + "/db/statement?filename=" + filename + "?filepath=" + filepath, {
-            method: 'GET',
-          }).then(response => response.json())
-            .then(data => {
-              if (data.status == 'error') {
-                throw new Error(data.message)
-              }
-              alert(data.message)
-              ElMessage({
-                message: '报表导出成功',
-                type: 'success'
-              })
+          let tmp = []
+          form.draw_parameters.forEach((item) => {
+            tmp.push(item[0])
+          })
+          form.draw_parameters = tmp
+          tmp = []
+          form.data_column.forEach((item) => {
+            tmp.push(item[0])
+          })
+
+          form.data_column = tmp
+          fetch(useGlobalStore().url + "/db/statement", {
+            method: 'POST',
+            body: JSON.stringify(form),
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          })
+            .then(response => response.blob())
+            .then(blob => {
+              const url = window.URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.setAttribute('download', form.filename);
+              document.body.appendChild(link);
+              link.click();
             })
-            .catch(response => {
+            .catch((e) => {
+              console.log(e)
               ElMessage.error('报表导出失败')
             })
         })
-        .catch(() => {
+        .catch((e) => {
+          console.log(e)
           ElMessage({
             type: 'info',
             message: '报表导出取消',
@@ -512,48 +559,15 @@ export const useSettingsStore = defineStore('settings', {
         customClass: "user-change-form",
         message:
           h(UserChangeBox, { modelValue: formUser, 'onUpdate:modelValue': value => formUser = value }),
-        showCancelButton: true,
         confirmButtonText: '确认',
-        cancelButtonText: '取消',
-      }).then(() => {
-        const formData = new FormData()
-        formData.append('receiver_email', formUser.email)
-        formData.append('receiver_name', formUser.name)
-        fetch(useGlobalStore().url + '/collect/emailset', {
-          method: 'POST',
-          body: formData,
-        })
-          .then((data) => data.json())
-          .then((data) => {
-            if (data.status != true) {
-              throw new Error()
-            }
-            this.user = {
-              name: formUser.name,
-              email: formUser.email,
-              lastTime: new Date().toLocaleString()
-            }
-            this.updateUser()
-            ElMessage({
-              type: 'success',
-              message: '用户更改成功',
-            })
-          })
-          .catch(() => {
-
-            this.updateUser()
-            ElMessage({
-              type: 'error',
-              message: '用户更改失败',
-            })
-          })
+        showConfirmButton: false,
+        closeOnClickModal: false,
+        closeOnPressEscape: false,
+        "show-close": false
       })
-        .catch(() => {
-          ElMessage({
-            type: 'info',
-            message: '用户更改取消',
-          })
-        })
+      router.push({
+        name: 'dashboard'
+      })
     },
     async updateConf() {
       fetch(useGlobalStore().url + '/control/deviceset?config_item=normal&driver_name=TestDevice')

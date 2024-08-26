@@ -249,10 +249,10 @@ const loadConf = (driver, key) => {
   tmp = Object.assign({}, tmp)
   for (let key in tmp) {
     tmp[key]['data'].forEach((item) => {
-      item.formula = item.formula.replace('真实数据', "real_data")
-      item.formula = item.formula.replace('原始数据', "raw_data")
-      item.inv_formula = item.inv_formula.replace('真实数据', "real_data")
-      item.inv_formula = item.inv_formula.replace('原始数据', "raw_data")
+      item.formula = item.formula.replace('设备侧数据', "real_data")
+      item.formula = item.formula.replace('用户侧数据', "raw_data")
+      item.inv_formula = item.inv_formula.replace('设备侧数据', "real_data")
+      item.inv_formula = item.inv_formula.replace('用户侧数据', "raw_data")
     })
   }
   fetch(global.url + '/control/deviceset?driver_name=' + driver, {
@@ -378,7 +378,7 @@ const addData = (driver, key) => {
   const formAdd = reactive({
     name: '',
     breakdown: [],
-    formula: '真实数据=原始数据',
+    formula: '设备侧数据=用户侧数据',
     inv_formula: '',
     index: 0,
     size: (driver == 'FanDriver' ? 2 : 4),
@@ -418,10 +418,10 @@ watch(() => settings.protocol['FanDriver'], (newProtocal) => {
   formFan.ack_query_f = JSON.parse(JSON.stringify(newProtocal.ack_query_f))
   for (let key in formFan) {
     formFan[key]['data'].forEach((item) => {
-      item.formula = item.formula.replace('real_data', "真实数据")
-      item.formula = item.formula.replace('raw_data', "原始数据")
-      item.inv_formula = item.inv_formula.replace("real_data", "真实数据")
-      item.inv_formula = item.inv_formula.replace("raw_data", "原始数据")
+      item.formula = item.formula.replace('real_data', "设备侧数据")
+      item.formula = item.formula.replace('raw_data', "用户侧数据")
+      item.inv_formula = item.inv_formula.replace("real_data", "设备侧数据")
+      item.inv_formula = item.inv_formula.replace("raw_data", "用户侧数据")
     })
   }
 }, { deep: true })
@@ -430,10 +430,10 @@ watch(() => settings.protocol['TestDevice'], (newProtocal) => {
   formTest.rev_f = JSON.parse(JSON.stringify(newProtocal.rev_f))
   for (let key in formTest) {
     formTest[key]['data'].forEach((item) => {
-      item.formula = item.formula.replace('real_data', "真实数据")
-      item.formula = item.formula.replace('raw_data', "原始数据")
-      item.inv_formula = item.inv_formula.replace("real_data", "真实数据")
-      item.inv_formula = item.inv_formula.replace("raw_data", "原始数据")
+      item.formula = item.formula.replace('real_data', "设备侧数据")
+      item.formula = item.formula.replace('raw_data', "用户侧数据")
+      item.inv_formula = item.inv_formula.replace("real_data", "设备侧数据")
+      item.inv_formula = item.inv_formula.replace("raw_data", "用户侧数据")
     })
   }
 }, { deep: true })

@@ -7,7 +7,7 @@ const settings = useSettingsStore();
 </script>
 
 <template>
-  <el-row :gutter="20">
+  <el-row :gutter="10">
     <el-col :span="22">
       <el-descriptions class="user-desc" :column="4" size="large" border>
         <el-descriptions-item>

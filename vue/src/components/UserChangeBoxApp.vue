@@ -15,8 +15,8 @@ const formUser = defineModel()
 
 const clickBnt = () => {
   const formData = new FormData()
-  formData.append('receiver_email', formUser.value.email)
-  formData.append('receiver_name', formUser.value.name)
+  formData.append('receiver_email', formUser.email)
+  formData.append('receiver_name', formUser.name)
   fetch(global.url + '/collect/emailset', {
     method: 'POST',
     body: formData,
@@ -38,6 +38,8 @@ const clickBnt = () => {
     .catch(() => {
       settings.updateUser()
       ElMessage.error('用户更改失败')
+      
+      ElMessageBox.close()
     })
 }
 

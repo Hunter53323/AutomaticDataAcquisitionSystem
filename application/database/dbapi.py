@@ -146,13 +146,13 @@ def api_showall_v2():
         cursor.close()
 
 
-@db.route("/export", methods=["GET"])
+@db.route("/export", methods=["POST"])
 # 数据导出接口，根据发送的测试人员等信息导出数据，返回csv文件，由客户指定导出目录进行保存
 def export():
     # filename = 'fans_data1.csv'
-    filename = request.args.get("filename")
-    ids_input = request.args.get("ids_input", "")
-    additional_conditions = request.args.get("additional_conditions", "")
+    filename = request.get_json().get("filename")
+    ids_input = request.get_json().get("ids_input", "")
+    additional_conditions = request.get_json().get("conditions", "")
     try:
         if not outputdb.change_current_table(table_name.get_table_name()):
             if not outputdb.change_history_table(table_name.get_table_name()):

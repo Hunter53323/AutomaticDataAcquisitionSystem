@@ -82,7 +82,7 @@ const handleTagClose = (item) =>{
         </el-tag>
       </el-tooltip>
     </el-row>
-    <el-row class="choice" :gutter="20">
+    <el-row class="choice" :gutter="10">
       <el-col :span="18">
         <el-text class="tip-text">可选变量</el-text>
         <el-button-group>
@@ -100,7 +100,7 @@ const handleTagClose = (item) =>{
         </el-button-group>
       </el-col>
     </el-row>
-    <el-row class="formula-input" :gutter="20">
+    <el-row class="formula-input" :gutter="10">
       <el-col :span="4">
         <el-input v-model="form.name" placeholder="输入自定义变量名" clearable></el-input>
       </el-col>
