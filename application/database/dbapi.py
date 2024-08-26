@@ -152,7 +152,7 @@ def export():
     # filename = 'fans_data1.csv'
     filename = request.get_json().get("filename")
     ids_input = request.get_json().get("ids_input", "")
-    additional_conditions = request.get_json().get("additional_conditions", "")
+    additional_conditions = request.get_json().get("conditions", "")
     try:
         if not outputdb.change_current_table(table_name.get_table_name()):
             if not outputdb.change_history_table(table_name.get_table_name()):

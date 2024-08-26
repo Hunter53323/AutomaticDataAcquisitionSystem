@@ -6,6 +6,7 @@ from collections import deque
 from core.warningmessage import emailsender
 import threading
 import re, time
+import traceback
 
 
 class AutoCollection:
@@ -114,33 +115,35 @@ class AutoCollection:
         self.__collect_count = [0, 0]
         overcurrent_count = 0
         # for item_para in self.__para_pool:
-        # try:
-        while self.__para_queue:
-            self.judge_pause_status()
-            if self.__stop_flag:
-                break
-            item_para = self.__para_queue.popleft()
-            self.__stable_state = False
-            tmp_para_dict = dict(zip(self.__para_vals.keys(), item_para))
-            collect_data, err_handle_status, code, err, breakdown_dict = self.signal_progress(tmp_para_dict)
-            # 检测到按下了停止或者出现通讯错误，那么跳出循环，以免卡在数采里面
-            if self.__stop_flag or self.communication.check_error():
-                break
-            if "过流" in err:
-                overcurrent_count += 1
-            self.save_data(data_dict=collect_data, para_dict=tmp_para_dict, err=err, breakdown_dict=breakdown_dict)
-            self.__collect_count[0 if collect_data else 1] += 1
-            if not err_handle_status or overcurrent_count > 10:
-                # 清障失败，直接停止整个数采系统
-                emailsender.send_email("电机数采系统故障通知", "发生系统故障，自动处理失败，请立即查看")
-                self.communication.close_all_device()
-                self.communication.disconnect()
-                break
-                # 清障失败，需要人工干预
-                # TODO：多次出现过流情况，直接停止整个数采或者打乱数据顺序重新进行数采
-                self.wait_until_no_breakdown()
-        # except Exception as e:
-        #     self.logger.error(f"自动采集出现异常,{e}")
+        try:
+            while self.__para_queue:
+                self.judge_pause_status()
+                if self.__stop_flag:
+                    break
+                item_para = self.__para_queue.popleft()
+                self.__stable_state = False
+                tmp_para_dict = dict(zip(self.__para_vals.keys(), item_para))
+                collect_data, err_handle_status, code, err, breakdown_dict = self.signal_progress(tmp_para_dict)
+                # 检测到按下了停止或者出现通讯错误，那么跳出循环，以免卡在数采里面
+                if self.__stop_flag or self.communication.check_error():
+                    break
+                if "过流" in err:
+                    overcurrent_count += 1
+                self.save_data(data_dict=collect_data, para_dict=tmp_para_dict, err=err, breakdown_dict=breakdown_dict)
+                self.__collect_count[0 if collect_data else 1] += 1
+                if not err_handle_status or overcurrent_count > 10:
+                    # 清障失败，直接停止整个数采系统
+                    emailsender.send_email("电机数采系统故障通知", "发生系统故障，自动处理失败，请立即查看")
+                    self.communication.close_all_device()
+                    self.communication.disconnect()
+                    break
+                    # 清障失败，需要人工干预
+                    # TODO：多次出现过流情况，直接停止整个数采或者打乱数据顺序重新进行数采
+                    self.wait_until_no_breakdown()
+        except Exception as e:
+            self.logger.error(f"自动采集出现异常,{e}")
+            self.logger.error(traceback.format_exc())
+            emailsender.send_email("电机数采系统故障通知", "发生未知系统故障，请立即查看，可重启系统后从未完成的数据重新开始数采")
         # 顺利采集完成一条数据
         self.__auto_running: bool = False
         self.clear_para()
@@ -381,9 +384,9 @@ class AutoCollection:
         # 将参数的配置转换为参数的值列表
         tmp_dict = {}
         for key, para_config in para_pool_dict.items():
-            min = int(para_config.get("min", None))
-            max = int(para_config.get("max", None))
-            step = int(para_config.get("step", None))
+            min = float(para_config.get("min", None))
+            max = float(para_config.get("max", None))
+            step = float(para_config.get("step", None))
             tmp_dict[key] = self.generate_test_params(min, max, step)
         para_pool_dict = tmp_dict
         self.__para_vals.clear()
