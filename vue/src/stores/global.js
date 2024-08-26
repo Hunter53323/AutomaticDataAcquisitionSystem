@@ -221,9 +221,9 @@ export const useDBStore = defineStore('database', {
           "公司名称": ""
         }
       })
-      this.columns.forEach((item) => {
-        form.data_column.push([item])
-      })
+      // this.columns.forEach((item) => {
+      //   form.data_column.push([item])
+      // })
       ElMessageBox({
         title: '报表导出',
         message: h(StatementBox, { modelValue: form, 'onUpdate:modelValue': value => form = value, columns: this.columnsToFill }),

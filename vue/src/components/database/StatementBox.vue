@@ -53,7 +53,7 @@ const addItem = () => {
       <el-cascader v-model="form.draw_parameters" placeholder="请选择要绘制的数据" :options="options" :props="prop"
         style="width: 100%" clearable />
     </el-form-item>
-    <el-form-item label="选择数据">
+    <el-form-item label="选择电机参数">
       <el-cascader v-model="form.data_column" placeholder="请选择要记录的数据" :options="options" :props="prop"
         style="width: 100%" clearable />
     </el-form-item>
