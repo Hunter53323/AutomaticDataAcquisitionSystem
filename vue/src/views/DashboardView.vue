@@ -73,9 +73,9 @@ socket.on('data_from_device', data => {
   })
   let timeMin = timeData1.value.at(0).time
   let timeMax = timeData1.value.at(-1).time
-  if (timeMax - timeMin > 20000) {
-    timeData1.value = timeData1.value.filter((val, index, arr) => val.time > timeMax - 10000);
-    timeData2.value = timeData2.value.filter((val, index, arr) => val.time > timeMax - 10000);
+  if (timeMax - timeMin > 2000) {
+    timeData1.value = timeData1.value.filter((val, index, arr) => val.time > timeMax - 1000);
+    timeData2.value = timeData2.value.filter((val, index, arr) => val.time > timeMax - 1000);
   }
 })
 
@@ -142,7 +142,8 @@ db.updateMeta()
           <div class="card-header">
             <span style="margin-right: 10px;">采集配置</span>
             <el-text class="collectorCount" type="primary">
-              共{{ dashboard.collectCount }}条，剩余{{ dashboard.remainCount }}条，成功{{ dashboard.successCount }}条，
+              共{{ dashboard.remainCount + dashboard.successCount + dashboard.failCount }}条，剩余{{ dashboard.remainCount
+              }}条，成功{{ dashboard.successCount }}条，
               失败{{ dashboard.failCount }}条
             </el-text>
           </div>
