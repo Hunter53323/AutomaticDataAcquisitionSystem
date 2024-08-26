@@ -376,10 +376,7 @@ class MySQLDatabase:
             data = {}
 
             for key in data_dict.keys():
-                if data_dict[key]:
-                    data[key] = data_dict[key]
-                else:
-                    columns.remove(key)
+                data[key] = data_dict[key]
 
             # 为每个列创建一个对应数量的占位符
             placeholders = ", ".join(["%s"] * len(columns))

@@ -217,7 +217,6 @@ def config_savev2():
         config_dict[driver.device_name] = json.dumps(driver.export_config())
     config_dict["自定义列"] = json.dumps(communicator.export_custom_column())
     config_dict["稳态判断"] = json.dumps(auto_collector.get_steady_state_determination())
-    config_dict["表名"] = "风机数据" + str(int(time.time()))
     config_dict.update({"配置命名": "config_name"})
     config_column = config_to_columns_v2(config_dict)
     if request.method == "GET":
@@ -235,6 +234,7 @@ def config_savev2():
         """
         # POST方法，保存当前设备配置
         config_name = request.args.get("config_name", None)
+        config_dict["表名"] = "风机数据" + config_name
         config_dict.update({"配置命名": config_name})
         outputdb.change_current_table(TABLE_NAME, config_column)
         driver_config = outputdb.select_data(columns=["ID", "配置命名"])
