@@ -24,7 +24,7 @@ class Communication:
         logger.setLevel(logging.DEBUG)  # 设置日志级别
         formatter = logging.Formatter("%(asctime)s-%(module)s-%(funcName)s-%(lineno)d-%(name)s-%(message)s")
         rHandler = ConcurrentRotatingFileHandler(
-            filename="./log/" + "communication" + ".log",
+            filename="./log/" + self.device_name + ".log",
             maxBytes=10 * 1024 * 1024,  # 设置每个日志文件的最大大小（例如10MB）
             backupCount=1,  # 设置保留的日志文件数量
         )
