@@ -1,8 +1,11 @@
 import smtplib
 from email.mime.text import MIMEText
 from email.header import Header
+
 from core.utils import save_json, read_json
 import json
+
+import requests
 
 
 class EmailWarning:
@@ -79,6 +82,7 @@ class EmailWarning:
             server = smtplib.SMTP_SSL(smtp_server, port)
             server.login(self.sender_mail, self.sender_passwd)  # 登录验证
             server.sendmail(self.sender_mail, [self.receiver_email], msg.as_string())  # 发送邮件
+            send_feishu(subject + ":" + message)
             return True
         except smtplib.SMTPException as e:
             print(e)
@@ -90,3 +94,23 @@ class EmailWarning:
         if self.sender_mail and self.sender_passwd and self.receiver_email and self.receiver_name:
             return True
         return False
+
+
+def send_feishu(message: str):
+
+    # 飞书Webhook的URL
+    webhook_url = "https://open.feishu.cn/open-apis/bot/v2/hook/2cbc51eb-7c28-44df-946c-06b0f38770be"
+
+    # 要发送的消息内容
+    message = {"msg_type": "text", "content": {"text": message}}
+
+    # 将消息内容转换为JSON格式
+    headers = {"Content-Type": "application/json"}
+    data = json.dumps(message)
+
+    # 发送POST请求到Webhook
+    response = requests.post(webhook_url, headers=headers, data=data)
+
+
+if __name__ == "__main__":
+    send_feishu("测试")

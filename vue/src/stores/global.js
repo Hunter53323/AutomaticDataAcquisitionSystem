@@ -221,9 +221,9 @@ export const useDBStore = defineStore('database', {
           "公司名称": ""
         }
       })
-      this.columns.forEach((item) => {
-        form.data_column.push([item])
-      })
+      // this.columns.forEach((item) => {
+      //   form.data_column.push([item])
+      // })
       ElMessageBox({
         title: '报表导出',
         message: h(StatementBox, { modelValue: form, 'onUpdate:modelValue': value => form = value, columns: this.columnsToFill }),
@@ -261,12 +261,10 @@ export const useDBStore = defineStore('database', {
               link.click();
             })
             .catch((e) => {
-              console.log(e)
               ElMessage.error('报表导出失败')
             })
         })
         .catch((e) => {
-          console.log(e)
           ElMessage({
             type: 'info',
             message: '报表导出取消',

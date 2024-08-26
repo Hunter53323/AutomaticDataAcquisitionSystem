@@ -141,7 +141,7 @@ class TestDevice(DriverBase):
             self.logger.error(f"连接关闭错误！error:{e}")
             return False
 
-    def read_all(self, read_count=3) -> bool:
+    def read_all(self, read_count=5) -> bool:
         if not self.is_set_f:
             return False
         for count in range(read_count):

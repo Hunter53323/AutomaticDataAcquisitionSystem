@@ -1,22 +1,32 @@
 <script setup>
-import { onMounted, watch, } from 'vue'
+import { onMounted, watch, onUpdated, onUnmounted } from 'vue'
 import { Chart } from '@antv/g2'
 
 const props = defineProps(['data', 'unit', 'title', 'index'])
 
-const chart = new Chart({
-  autoFit: true,
-  height: 300
-});
+let chart
 
-// let time = Date.now();
+onUpdated(async () => {
+  // console.log("update")
+  await chart.destroy()
+
+  initChart()
+  updateChart(props.data)
+})
+
+onMounted(() => {
+  initChart()
+})
+
+onUnmounted(() => {
+  chart.destroy()
+})
 
 watch(() => props.data, (val) => {
-  // let time_now = Date.now();
-  // if (time_now - time < 1000) {
-  //   return;
-  // }
-  // time = Date.now();
+  updateChart(val)
+}, { deep: true })
+
+const updateChart = (val) => {
   chart
     .scale('x', {
       domain: [val[0].time, val[0].time + 20000],
@@ -38,9 +48,13 @@ watch(() => props.data, (val) => {
       labelAlign: 'parallel'
     })
     .changeData(val);
-}, { deep: true })
+}
 
-onMounted(() => {
+const initChart = () => {
+  chart = new Chart({
+    autoFit: true,
+    height: 300
+  });
   chart
     .data(props.data)
     .encode('x', 'time')
@@ -81,7 +95,8 @@ onMounted(() => {
   chart.render()
   const container = chart.getContainer(); // 获得挂载的容器
   document.getElementById('container' + props.index).appendChild(container);
-})
+}
+
 
 </script>
 

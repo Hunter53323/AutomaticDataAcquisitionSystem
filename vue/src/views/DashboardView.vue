@@ -56,7 +56,7 @@ watch(() => [dashboard.dataShowSelected, dashboard.paraShowSelected, dataAll.val
 
 socket.on('data_from_device', data => {
   const timeRecv = Date.now()
-  dataAll.value = data
+  dataAll.value = Object.assign(data)
   graphSelected1.value.forEach(element => {
     timeData1.value.push({
       time: timeRecv,
@@ -142,7 +142,8 @@ db.updateMeta()
           <div class="card-header">
             <span style="margin-right: 10px;">采集配置</span>
             <el-text class="collectorCount" type="primary">
-              共{{ dashboard.collectCount }}条，剩余{{ dashboard.remainCount }}条，成功{{ dashboard.successCount }}条，
+              共{{ dashboard.remainCount + dashboard.successCount + dashboard.failCount }}条，剩余{{ dashboard.remainCount
+              }}条，成功{{ dashboard.successCount }}条，
               失败{{ dashboard.failCount }}条
             </el-text>
           </div>
@@ -171,7 +172,7 @@ db.updateMeta()
     </el-col>
     <el-col :span="12">
       <el-card shadow="hover">
-        <DataGraph :data="timeData2" :unit="global.getUnit(graphSelected2[0])" :title="graphSelected2" index="2" />
+        <!-- <DataGraph :data="timeData2" :unit="global.getUnit(graphSelected2[0])" :title="graphSelected2" index="2" /> -->
         <el-row class="graph-choice" :gutter="10">
           <el-col :span="8">
             <el-select v-model="graphClass2" placeholder="选择显示种类" style="width: 100%" size="small">

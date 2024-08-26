@@ -1,7 +1,8 @@
-from engineio.async_drivers import gevent
+import gevent
 from gevent import monkey
 
 monkey.patch_all(socket=False)
+
 # 以上部分会将thread等模块替换掉，必须放在最前面多线程会出问题，同时由于是阻塞式的逻辑，需要把socket的替换给去掉
 from flask import Flask, render_template
 from flask_socketio import SocketIO
