@@ -182,18 +182,23 @@ def statement():
     """
     # filename = request.args.get("filename")
     input_form: dict = request.get_json().get("input_form")
-    ids_input: list[int | str] = request.get_json().get("ids_input", "")
+    ids_input: str = request.get_json().get("ids_input", "")
     draw_parameters: list[str] = request.get_json().get("draw_parameters", "")
-    data_column: list[str] = request.get_json().get("data_column", "")
-    static_data_column: list[str] = request.get_json().get("static_data_column", "")
+    # data_column: list[str] = request.get_json().get("data_column", "")
+    static_data_column: list[str] = request.get_json().get("data_column", "")
     try:
         if not outputdb.change_current_table(table_name.get_table_name()):
             if not outputdb.change_history_table(table_name.get_table_name()):
                 return jsonify({"status": "error", "message": "表不存在"}), 404
-        data = outputdb.select_data(ids_input=ids_input)
-        data_column = outputdb.table_columns.keys()
+        if ids_input:
+            # 分割字符串，并转换为整数列表
+            ids = [id_str for id_str in ids_input.split(",")]
+        else:
+            ids = []
+        data = outputdb.select_data(ids_input=ids)
+        data_column = list(outputdb.table_columns.keys())
         breakdown_number = 0
-        for row in len(data):
+        for row in data:
             for key in data_column:
                 if "故障" in key:
                     index = data_column.index(key)
@@ -210,17 +215,16 @@ def statement():
                 index = data_column.index(para)
                 min_value = 1000000
                 max_value = 0
-                for i in len(data):
+                for i in range(len(data)):
                     if data[i][index] > max_value:
                         max_value = data[i][index]
                     if data[i][index] < min_value:
                         min_value = data[i][index]
                 para_range[para] = str(min_value) + "-" + str(max_value)
-        {"aaa": "1-10"}
         # 取出所设置的静态数据
         static_data = outputdb.select_data(ids_input=ids_input, columns=static_data_column)
         one_static_data = static_data[0] if static_data else {}
-        static_data_list = dict(zip(data_column, one_static_data))
+        static_data_list = dict(zip(static_data_column, one_static_data))
         input_form.update(static_data_list)
         if "ID" not in data_column:
             data_column.insert(0, "ID")
@@ -228,4 +232,6 @@ def statement():
         export_path = generate_pdf(draw_parameters, input_form, para_range, data_dict_list)
         return send_file(export_path, as_attachment=True)
     except Exception as e:
+        import traceback
+        print(traceback.format_exc())
         return jsonify({"status": "error", "message": str(e)})
