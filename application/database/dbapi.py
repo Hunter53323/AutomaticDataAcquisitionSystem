@@ -3,6 +3,7 @@ from core.database import outputdb
 from flask import request, jsonify
 from core.statement.statement import generate_pdf
 from core.database import table_name
+from core.communication import communicator
 from flask import send_file
 
 
@@ -180,19 +181,51 @@ def statement():
         -d '{"ids_input": [1,2,3,4,"5-10"], "draw_parameters": ["负载量", "设定转速"], "data_column": ["负载量", "设定转速", "速度环补偿系数", "电流环带宽", "观测器补偿系数", "目标转速", "实际转速"], "input_form": {"实验员姓名": "张三", "公司名称": "XX公司"} }'
     """
     # filename = request.args.get("filename")
-    input_form = request.get_json().get("input_form")
+    input_form: dict = request.get_json().get("input_form")
     ids_input: list[int | str] = request.get_json().get("ids_input", "")
     draw_parameters: list[str] = request.get_json().get("draw_parameters", "")
     data_column: list[str] = request.get_json().get("data_column", "")
+    static_data_column: list[str] = request.get_json().get("static_data_column", "")
     try:
         if not outputdb.change_current_table(table_name.get_table_name()):
             if not outputdb.change_history_table(table_name.get_table_name()):
                 return jsonify({"status": "error", "message": "表不存在"}), 404
-        data = outputdb.select_data(ids_input=ids_input, columns=data_column)
+        data = outputdb.select_data(ids_input=ids_input)
+        data_column = outputdb.table_columns.keys()
+        breakdown_number = 0
+        for row in len(data):
+            for key in data_column:
+                if "故障" in key:
+                    index = data_column.index(key)
+                    if row[index]:
+                        breakdown_number += 1
+        input_form["故障条数"] = breakdown_number
+        input_form["总条数"] = len(data)
+
+        # 找到所测试参数的范围
+        para_range = {}
+        para_list = communicator.get_para_map().keys()
+        for para in para_list:
+            if para in data_column:
+                index = data_column.index(para)
+                min_value = 1000000
+                max_value = 0
+                for i in len(data):
+                    if data[i][index] > max_value:
+                        max_value = data[i][index]
+                    if data[i][index] < min_value:
+                        min_value = data[i][index]
+                para_range[para] = str(min_value) + "-" + str(max_value)
+        {"aaa": "1-10"}
+        # 取出所设置的静态数据
+        static_data = outputdb.select_data(ids_input=ids_input, columns=static_data_column)
+        one_static_data = static_data[0] if static_data else {}
+        static_data_list = dict(zip(data_column, one_static_data))
+        input_form.update(static_data_list)
         if "ID" not in data_column:
             data_column.insert(0, "ID")
         data_dict_list = [dict(zip(data_column, row)) for row in data]
-        export_path = generate_pdf(draw_parameters, input_form, data_dict_list)
+        export_path = generate_pdf(draw_parameters, input_form, para_range, data_dict_list)
         return send_file(export_path, as_attachment=True)
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
