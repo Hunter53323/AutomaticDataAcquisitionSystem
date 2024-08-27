@@ -16,8 +16,8 @@ const db = useDBStore()
 
 const changeUser = () => {
   let formUser = reactive({
-    name: '',
-    email: '',
+    name: settings.user.name,
+    email: settings.user.email,
   })
   ElMessageBox({
     title: '请输入您的信息',
