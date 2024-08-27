@@ -57,10 +57,10 @@ def api_showall():
     offset = (page - 1) * per_page
     cursor = outputdb.connection.cursor()
     try:
-        cursor.execute(f"SELECT COUNT(*) FROM {outputdb.table_name}")
+        cursor.execute(f"SELECT COUNT(*) FROM `{outputdb.table_name}`")
         total_count = cursor.fetchone()[0]
         cursor.execute(
-            f"SELECT * FROM {outputdb.table_name} LIMIT %s OFFSET %s",
+            f"SELECT * FROM `{outputdb.table_name}` LIMIT %s OFFSET %s",
             (per_page, offset),
         )
         data = cursor.fetchall()
@@ -92,9 +92,9 @@ def api_show_meta():
             return jsonify({"status": "error", "message": "表不存在"}), 404
     cursor = outputdb.connection.cursor()
     try:
-        cursor.execute(f"SELECT COUNT(*) FROM {outputdb.table_name}")
+        cursor.execute(f"SELECT COUNT(*) FROM `{outputdb.table_name}`")
         total_count = cursor.fetchone()[0]
-        cursor.execute(f"SELECT * FROM {outputdb.table_name} LIMIT %s OFFSET %s", (1, 0))
+        cursor.execute(f"SELECT * FROM `{outputdb.table_name}` LIMIT %s OFFSET %s", (1, 0))
         data = cursor.fetchall()
         column_names = [desc[0] for desc in cursor.description]
         column_names_to_fill = column_names.copy()
@@ -119,10 +119,10 @@ def api_showall_v2():
     offset = (page - 1) * per_page
     cursor = outputdb.connection.cursor()
     try:
-        cursor.execute(f"SELECT COUNT(*) FROM {outputdb.table_name}")
+        cursor.execute(f"SELECT COUNT(*) FROM `{outputdb.table_name}`")
         total_count = cursor.fetchone()[0]
         cursor.execute(
-            f"SELECT * FROM {outputdb.table_name} LIMIT %s OFFSET %s",
+            f"SELECT * FROM `{outputdb.table_name}` LIMIT %s OFFSET %s",
             (per_page, offset),
         )
         data = cursor.fetchall()

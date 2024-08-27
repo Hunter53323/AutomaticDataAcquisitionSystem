@@ -182,7 +182,7 @@ class MySQLDatabase:
         """
         try:
             cursor = self.connection.cursor()
-            cursor.execute(f"DROP TABLE IF EXISTS {self.table_name}")
+            cursor.execute(f"DROP TABLE IF EXISTS `{self.table_name}`")
             cursor.execute(create_table_sql)
             self.connection.commit()
             self.logger.info(f"数据库表 '{self.table_name}' 创建成功。")
@@ -205,7 +205,7 @@ class MySQLDatabase:
         try:
             cursor = self.connection.cursor()
             # 准备查询语句
-            query = f"SELECT ID FROM {self.table_name}"
+            query = f"SELECT ID FROM `{self.table_name}`"
             # 添加WHERE子句（如果有）
             if conditions:
                 query += f" WHERE {conditions}"
@@ -250,7 +250,7 @@ class MySQLDatabase:
             query += "`"
 
             # 添加FROM子句
-            query += f" FROM {self.table_name}"
+            query += f" FROM `{self.table_name}`"
 
             # 准备WHERE子句
             where_clauses = []
@@ -284,11 +284,11 @@ class MySQLDatabase:
         else:
             ids = self.parse_ids_input(ids_input)
             placeholders = ", ".join(["%s"] * len(ids))
-            query = f"DELETE FROM {self.table_name} WHERE ID IN ({placeholders})"
+            query = f"DELETE FROM `{self.table_name}` WHERE ID IN ({placeholders})"
 
         try:
             cursor = self.connection.cursor()
-            cursor.execute(f"SELECT COUNT(*) FROM {self.table_name} WHERE ID IN ({placeholders})", ids)
+            cursor.execute(f"SELECT COUNT(*) FROM `{self.table_name}` WHERE ID IN ({placeholders})", ids)
             count = cursor.fetchone()[0]
             if count == len(ids):
                 cursor.execute(query, ids if ids_input else ())
@@ -318,7 +318,7 @@ class MySQLDatabase:
         try:
             cursor = self.connection.cursor()
             # 使用 TRUNCATE TABLE 来删除所有数据并重置ID
-            cursor.execute(f"TRUNCATE TABLE {self.table_name}")
+            cursor.execute(f"TRUNCATE TABLE `{self.table_name}`")
             self.connection.commit()
             self.logger.info("所有数据已删除，并且ID已经重置。")
             return True
@@ -339,7 +339,7 @@ class MySQLDatabase:
         try:
             cursor = self.connection.cursor()
             # 某些情况下，ALTER TABLE 可能不适用于某些存储引擎，例如InnoDB
-            cursor.execute(f"ALTER TABLE {self.table_name} AUTO_INCREMENT = 1")
+            cursor.execute(f"ALTER TABLE `{self.table_name}` AUTO_INCREMENT = 1")
             self.connection.commit()
             return True
         except Error as e:
@@ -382,7 +382,7 @@ class MySQLDatabase:
             placeholders = ", ".join(["%s"] * len(columns))
 
             # 构造插入语句
-            query = f"INSERT INTO {self.table_name} (`{'`, `'.join(columns)}`) VALUES ({placeholders})"
+            query = f"INSERT INTO `{self.table_name}` (`{'`, `'.join(columns)}`) VALUES ({placeholders})"
 
             # 准备数据元组列表，每个元组对应一个INSERT语句的参数
             data_tuples = [tuple(data[column] for column in columns)]
@@ -418,7 +418,7 @@ class MySQLDatabase:
         set_clause = ", ".join([f"{key} = %s" for key in update_data.keys()])
 
         # 使用动态表名
-        query = f"UPDATE {self.table_name} SET {set_clause} WHERE ID IN ({','.join(['%s'] * len(ids))})"
+        query = f"UPDATE `{self.table_name}` SET {set_clause} WHERE ID IN ({','.join(['%s'] * len(ids))})"
 
         # 准备更新值和ID的参数列表
         update_values = list(update_data.values())  # 更新数据的值
@@ -462,11 +462,11 @@ class MySQLDatabase:
         with self.connection.cursor() as cursor:
             offset = (page - 1) * per_page
             # 使用动态表名
-            cursor.execute(f"SELECT COUNT(*) FROM {self.table_name}")
+            cursor.execute(f"SELECT COUNT(*) FROM `{self.table_name}`")
             total_count = cursor.fetchone()[0]
 
             # 使用动态表名
-            cursor.execute(f"SELECT * FROM {self.table_name} LIMIT %s OFFSET %s", (per_page, offset))
+            cursor.execute(f"SELECT * FROM `{self.table_name}` LIMIT %s OFFSET %s", (per_page, offset))
             data = cursor.fetchall()
 
             return data, total_count
@@ -474,7 +474,7 @@ class MySQLDatabase:
     def get_column_names(self) -> list:
         with self.connection.cursor() as cursor:
             # 使用动态表名
-            cursor.execute(f"SELECT * FROM {self.table_name} LIMIT 1")
+            cursor.execute(f"SELECT * FROM `{self.table_name}` LIMIT 1")
             column_names = [i[0] for i in cursor.description]
         return column_names
 
@@ -516,7 +516,7 @@ class MySQLDatabase:
                         else:
                             ids.append(int(part))
 
-                query = f"SELECT * FROM {self.table_name}"  # 使用动态表名
+                query = f"SELECT * FROM `{self.table_name}`"  # 使用动态表名
                 where_clauses = []
 
                 if ids:

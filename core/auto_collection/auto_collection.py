@@ -307,6 +307,9 @@ class AutoCollection:
     def calculate_result(self, data_dict: dict[str, any], para_dict: dict[str, any], start_time: float) -> dict[str, any]:
         custom_dict = {}
         for col, expr in self.communication.custom_calculate_map.items():
+            if "名称" in col or "型号" in col:
+                custom_dict[col] = expr
+                continue
             expr_dict = {}
             expr_name = re.findall(r"[^\s\+\-\*\/\(\)]+", expr)
             for col_name in data_dict.keys():

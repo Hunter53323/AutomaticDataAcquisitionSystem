@@ -164,3 +164,12 @@ def email_set():
             return jsonify({"status": True}), 200
         else:
             return jsonify({"status": False}), 400
+
+
+@autocollect.route("/restartstatus", methods=["GET"])
+def restartstatus():
+    _, _, _, status = auto_collector.get_current_progress()
+    if status == 3 or status == 4:
+        return jsonify({"status": True}), 200
+    else:
+        return jsonify({"status": False}), 200
