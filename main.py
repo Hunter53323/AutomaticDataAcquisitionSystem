@@ -1,7 +1,9 @@
-import gevent
+from engineio.async_drivers import gevent
+
+# import gevent
 from gevent import monkey
 
-monkey.patch_all(socket=False)
+monkey.patch_all(socket=False, ssl=False)
 
 # 以上部分会将thread等模块替换掉，必须放在最前面多线程会出问题，同时由于是阻塞式的逻辑，需要把socket的替换给去掉
 from flask import Flask, render_template
@@ -43,7 +45,7 @@ def get_apis():
 
 
 if __name__ == "__main__":
-    socketio.run(app, debug=True, host="127.0.0.1", port=5000, allow_unsafe_werkzeug=True)
+    socketio.run(app, debug=False, host="127.0.0.1", port=5000)
     # httpserver = WSGIServer(("127.0.0.1", 5000), app, log=None)
     # httpserver.serve_forever()
 
