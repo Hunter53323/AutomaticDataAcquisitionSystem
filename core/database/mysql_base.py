@@ -70,7 +70,7 @@ class MySQLDatabase:
             cursor = self.connection.cursor()
             cursor.execute(f"SHOW TABLES LIKE '{table_name}'")
             if not cursor.fetchone():
-                self.logger.error(f"表 '{table_name}' 不存在，无法切换。")
+                self.logger.info(f"表 '{table_name}' 不存在，无法切换。")
                 return False
             self.table_name = table_name
             self.table_columns = self.get_columns_from_table(table_name)
