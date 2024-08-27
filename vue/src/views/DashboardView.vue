@@ -10,6 +10,8 @@ import SelectionBox from '@/components/SelectionBox.vue'
 import { io } from 'socket.io-client'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useGlobalStore, useDashboardStore, useSettingsStore, useDBStore } from '@/stores/global'
+import { Chart } from '@antv/g2'
+import TestGraph from '@/components/Dashboard/TestGraph.vue'
 
 const dataAll = ref({})
 const global = useGlobalStore()
@@ -73,19 +75,10 @@ socket.on('data_from_device', data => {
   })
   let timeMin = timeData1.value.at(0).time
   let timeMax = timeData1.value.at(-1).time
-  if (timeMax - timeMin > 20000) {
+  if (timeMax - timeMin >= 20000) {
     timeData1.value = timeData1.value.filter((val, index, arr) => val.time > timeMax - 10000);
     timeData2.value = timeData2.value.filter((val, index, arr) => val.time > timeMax - 10000);
   }
-})
-
-socket.on('auto_collect_status', data => {
-  dashboard.collectCount = data.remaining + data.success + data.fail
-  dashboard.autoCollectStatus = data.status
-  dashboard.remainCount = data.remaining
-  dashboard.successCount = data.success
-  dashboard.failCount = data.fail
-  console.log(data.status)
 })
 
 socket.on('device_status', data => {
@@ -102,7 +95,6 @@ socket.on('device_status', data => {
   dashboard.failCount = data.auto_collect_status.fail
 })
 
-
 dashboard.initList()
 dashboard.updateDeviceState()
 settings.updateProtocol()
@@ -111,6 +103,7 @@ settings.updateDefined()
 settings.updateUser()
 settings.updateSteady()
 db.updateMeta()
+
 
 </script>
 
@@ -156,7 +149,7 @@ db.updateMeta()
   <el-row :gutter="10">
     <el-col :span="12">
       <el-card shadow="hover">
-        <DataGraph :data="timeData1" :unit="global.getUnit(graphSelected1[0])" :title="graphSelected1" index="1" />
+        <DataGraph :data="timeData1"  :title="graphSelected1" index="1" />
         <el-row class="graph-choice" :gutter="10">
           <el-col :span="8">
             <el-select v-model="graphClass1" placeholder="选择显示种类" style="width: 100%" size="small">
@@ -172,7 +165,7 @@ db.updateMeta()
     </el-col>
     <el-col :span="12">
       <el-card shadow="hover">
-        <!-- <DataGraph :data="timeData2" :unit="global.getUnit(graphSelected2[0])" :title="graphSelected2" index="2" /> -->
+        <DataGraph :data="timeData2" :title="graphSelected2" index="2" />
         <el-row class="graph-choice" :gutter="10">
           <el-col :span="8">
             <el-select v-model="graphClass2" placeholder="选择显示种类" style="width: 100%" size="small">

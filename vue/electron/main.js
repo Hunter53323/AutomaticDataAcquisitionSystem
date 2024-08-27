@@ -31,6 +31,22 @@ app.whenReady().then(() => {
     // 打开的窗口，那么程序会重新创建一个窗口。
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
+
+  setTimeout(() => {
+    fetch(useGlobalStore().url + '/collect/restartStatus', {
+      method: 'GET',
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.status == true) {
+          app.relaunch()
+          app.exit()
+        }
+      })
+      .catch(error => {
+
+      })
+  }, 1000 * 60)
 })
 
 // 除了 macOS 外，当所有窗口都被关闭的时候退出程序。 因此，通常对程序和它们在
