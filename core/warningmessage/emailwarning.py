@@ -10,8 +10,8 @@ import requests
 
 class EmailWarning:
     def __init__(self) -> None:
-        self.sender_mail: str = read_json("sender_mail")
-        self.sender_passwd: str = read_json("sender_passwd")
+        self.sender_mail: str = "sjzdcjxt@126.com"
+        self.sender_passwd: str = "ZUJVWGWLPKZGVSCQ"
         self.receiver_email: str = read_json("receiver_email")
         self.receiver_name: str = read_json("receiver_name")
 
