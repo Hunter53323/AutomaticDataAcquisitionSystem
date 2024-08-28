@@ -80,7 +80,7 @@ class AutoCollection:
         self.__stop_flag = True
         return True
 
-    def get_current_progress(self) -> tuple[int, int, int, bool]:
+    def get_current_progress(self) -> tuple[int, int, int, int]:
         """
         :return int 成功采集数量
         :return int 失败采集数量

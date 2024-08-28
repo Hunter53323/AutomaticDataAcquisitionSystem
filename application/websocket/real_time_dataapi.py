@@ -65,9 +65,15 @@ def handle_socketio_events(socketio: SocketIO):
             global thread
             if communicator.check_error():
                 try:
-                    communicator.close_all_device()
-                    communicator.stop_read_all()
-                    communicator.disconnect()
+                    auto_collect_status = auto_collector.get_current_progress()
+                    if auto_collect_status == 3 or auto_collect_status == 4:
+                        # 首先检查当前的数采状态，如果正在进行自动数采的话使用数采里面的停止操作
+                        auto_collector.stop_auto_collect()
+                    else:
+                        # 否则的话就正常停止整个通讯
+                        communicator.close_all_device()
+                        communicator.stop_read_all()
+                        communicator.disconnect()
                     communicator.reset_status()
                 except Exception as e:
                     communicator.logger.error(f"关闭设备失败，{e}")
