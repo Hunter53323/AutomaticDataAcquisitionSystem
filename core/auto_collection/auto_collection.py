@@ -25,6 +25,7 @@ class AutoCollection:
 
         self.db = database
         self.logger = self.communication.logger
+        self.stop_real_time_data_flag = False
 
     def is_stable(self) -> bool:
         return self.__stable_state
@@ -151,6 +152,7 @@ class AutoCollection:
         self.communication.stop_read_all()
         self.communication.disconnect()
         self.communication.reset_status()
+        self.stop_real_time_data_flag = True
         return True
 
     def clear_para(self) -> bool:
@@ -267,7 +269,7 @@ class AutoCollection:
 
             time_count += 1
             # count的判断是避免当前的稳定状态影响稳态判断,
-            if steady_determination(curr_data, para_dict) and time_count > 30:
+            if steady_determination(curr_data, para_dict, curr_time) and time_count > 30:
                 # if self.steady_state_determination(avg_data_calculated, para_dict) and time_count > 10:
                 self.__stable_state = True
                 # final_data = self.calculate_result(curr_data, para_dict)
@@ -324,39 +326,52 @@ class AutoCollection:
         return data_dict
 
     def steady_state_determination(self) -> bool:
+        time_delay_start = False
         history_n = []
         value_err = float(self.__custom_steady_state_determination["误差"])
         epsilon_a = float(self.__custom_steady_state_determination["斜率"])
+        if int(value_err) == 999 and epsilon_a > 1:
+            # 转为时延控制模式
+            time_delay_start = True
 
-        def is_steady(data_dict: dict[str, any], para_dict: dict[str, any]) -> bool:
+        def is_steady(data_dict: dict[str, any], para_dict: dict[str, any], start_time: float) -> bool:
             # 三大类的字符串解析可以统一起来，后面也用类似的方式去做
             # 需要对前端的配置做一个解码，可能需要一个解码函数
-            set_value_name = self.__custom_steady_state_determination["设定值"]
-            actual_value_name = self.__custom_steady_state_determination["实际值"]
-            if set_value_name in data_dict.keys():
-                set_value = data_dict[set_value_name]
-            elif set_value_name in para_dict.keys():
-                set_value = para_dict[set_value_name]
-            elif set_value_name in self.communication.custom_calculate_map.keys():
-                set_value = self.communication.custom_calculate_map[set_value_name]
+            if time_delay_start:
+                # 时延控制模式
+                # 这里减1是由于稳态之后还要等待1秒，所以把这一个减去
+                if time.time() - start_time > (value_err - 1):
+                    return True
+                else:
+                    return False
             else:
-                raise ValueError(f"稳态判断条件中的数据项{set_value_name}不存在")
-            if actual_value_name in data_dict.keys():
-                actual_value = data_dict[actual_value_name]
-            elif actual_value_name in para_dict.keys():
-                actual_value = para_dict[actual_value_name]
-            elif actual_value_name in self.communication.custom_calculate_map.keys():
-                actual_value = self.communication.custom_calculate_map[actual_value_name]
-            else:
-                raise ValueError(f"稳态判断条件中的数据项{actual_value_name}不存在")
-            if not history_n:
-                history_n.append(actual_value)
-                return False
-            if abs(actual_value - history_n[-1]) < epsilon_a and abs(actual_value - set_value) < value_err:
-                return True
-            else:
-                history_n.append(actual_value)
-                return False
+                # 误差斜率控制模式
+                set_value_name = self.__custom_steady_state_determination["设定值"]
+                actual_value_name = self.__custom_steady_state_determination["实际值"]
+                if set_value_name in data_dict.keys():
+                    set_value = data_dict[set_value_name]
+                elif set_value_name in para_dict.keys():
+                    set_value = para_dict[set_value_name]
+                elif set_value_name in self.communication.custom_calculate_map.keys():
+                    set_value = self.communication.custom_calculate_map[set_value_name]
+                else:
+                    raise ValueError(f"稳态判断条件中的数据项{set_value_name}不存在")
+                if actual_value_name in data_dict.keys():
+                    actual_value = data_dict[actual_value_name]
+                elif actual_value_name in para_dict.keys():
+                    actual_value = para_dict[actual_value_name]
+                elif actual_value_name in self.communication.custom_calculate_map.keys():
+                    actual_value = self.communication.custom_calculate_map[actual_value_name]
+                else:
+                    raise ValueError(f"稳态判断条件中的数据项{actual_value_name}不存在")
+                if not history_n:
+                    history_n.append(actual_value)
+                    return False
+                if abs(actual_value - history_n[-1]) < epsilon_a and abs(actual_value - set_value) < value_err:
+                    return True
+                else:
+                    history_n.append(actual_value)
+                    return False
 
         return is_steady
 

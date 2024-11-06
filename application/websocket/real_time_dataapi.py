@@ -80,6 +80,10 @@ def handle_socketio_events(socketio: SocketIO):
                 thread_running.set()
                 thread = None
                 emailsender.send_email("读写故障", "数据采集模块出现读写故障，请检查")
+            if auto_collector.stop_real_time_data_flag:
+                thread_running.set()
+                thread = None
+                auto_collector.stop_real_time_data_flag = False
             if thread_running.is_set():
                 thread_running.clear()
                 break
